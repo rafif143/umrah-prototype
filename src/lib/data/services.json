@@ -1,0 +1,71 @@
+{
+    "suppliers": [
+        {
+            "id": 1,
+            "name": "Al Mazaya Services",
+            "type": "Ground Handling"
+        },
+        {
+            "id": 2,
+            "name": "Elaf Group",
+            "type": "Ground Handling"
+        },
+        {
+            "id": 3,
+            "name": "Rawafed",
+            "type": "Catering & Logistics"
+        },
+        {
+            "id": 4,
+            "name": "Seagull",
+            "type": "Logistics"
+        }
+    ],
+    "services": [
+        {
+            "id": 1,
+            "name": "Meet & Greet Airport",
+            "category": "Airport"
+        },
+        {
+            "id": 2,
+            "name": "Luggage Handling",
+            "category": "Logistics"
+        },
+        {
+            "id": 3,
+            "name": "Wheelchair Assistance",
+            "category": "Medical"
+        },
+        {
+            "id": 4,
+            "name": "Mutawif Service",
+            "category": "Manpower"
+        },
+        {
+            "id": 5,
+            "name": "Zam-zam Water (5L)",
+            "category": "Gifts"
+        },
+        {
+            "id": 6,
+            "name": "Muttaciq Sim Card",
+            "category": "Communication"
+        },
+        {
+            "id": 7,
+            "name": "Laundry Service",
+            "category": "Hotel"
+        },
+        {
+            "id": 8,
+            "name": "City Tour (Taif)",
+            "category": "Tour"
+        },
+        {
+            "id": 9,
+            "name": "City Tour (Badar)",
+            "category": "Tour"
+        }
+    ]
+}

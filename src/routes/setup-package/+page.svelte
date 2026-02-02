@@ -1,6 +1,9 @@
 <script>
 	import { ArrowLeft, Save, Eye, MoreHorizontal, Info, Calendar } from 'lucide-svelte';
 	import { fade } from 'svelte/transition';
+	import { page } from '$app/stores';
+	import { onMount } from 'svelte';
+	import { packageStore } from '$lib/stores/packageStore.svelte.js';
 
 	// State Management
 	import { PackageState } from './packageState.svelte.js';
@@ -18,6 +21,16 @@
 
 	// Instantiate state
 	const state = new PackageState();
+
+	onMount(() => {
+		const id = $page.url.searchParams.get('id');
+		if (id) {
+			const pkg = (packageStore.packages || []).find((p) => p.id === id);
+			if (pkg) {
+				state.loadPackage(pkg);
+			}
+		}
+	});
 </script>
 
 <div class="flex h-screen bg-gray-50/50">
@@ -155,7 +168,9 @@
 		<!-- Top Bar / Breadcrumb area -->
 		<div class="flex items-center justify-between border-b border-gray-200 bg-white px-8 py-4">
 			<div class="flex items-center gap-2 text-xs text-gray-500">
-				<span>Package Management</span>
+				<a href="/package-management" class="transition-colors hover:text-[#972395]"
+					>Package Management</a
+				>
 				<span class="text-gray-300">/</span>
 				<span class="font-medium text-gray-900">Add New Package</span>
 			</div>
@@ -231,18 +246,41 @@
 				<div class="mt-8 flex items-center justify-end gap-3 border-t border-gray-100 pt-6">
 					<button
 						class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+						onclick={() => (window.location.href = '/package-management')}
 					>
 						Cancel
 					</button>
 					<button
 						class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+						onclick={() => {
+							// Save as Draft (Status Check)
+							const data = state.exportData();
+							const existingId = $page.url.searchParams.get('id');
+							if (existingId) {
+								packageStore.updatePackage(existingId, { ...data, status: 'Draft' });
+							} else {
+								packageStore.addPackage({ ...data, id: Date.now().toString(), status: 'Draft' });
+							}
+							alert('Draft Saved!');
+						}}
 					>
 						Save Draft
 					</button>
 					<button
 						class="rounded-lg bg-[#972395] px-6 py-2 text-sm font-medium text-white hover:bg-[#861f84]"
+						onclick={() => {
+							const data = state.exportData();
+							const existingId = $page.url.searchParams.get('id');
+							if (existingId) {
+								packageStore.updatePackage(existingId, data);
+							} else {
+								packageStore.addPackage({ ...data, id: Date.now().toString() });
+							}
+							alert('Package Saved!');
+							window.location.href = '/package-management';
+						}}
 					>
-						Next Step &rarr;
+						Save & Finish
 					</button>
 				</div>
 			</div>

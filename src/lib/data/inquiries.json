@@ -1,0 +1,38 @@
+[
+    {
+        "id": "INQ-001",
+        "customerName": "Ahmad Albab",
+        "whatsapp": "+60123456789",
+        "packageName": "SV 05 DEC 2026 (DAN/ELA) - UMRAH ZIARAH CAIRO",
+        "packageType": "Umrah Ziarah",
+        "agent": "Rayhar HQ",
+        "inquiryDate": "01 Feb 2026"
+    },
+    {
+        "id": "INQ-002",
+        "customerName": "Siti Aminah",
+        "whatsapp": "+60198765432",
+        "packageName": "MH 15 FEB 2026 (MKK/MED)",
+        "packageType": "Umrah Biasa",
+        "agent": "Ali Travel",
+        "inquiryDate": "30 Jan 2026"
+    },
+    {
+        "id": "INQ-003",
+        "customerName": "Haji Rahman",
+        "whatsapp": "+601122334455",
+        "packageName": "SV 01 MAR 2026 (JED/MED)",
+        "packageType": "Umrah Premium",
+        "agent": "Rayhar KT",
+        "inquiryDate": "28 Jan 2026"
+    },
+    {
+        "id": "INQ-004",
+        "customerName": "Nurul Huda",
+        "whatsapp": "+60177788899",
+        "packageName": "TK 10 APR 2026 (IST/MED)",
+        "packageType": "Umrah Turki",
+        "agent": "Rayhar KB",
+        "inquiryDate": "25 Jan 2026"
+    }
+]

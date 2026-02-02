@@ -14,12 +14,14 @@
 			<input
 				type="text"
 				placeholder="Enter package name"
+				bind:value={state.basicInfo.name}
 				class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 			/>
 		</div>
 		<div class="flex flex-col gap-1.5">
 			<label class="text-[13px] font-medium text-gray-700">Category</label>
 			<select
+				bind:value={state.basicInfo.category}
 				class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 			>
 				<option value="">Select category</option>
@@ -31,6 +33,7 @@
 		<div class="flex flex-col gap-1.5">
 			<label class="text-[13px] font-medium text-gray-700">Sub Category</label>
 			<select
+				bind:value={state.basicInfo.subCategory}
 				class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 			>
 				<option value="">Select sub category</option>
@@ -44,6 +47,7 @@
 			<input
 				type="number"
 				placeholder="e.g., 9"
+				bind:value={state.basicInfo.duration}
 				class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 			/>
 		</div>

@@ -11,7 +11,7 @@
 	let { state: pkgState } = $props();
 </script>
 
-<div class="mb-4">
+<div class="mb-4 flex items-center justify-between">
 	<button
 		class="flex items-center gap-2 text-sm font-medium text-gray-500 transition-colors hover:text-gray-900"
 		onclick={() => (pkgState.showTripSetup = false)}
@@ -19,6 +19,24 @@
 		<ArrowLeft size={16} />
 		Back to Trip List
 	</button>
+	<div class="flex gap-2">
+		<button
+			class="rounded-lg border border-gray-300 px-4 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+			onclick={() => (pkgState.showTripSetup = false)}
+		>
+			Cancel
+		</button>
+		<button
+			class="rounded-lg bg-[#972395] px-4 py-1.5 text-sm font-medium text-white hover:bg-[#861f84]"
+			onclick={() => {
+				pkgState.saveTrip();
+				pkgState.showTripSetup = false;
+				alert('Trip Data Updated!');
+			}}
+		>
+			Save Trip Data
+		</button>
+	</div>
 </div>
 
 <!-- Trip Setup Content -->

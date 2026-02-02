@@ -1,55 +1,31 @@
 <script>
-	import { Plus, Search, Filter, Eye, Edit, Trash2, Calendar } from 'lucide-svelte';
+	import {
+		Plus,
+		Search,
+		Filter,
+		LayoutGrid,
+		List,
+		MoreHorizontal,
+		Calendar,
+		Users,
+		Plane,
+		FileText,
+		Eye,
+		Edit,
+		Trash2
+	} from 'lucide-svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
+	import { packageStore } from '$lib/stores/packageStore.svelte.js';
 
-	// Simulated package data
-	const packages = [
-		{
-			id: 1,
-			name: 'Umrah Ramadhan Premium',
-			category: 'Premium',
-			duration: '12 Days 11 Nights',
-			price: 'RM 12,500',
-			status: 'Active',
-			image: '🕋'
-		},
-		{
-			id: 2,
-			name: 'Umrah Regular Economy',
-			category: 'Economy',
-			duration: '9 Days 8 Nights',
-			price: 'RM 6,800',
-			status: 'Active',
-			image: '🕌'
-		},
-		{
-			id: 3,
-			name: 'Umrah Plus Turkey',
-			category: 'Plus',
-			duration: '14 Days 13 Nights',
-			price: 'RM 18,900',
-			status: 'Draft',
-			image: '✈️'
-		},
-		{
-			id: 4,
-			name: 'Umrah VIP Executive',
-			category: 'VIP',
-			duration: '10 Days 9 Nights',
-			price: 'RM 25,000',
-			status: 'Active',
-			image: '⭐'
-		},
-		{
-			id: 5,
-			name: 'Umrah Akhir Tahun',
-			category: 'Premium',
-			duration: '11 Days 10 Nights',
-			price: 'RM 14,200',
-			status: 'Inactive',
-			image: '🌙'
-		}
-	];
+	let viewMode = $state('grid'); // 'grid' | 'list'
+	let searchQuery = $state('');
+
+	// Use store data
+	let packages = $derived(
+		(packageStore.packages || []).filter((p) =>
+			(p?.name || '').toLowerCase().includes((searchQuery || '').toLowerCase())
+		)
+	);
 </script>
 
 <svelte:head>
@@ -91,6 +67,7 @@
 						type="text"
 						placeholder="Search packages..."
 						class="flex-1 border-none bg-transparent text-sm outline-none placeholder:text-gray-400"
+						bind:value={searchQuery}
 					/>
 				</div>
 				<button
@@ -111,7 +88,7 @@
 						<div
 							class="relative flex h-[120px] items-center justify-center bg-gradient-to-br from-[#972395]/10 to-[#972395]/20"
 						>
-							<span class="text-5xl">{pkg.image}</span>
+							<span class="text-5xl">{pkg.image || ''}</span>
 							<span
 								class="absolute top-3 right-3 rounded-full px-2.5 py-1 text-[11px] font-medium
 								{pkg.status === 'Active'
@@ -126,7 +103,7 @@
 						<div class="p-4">
 							<span
 								class="mb-2 inline-block rounded-md bg-[#972395]/10 px-2 py-1 text-[11px] font-medium text-[#972395]"
-								>{pkg.category}</span
+								>{pkg.category || 'Package'}</span
 							>
 							<h3 class="mb-2 text-[15px] font-semibold text-gray-900">{pkg.name}</h3>
 							<div class="mb-3 flex items-center gap-3 text-xs text-gray-500">
@@ -137,15 +114,23 @@
 								<div class="flex gap-1.5">
 									<button
 										class="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:border-[#972395] hover:text-[#972395]"
-										><Eye size={16} /></button
+										onclick={(e) => e.preventDefault()}><Eye size={16} /></button
 									>
 									<button
 										class="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:border-[#972395] hover:text-[#972395]"
-										><Edit size={16} /></button
+										onclick={(e) => {
+											e.preventDefault();
+											window.location.href = `/setup-package?id=${pkg.id}`;
+										}}><Edit size={16} /></button
 									>
 									<button
 										class="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:border-red-500 hover:text-red-500"
-										><Trash2 size={16} /></button
+										onclick={(e) => {
+											e.preventDefault();
+											if (confirm('Are you sure you want to delete this package?')) {
+												packageStore.deletePackage(pkg.id);
+											}
+										}}><Trash2 size={16} /></button
 									>
 								</div>
 							</div>

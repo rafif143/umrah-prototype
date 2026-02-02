@@ -1,0 +1,56 @@
+{
+    "foodTypes": [
+        {
+            "id": 1,
+            "name": "International",
+            "description": "Standard international buffet"
+        },
+        {
+            "id": 2,
+            "name": "Asian",
+            "description": "Asian cuisine including rice and noodles"
+        },
+        {
+            "id": 3,
+            "name": "Middle Eastern",
+            "description": "Traditional Arab dishes"
+        },
+        {
+            "id": 4,
+            "name": "Local",
+            "description": "Local specialties"
+        }
+    ],
+    "bases": [
+        {
+            "id": 1,
+            "name": "Full Board",
+            "foodTypeIds": [
+                1,
+                3
+            ]
+        },
+        {
+            "id": 2,
+            "name": "Half Board",
+            "foodTypeIds": [
+                1
+            ]
+        },
+        {
+            "id": 3,
+            "name": "Bed & Breakfast",
+            "foodTypeIds": []
+        },
+        {
+            "id": 4,
+            "name": "All Inclusive",
+            "foodTypeIds": [
+                1,
+                2,
+                3,
+                4
+            ]
+        }
+    ]
+}

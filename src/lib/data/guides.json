@@ -1,0 +1,65 @@
+{
+    "guides": [
+        {
+            "id": 1,
+            "name": "Ustaz Abdullah",
+            "type": "Mutawif",
+            "city": "Makkah",
+            "contact": "+966 50 111 2222"
+        },
+        {
+            "id": 2,
+            "name": "Ustaz Rahim",
+            "type": "Mutawif",
+            "city": "Madinah",
+            "contact": "+966 50 333 4444"
+        },
+        {
+            "id": 3,
+            "name": "Ustaz Karim",
+            "type": "Mutawif",
+            "city": "Makkah",
+            "contact": "+966 50 555 6666"
+        },
+        {
+            "id": 4,
+            "name": "Ustaz Hassan",
+            "type": "Mutawif",
+            "city": "Madinah",
+            "contact": "+966 50 777 8888"
+        },
+        {
+            "id": 5,
+            "name": "Ustaz Faisal",
+            "type": "Mutawif VIP",
+            "city": "Makkah",
+            "contact": "+966 50 999 0000"
+        }
+    ],
+    "leaders": [
+        {
+            "id": 1,
+            "name": "Haji Ismail",
+            "contact": "+60 12 345 6789",
+            "experience": "10 Years"
+        },
+        {
+            "id": 2,
+            "name": "Hajah Fatimah",
+            "contact": "+60 13 456 7890",
+            "experience": "8 Years"
+        },
+        {
+            "id": 3,
+            "name": "Encik Razak",
+            "contact": "+60 19 876 5432",
+            "experience": "5 Years"
+        },
+        {
+            "id": 4,
+            "name": "Ustazah Nurul",
+            "contact": "+60 17 654 3210",
+            "experience": "7 Years"
+        }
+    ]
+}

@@ -1,0 +1,45 @@
+import { persistedState } from './persistedState.svelte.js';
+import initialHotelData from '../data/masterData-hotel.json';
+
+// Create a persisted store for Hotel Master Data
+const hotelState = persistedState('umrah_master_hotel', initialHotelData);
+
+export const hotelStore = {
+    get hotels() { return hotelState.value.hotels; },
+    get roomTypes() { return hotelState.value.roomTypes; },
+    get basisTypes() { return hotelState.value.basisTypes; },
+    get foodTypes() { return hotelState.value.foodTypes; },
+    get hotelViews() { return hotelState.value.hotelViews; },
+
+    // Hotel Actions
+    addHotel: (hotel) => {
+        hotelState.value = { ...hotelState.value, hotels: [...hotelState.value.hotels, hotel] };
+    },
+    updateHotel: (id, updatedHotel) => {
+        hotelState.value = {
+            ...hotelState.value,
+            hotels: hotelState.value.hotels.map(h => h.id === id ? { ...h, ...updatedHotel } : h)
+        };
+    },
+    deleteHotel: (id) => {
+        hotelState.value = {
+            ...hotelState.value,
+            hotels: hotelState.value.hotels.filter(h => h.id !== id)
+        };
+    },
+
+    // Config Actions
+    addRoomType: (item) => {
+        hotelState.value = { ...hotelState.value, roomTypes: [...hotelState.value.roomTypes, item] };
+    },
+    addFoodType: (item) => {
+        hotelState.value = { ...hotelState.value, foodTypes: [...hotelState.value.foodTypes, item] };
+    },
+    addHotelView: (item) => {
+        hotelState.value = { ...hotelState.value, hotelViews: [...hotelState.value.hotelViews, item] };
+    },
+
+    reset: () => {
+        hotelState.value = initialHotelData;
+    }
+};

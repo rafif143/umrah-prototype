@@ -13,6 +13,82 @@ export class PackageState {
     tripSetupTab = $state('accomodation');
     showTripSetup = $state(false);
 
+    // Basic Info State
+    basicInfo = $state({
+        name: '',
+        category: '',
+        subCategory: '',
+        duration: ''
+    });
+
+    // Detailed Info State
+    descriptions = $state([{ image: '', text: '' }]);
+    targetAudience = $state([]);
+    includedItems = $state([]);
+    excludedItems = $state([]);
+    faqList = $state([{ question: '', answer: '' }]);
+    galleryImages = $state([]);
+
+    loadPackage(pkg) {
+        if (!pkg) return;
+        // Basic Info
+        this.basicInfo.name = pkg.name || '';
+        this.basicInfo.category = pkg.category || '';
+        this.basicInfo.subCategory = pkg.subCategory || '';
+        this.basicInfo.duration = pkg.duration ? pkg.duration.replace(/\D/g, '') : '';
+
+        // Detailed Info
+        this.descriptions = pkg.descriptions?.length ? pkg.descriptions : [{ image: '', text: '' }];
+        this.targetAudience = pkg.targetAudience || [];
+        this.includedItems = pkg.includedItems || [];
+        this.excludedItems = pkg.excludedItems || [];
+        this.faqList = pkg.faqList?.length ? pkg.faqList : [{ question: '', answer: '' }];
+        this.galleryImages = pkg.galleryImages || [];
+
+        // Trip Lists & Resources
+        if (pkg.tripDates) this.tripDates = pkg.tripDates;
+        if (pkg.itinerary) this.itinerary = pkg.itinerary;
+        if (pkg.flightList) this.flightList = pkg.flightList;
+        if (pkg.accommodationList) this.accommodationList = pkg.accommodationList;
+        if (pkg.mealsList) this.mealsList = pkg.mealsList;
+        if (pkg.transportList) this.transportList = pkg.transportList;
+        if (pkg.operationalCostList) this.operationalCostList = pkg.operationalCostList;
+        if (pkg.serviceList) this.serviceList = pkg.serviceList;
+        if (pkg.roomCalculator) this.roomCalculator = pkg.roomCalculator;
+    }
+
+    exportData() {
+        return $state.snapshot({
+            // Flatten basic info into top-level for compatibility
+            name: this.basicInfo.name,
+            category: this.basicInfo.category,
+            subCategory: this.basicInfo.subCategory,
+            duration: this.basicInfo.duration ? `${this.basicInfo.duration} Hari` : '',
+
+            // Full State
+            descriptions: this.descriptions,
+            targetAudience: this.targetAudience,
+            includedItems: this.includedItems,
+            excludedItems: this.excludedItems,
+            faqList: this.faqList,
+            galleryImages: this.galleryImages,
+
+            tripDates: this.tripDates,
+            itinerary: this.itinerary,
+            flightList: this.flightList,
+            accommodationList: this.accommodationList,
+            mealsList: this.mealsList,
+            transportList: this.transportList,
+            operationalCostList: this.operationalCostList,
+            serviceList: this.serviceList,
+            roomCalculator: this.roomCalculator,
+
+            // Computed/Derived values for list view
+            price: this.calculateTotalCosts().grandTotal,
+            status: 'Active' // Default
+        });
+    }
+
     // Sections for General Info tab
     infoSections = [
         { id: 'basic', label: 'Basic Info', icon: Info },
@@ -33,31 +109,85 @@ export class PackageState {
     ];
 
     // Trip Dates List (Dummy Data)
-    // Trip Dates List (Dummy Data)
     tripDates = $state([
         {
             id: 1,
             packageName: 'ACEH SABANG 5 HARI 4 MALAM',
-            checkIn: '20 Mar 2024',
-            checkOut: '24 Mar 2024',
-            duration: '5 Hari 4 Malam',
+            checkIn: '2024-03-20',
+            checkOut: '2024-03-24',
+            duration: '5',
+            durationNights: '4',
+            paxCapacity: 40,
+            validityStart: '2024-01-01',
+            validityEnd: '2024-12-31',
             date: '20 Mar 2024',
             flightCode: 'SV 820 / SV 821',
             price: 'RM 4,990',
-            status: 'Active'
-        },
-        {
-            id: 2,
-            packageName: 'UMRAH ZIARAH TAIF',
-            checkIn: '15 Apr 2024',
-            checkOut: '26 Apr 2024',
-            duration: '12 Hari 11 Malam',
-            date: '15 Apr 2024',
-            flightCode: 'MH 150 / MH 151',
-            price: 'RM 8,990',
-            status: 'Pending'
+            status: 'Active',
+            guides: [],
+            leaders: []
         }
     ]);
+
+    // Active Trip State (for editing)
+    activeTrip = $state({
+        id: null,
+        checkIn: '',
+        checkOut: '',
+        paxCapacity: '',
+        duration: '',
+        durationNights: '',
+        validityStart: '',
+        validityEnd: '',
+        guides: [], // { name: '', type: 'guide'|'leader', contact: '' }
+        leaders: []
+    });
+
+    // Itinerary State (Package Level)
+    itinerary = $state([
+        { day: 1, title: '', location: '', description: '' }
+    ]);
+
+    loadTrip(trip) {
+        this.activeTrip = structuredClone($state.snapshot(trip));
+        this.activeTrip.guides = trip.guides || [];
+        this.activeTrip.leaders = trip.leaders || [];
+    }
+
+    resetTrip() {
+        this.activeTrip = {
+            id: null,
+            checkIn: '',
+            checkOut: '',
+            paxCapacity: '',
+            duration: '',
+            durationNights: '',
+            validityStart: '',
+            validityEnd: '',
+            guides: [],
+            leaders: []
+        };
+    }
+
+    saveTrip() {
+        const tripData = $state.snapshot(this.activeTrip);
+
+        // Basic derivation of display fields
+        tripData.date = tripData.checkIn ? new Date(tripData.checkIn).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : '-';
+        tripData.durationText = `${tripData.duration} Hari ${tripData.durationNights} Malam`;
+
+        if (tripData.id) {
+            const index = this.tripDates.findIndex(t => t.id === tripData.id);
+            if (index !== -1) {
+                this.tripDates[index] = { ...this.tripDates[index], ...tripData };
+            }
+        } else {
+            tripData.id = Date.now();
+            tripData.status = 'Active';
+            tripData.price = 'RM 0'; // Placeholder
+            this.tripDates.push(tripData);
+        }
+    }
 
     // Accommodation State
     showAccommodationModal = $state(false);
@@ -402,6 +532,20 @@ export class PackageState {
 
     removeFlightItemFromGroup(index) {
         this.flightGroupForm.items = this.flightGroupForm.items.filter((_, i) => i !== index);
+    }
+
+    editFlightItemInGroup(item, index) {
+        this.flightItemForm = structuredClone($state.snapshot(item));
+        this.editingFlightItemIndex = index;
+    }
+
+    updateFlightItemInGroup() {
+        if (this.editingFlightItemIndex !== null) {
+            this.calculateFlightItemTotal(this.flightItemForm);
+            this.flightGroupForm.items[this.editingFlightItemIndex] = structuredClone($state.snapshot(this.flightItemForm));
+            this.flightItemForm = this.getInitialFlightItemForm();
+            this.editingFlightItemIndex = null;
+        }
     }
 
     calculateFlightItemTotal() {

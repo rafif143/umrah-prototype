@@ -116,6 +116,20 @@
 		costingFormData.costItems = costingFormData.costItems.filter((_, i) => i !== index);
 	}
 
+	// Edit functions
+	function editCategory(category) {
+		categoryFormData = { ...category };
+		showCategoryForm = true;
+	}
+
+	function editCosting(costing) {
+		costingFormData = {
+			...costing,
+			costItems: costing.costItems.map((item) => ({ ...item }))
+		};
+		showCostingForm = true;
+	}
+
 	// Get category type for item
 	function getCategoryType(categoryId) {
 		if (!categoryId) return null;
@@ -335,7 +349,7 @@
 										<div class="flex items-center gap-2">
 											<button
 												class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-												><Edit size={16} /></button
+												onclick={() => editCategory(category)}><Edit size={16} /></button
 											>
 											<button class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
 												><Trash2 size={16} /></button
@@ -465,7 +479,7 @@
 										<div class="flex items-center gap-2">
 											<button
 												class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-												><Edit size={16} /></button
+												onclick={() => editCosting(costing)}><Edit size={16} /></button
 											>
 											<button class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
 												><Trash2 size={16} /></button

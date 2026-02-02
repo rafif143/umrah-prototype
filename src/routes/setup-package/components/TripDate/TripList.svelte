@@ -13,7 +13,10 @@
 		</div>
 		<button
 			class="flex items-center gap-2 rounded-lg bg-[#972395] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
-			onclick={() => (state.showTripSetup = true)}
+			onclick={() => {
+				state.resetTrip();
+				state.showTripSetup = true;
+			}}
 		>
 			<Plus size={16} />
 			Add Date Trip
@@ -67,7 +70,10 @@
 				<div class="ml-4 flex items-center">
 					<button
 						class="rounded-lg border border-gray-200 px-4 py-2 text-sm font-medium whitespace-nowrap text-gray-600 transition-colors hover:bg-gray-50"
-						onclick={() => (state.showTripSetup = true)}
+						onclick={() => {
+							state.loadTrip(trip);
+							state.showTripSetup = true;
+						}}
 					>
 						Edit Setup
 					</button>

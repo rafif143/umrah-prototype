@@ -1,0 +1,325 @@
+[
+    {
+        "id": "pkg-001",
+        "name": "Pakej Umrah Economy - 12 Hari",
+        "category": "Umrah Regular",
+        "subCategory": "Economy",
+        "duration": "12 Hari",
+        "image": "🕋",
+        "price": "RM 6,990",
+        "status": "Active",
+        "descriptions": [
+            {
+                "image": "",
+                "text": "Pakej Umrah Economy ini direka khas untuk jemaah yang mencari pengalaman ibadah yang selesa namun berpatutan. Pakej ini merangkumi penginapan yang selesa berhampiran Masjidil Haram dan Masjid Nabawi, memastikan anda dapat menumpukan sepenuh perhatian kepada ibadah anda."
+            },
+            {
+                "image": "",
+                "text": "Kami menyediakan bimbingan penuh mutawif berpengalaman dari Malaysia yang akan menyantuni anda sepanjang perjalanan. Termasuk lawatan ziarah ke tempat-tempat bersejarah di Makkah dan Madinah."
+            }
+        ],
+        "targetAudience": [
+            "Jemaah kali pertama",
+            "Keluarga dengan bajet sederhana",
+            "Warga emas yang memerlukan bimbingan"
+        ],
+        "includedItems": [
+            "Tiket penerbangan pergi balik (KUL-JED-KUL)",
+            "Visa Umrah & Insurans Perjalanan",
+            "Penginapan hotel (Quad/Quint Sharing)",
+            "Makan minum 3 kali sehari (Fullboard)",
+            "Pengangkutan bas berhawa dingin (Mekah-Madinah)",
+            "Bimbingan Mutawif berpengalaman 24/7",
+            "Air Zamzam 5 Liter (jika dibenarkan)"
+        ],
+        "excludedItems": [
+            "Perbelanjaan peribadi (dobi, telefon, dll)",
+            "Lawatan tambahan (Taif, Badar) - pilihan",
+            "Lebihan bagasi"
+        ],
+        "faqList": [
+            {
+                "question": "Adakah pakej ini sesuai untuk warga emas?",
+                "answer": "Ya, kami menyediakan khidmat kerusi roda dan bimbingan khusus untuk warga emas. Hotel yang dipilih juga mempunyai akses lif yang mudah."
+            },
+            {
+                "question": "Berapakah deposit yang diperlukan?",
+                "answer": "Deposit pendaftaran adalah sebanyak RM1,000 seorang (tidak dikembalikan jika batal saat akhir)."
+            }
+        ],
+        "galleryImages": [
+            {
+                "url": "",
+                "caption": "Masjidil Haram"
+            },
+            {
+                "url": "",
+                "caption": "Dataran Masjid Nabawi"
+            }
+        ],
+        "tripDates": [
+            {
+                "id": 1710950400000,
+                "checkIn": "2024-03-20",
+                "checkOut": "2024-03-31",
+                "duration": "12",
+                "durationNights": "11",
+                "paxCapacity": 40,
+                "validityStart": "2024-01-01",
+                "validityEnd": "2024-03-10",
+                "date": "20 Mar 2024",
+                "flightCode": "SV 820 / SV 821",
+                "price": "RM 6,990",
+                "status": "Active",
+                "guides": [
+                    {
+                        "name": "Ustaz Abdullah (Makkah)",
+                        "type": "guide"
+                    },
+                    {
+                        "name": "Ustaz Rahim (Madinah)",
+                        "type": "guide"
+                    }
+                ],
+                "leaders": [
+                    {
+                        "name": "Haji Ismail",
+                        "type": "leader"
+                    }
+                ]
+            },
+            {
+                "id": 1713542400000,
+                "checkIn": "2024-04-15",
+                "checkOut": "2024-04-26",
+                "duration": "12",
+                "durationNights": "11",
+                "paxCapacity": 35,
+                "validityStart": "2024-01-01",
+                "validityEnd": "2024-04-05",
+                "date": "15 Apr 2024",
+                "flightCode": "MH 150 / MH 151",
+                "price": "RM 7,290",
+                "status": "Active",
+                "guides": [
+                    {
+                        "name": "Ustaz Karim (Makkah)",
+                        "type": "guide"
+                    }
+                ],
+                "leaders": [
+                    {
+                        "name": "Hajah Fatimah",
+                        "type": "leader"
+                    }
+                ]
+            }
+        ],
+        "itinerary": [
+            {
+                "day": 1,
+                "title": "Berangkat ke Tanah Suci",
+                "location": "KLIA - Jeddah - Madinah",
+                "description": "Berkumpul di KLIA 4 jam sebelum penerbangan. Tiba di Jeddah, menaiki bas ke Madinah. Check-in hotel dan berehat."
+            },
+            {
+                "day": 2,
+                "title": "Ziarah Dalaman Madinah",
+                "location": "Masjid Nabawi",
+                "description": "Ziarah Maqam Rasulullah SAW, Saidina Abu Bakar & Saidina Umar. Lawatan ke Perkuburan Baqi' dan Raudhah (tertakluk kepada tempahan aplikasi)."
+            },
+            {
+                "day": 3,
+                "title": "Ziarah Luar Madinah",
+                "location": "Madinah",
+                "description": "Melawat Masjid Quba, Ladang Kurma, Bukit Uhud, Masjid Qiblatain dan Masjid Tujuh."
+            },
+            {
+                "day": 4,
+                "title": "Aktiviti Bebas di Madinah",
+                "location": "Masjid Nabawi",
+                "description": "Memperbanyakkan ibadah di Masjid Nabawi. Kuliah agama selepas Asar."
+            },
+            {
+                "day": 5,
+                "title": "Bertolak ke Makkah",
+                "location": "Madinah - Makkah",
+                "description": "Ziarah Widak. Memakai Ihram di hotel, berniat Umrah di Miqat Bir Ali. Perjalanan ke Makkah menaiki bas/kereta api. Tiba di Makkah, check-in dan menyempurnakan Umrah Pertama."
+            },
+            {
+                "day": 6,
+                "title": "Aktiviti Bebas di Makkah",
+                "location": "Masjidil Haram",
+                "description": "Berehat dan memperbanyakkan Tawaf sunat serta ibadah di Masjidil Haram."
+            },
+            {
+                "day": 7,
+                "title": "Ziarah Luar Makkah (Pilihan)",
+                "location": "Makkah",
+                "description": "Melawat Jabal Thur, Jabal Rahmah (Arafah), Mina, Muzdalifah dan Jabal Nur. Singgah di Miqat Ja'ranah untuk berniat Umrah Kedua (Pilihan)."
+            },
+            {
+                "day": 8,
+                "title": "Ziarah Hudaibiyah (Pilihan)",
+                "location": "Hudaibiyah",
+                "description": "Lawatan ke tapak Perjanjian Hudaibiyah dan Muzium Haramain. Berniat Umrah Ketiga di Miqat Hudaibiyah (Pilihan)."
+            },
+            {
+                "day": 9,
+                "title": "Aktiviti Bebas",
+                "location": "Masjidil Haram",
+                "description": "Ibadah bebas. Membeli belah cenderahati di sekitar hotel."
+            },
+            {
+                "day": 10,
+                "title": "Tawaf Widak & Berangkat Pulang",
+                "location": "Makkah - Jeddah",
+                "description": "Tawaf Widak. Bertolak ke Lapangan Terbang Jeddah. Singgah di Corniche Jeddah (jika masa mengizinkan)."
+            },
+            {
+                "day": 11,
+                "title": "Penerbangan Pulang",
+                "location": "Dalam Penerbangan",
+                "description": "Penerbangan pulang ke Kuala Lumpur."
+            },
+            {
+                "day": 12,
+                "title": "Tiba di Malaysia",
+                "location": "KLIA",
+                "description": "Selamat tiba di KLIA. Semoga mendapat Umrah yang Mabrur/Mabrurah."
+            }
+        ]
+    },
+    {
+        "id": "pkg-002",
+        "name": "Pakej Umrah VIP - 10 Hari",
+        "category": "Umrah VIP",
+        "subCategory": "Premium",
+        "duration": "10 Hari",
+        "image": "🕌",
+        "price": "RM 12,990",
+        "status": "Active",
+        "descriptions": [
+            {
+                "image": "",
+                "text": "Rasai pengalaman Umrah yang eksklusif dengan Pakej VIP kami. Anda akan menginap di hotel bertaraf 5 bintang yang terletak betul-betul di hadapan Masjidil Haram (Clock Tower) dan Masjid Nabawi."
+            },
+            {
+                "image": "",
+                "text": "Penerbangan terus menggunakan Saudi Airlines atau Malaysia Airlines tanpa transit, menjimatkan masa dan tenaga anda. Sajian makanan antarabangsa dan pengangkutan peribadi disediakan untuk keselesaan maksimum."
+            }
+        ],
+        "targetAudience": [
+            "Pasangan yang inginkan privasi",
+            "Korporat dan VVIP",
+            "Keluarga yang mahukan keselesaan maksimum"
+        ],
+        "includedItems": [
+            "Tiket penerbangan kelas Perniagaan (Business Class)",
+            "Hotel 5 Bintang (Sofitel/Hilton/Fairmont)",
+            "Bilik berdua (Double Sharing)",
+            "Makan minum bufet antarabangsa",
+            "Pengangkutan GMC/SUV peribadi",
+            "Mutawif peribadi untuk kumpulan kecil",
+            "Ziarah Taif Percuma (Kereta Kabel)"
+        ],
+        "excludedItems": [
+            "Perbelanjaan peribadi",
+            "Tip untuk petugas hotel (pilihan)"
+        ],
+        "faqList": [
+            {
+                "question": "Bolehkah saya memilih tarikh penerbangan sendiri?",
+                "answer": "Ya, untuk pakej VIP kami menawarkan fleksibiliti tarikh mengikut kekosongan penerbangan."
+            }
+        ],
+        "galleryImages": [],
+        "tripDates": [
+            {
+                "id": 1716134400000,
+                "checkIn": "2024-05-20",
+                "checkOut": "2024-05-30",
+                "duration": "10",
+                "durationNights": "9",
+                "paxCapacity": 10,
+                "validityStart": "2024-02-01",
+                "validityEnd": "2024-05-01",
+                "date": "20 May 2024",
+                "flightCode": "SV 828 / SV 829",
+                "price": "RM 12,990",
+                "status": "Active",
+                "guides": [
+                    {
+                        "name": "Ustaz Faisal (VIP)",
+                        "type": "guide"
+                    }
+                ],
+                "leaders": []
+            }
+        ],
+        "itinerary": [
+            {
+                "day": 1,
+                "title": "Penerbangan VIP ke Jeddah",
+                "location": "KLIA - Jeddah",
+                "description": "Layanan VIP di Lounge KLIA. Penerbangan terus ke Jeddah."
+            },
+            {
+                "day": 2,
+                "title": "Ketibaan & Umrah Pertama",
+                "location": "Makkah",
+                "description": "Pengangkutan GMC terus ke Hotel Fairmont. Rehat sebentar dan laksanakan Umrah."
+            }
+        ]
+    },
+    {
+        "id": "pkg-003",
+        "name": "Pakej Ziarah Istanbul + Umrah",
+        "category": "Umrah Plus",
+        "subCategory": "Standard",
+        "duration": "14 Hari",
+        "image": "✈️",
+        "price": "RM 8,500",
+        "status": "Draft",
+        "descriptions": [
+            {
+                "image": "",
+                "text": "Gabungan ibadah dan sejarah. Mulakan perjalanan anda dengan melawat kota Istanbul yang penuh sejarah Empayar Uthmaniyah sebelum menunaikan Umrah di Tanah Suci."
+            }
+        ],
+        "targetAudience": [
+            "Pencinta sejarah",
+            "Keluarga muda"
+        ],
+        "includedItems": [
+            "Tiket penerbangan Turkish Airlines",
+            "Penginapan 2 malam di Istanbul",
+            "Lawatan ke Hagia Sophia & Blue Mosque",
+            "Pakej Umrah lengkap (Makkah & Madinah)"
+        ],
+        "excludedItems": [],
+        "faqList": [],
+        "galleryImages": [],
+        "tripDates": [],
+        "itinerary": [
+            {
+                "day": 1,
+                "title": "Kuala Lumpur - Istanbul",
+                "location": "Istanbul",
+                "description": "Penerbangan ke Istanbul. Check-in hotel."
+            },
+            {
+                "day": 2,
+                "title": "City Tour Istanbul",
+                "location": "Istanbul",
+                "description": "Melawat Masjid Biru, Hagia Sophia dan Topkapi Palace."
+            },
+            {
+                "day": 3,
+                "title": "Istanbul - Madinah",
+                "location": "Madinah",
+                "description": "Penerbangan domestik ke Madinah. Check-in hotel."
+            }
+        ]
+    }
+]

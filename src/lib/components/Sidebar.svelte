@@ -38,7 +38,7 @@
 
 	const bookingManagementSubItems = [
 		{ id: 'inquiry', label: 'Inquiry', icon: FileQuestion, href: '/booking/inquiry' },
-		{ id: 'booking-data', label: 'Booking Data', icon: BookOpen, href: '/booking/data' },
+		{ id: 'booking-data', label: 'Booking Data', icon: BookOpen, href: '/booking-management' },
 		{
 			id: 'hotel-allotment',
 			label: 'Hotel Allotment',

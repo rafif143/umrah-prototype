@@ -1,0 +1,78 @@
+{
+    "suppliers": [
+        {
+            "id": 1,
+            "name": "Hussain Transport",
+            "contact": "+966 50 123 4567"
+        },
+        {
+            "id": 2,
+            "name": "Saptco VIP",
+            "contact": "+966 50 987 6543"
+        },
+        {
+            "id": 3,
+            "name": "Dallah Trans",
+            "contact": "+966 55 112 2334"
+        },
+        {
+            "id": 4,
+            "name": "Qaid Transport",
+            "contact": "+966 54 445 5667"
+        }
+    ],
+    "vehicleTypes": [
+        {
+            "id": "BUS_49",
+            "name": "Bus 49 Seater",
+            "capacity": 49
+        },
+        {
+            "id": "BUS_30",
+            "name": "Bus 30 Seater (VIP)",
+            "capacity": 30
+        },
+        {
+            "id": "GMC",
+            "name": "GMC Yukon",
+            "capacity": 7
+        },
+        {
+            "id": "SUV",
+            "name": "SUV (Ford/Toyota)",
+            "capacity": 5
+        },
+        {
+            "id": "HIACE",
+            "name": "Toyota Hiace",
+            "capacity": 12
+        },
+        {
+            "id": "COASTER",
+            "name": "Toyota Coaster",
+            "capacity": 22
+        }
+    ],
+    "routes": [
+        {
+            "id": 1,
+            "name": "Jeddah Airport -> Makkah Hotel"
+        },
+        {
+            "id": 2,
+            "name": "Makkah Hotel -> Madinah Hotel"
+        },
+        {
+            "id": 3,
+            "name": "Madinah Hotel -> Madinah Airport"
+        },
+        {
+            "id": 4,
+            "name": "Makkah City Tour"
+        },
+        {
+            "id": 5,
+            "name": "Madinah City Tour"
+        }
+    ]
+}

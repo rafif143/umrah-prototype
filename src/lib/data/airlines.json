@@ -1,0 +1,78 @@
+{
+    "airlines": [
+        {
+            "id": "SV",
+            "name": "Saudi Airlines",
+            "code": "SV",
+            "logo": "✈️"
+        },
+        {
+            "id": "MH",
+            "name": "Malaysia Airlines",
+            "code": "MH",
+            "logo": "✈️"
+        },
+        {
+            "id": "TK",
+            "name": "Turkish Airlines",
+            "code": "TK",
+            "logo": "✈️"
+        },
+        {
+            "id": "QR",
+            "name": "Qatar Airways",
+            "code": "QR",
+            "logo": "✈️"
+        },
+        {
+            "id": "EK",
+            "name": "Emirates",
+            "code": "EK",
+            "logo": "✈️"
+        },
+        {
+            "id": "EY",
+            "name": "Etihad Airways",
+            "code": "EY",
+            "logo": "✈️"
+        },
+        {
+            "id": "WY",
+            "name": "Oman Air",
+            "code": "WY",
+            "logo": "✈️"
+        }
+    ],
+    "airports": [
+        {
+            "code": "KUL",
+            "name": "Kuala Lumpur International Airport",
+            "city": "Kuala Lumpur"
+        },
+        {
+            "code": "JED",
+            "name": "King Abdulaziz International Airport",
+            "city": "Jeddah"
+        },
+        {
+            "code": "MED",
+            "name": "Prince Mohammad Bin Abdulaziz International Airport",
+            "city": "Madinah"
+        },
+        {
+            "code": "IST",
+            "name": "Istanbul Airport",
+            "city": "Istanbul"
+        },
+        {
+            "code": "DOH",
+            "name": "Hamad International Airport",
+            "city": "Doha"
+        },
+        {
+            "code": "DXB",
+            "name": "Dubai International Airport",
+            "city": "Dubai"
+        }
+    ]
+}

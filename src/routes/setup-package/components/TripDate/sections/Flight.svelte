@@ -4,18 +4,18 @@
 		Plus,
 		Edit,
 		Trash2,
-		ChevronDown,
-		ChevronRight,
 		Plane,
 		Clock,
-		Calendar
+		Calendar,
+		ChevronDown,
+		ChevronRight
 	} from 'lucide-svelte';
 	import { fly } from 'svelte/transition';
 
 	/** @type {{ state: import('../../packageState.svelte').PackageState }} */
 	let { state: pkgState } = $props();
 
-	// Local temporary state for expanded items in list view (optional)
+	// Local temporary state for expanded items in list view
 	let expandedGroups = $state({});
 
 	function toggleGroup(id) {
@@ -55,7 +55,7 @@
 		<div class="grid gap-4">
 			{#each pkgState.flightList as group, i}
 				<div
-					class="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md"
+					class="relative overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-all hover:shadow-md"
 				>
 					<!-- Group Header -->
 					<div
@@ -74,16 +74,6 @@
 								<h4 class="text-sm font-semibold text-gray-900">
 									{group.name || 'Untitled Flight'}
 								</h4>
-								<div class="flex items-center gap-3 text-xs text-gray-500">
-									<span class="flex items-center gap-1">
-										<Plane size={12} />
-										{group.airline || 'No Airline'}
-									</span>
-									<span>•</span>
-									<span>{group.type || 'Type N/A'}</span>
-									<span>•</span>
-									<span>{group.totalSeats || 0} Seats</span>
-								</div>
 							</div>
 						</div>
 						<div class="flex items-center gap-2">
@@ -147,6 +137,10 @@
 													<Clock size={12} class="text-gray-400" />
 													Dep: {item.departureTime.hour}:{item.departureTime.minute}
 													{item.departureTime.ampm}
+												</div>
+												<div class="flex items-center gap-1.5">
+													<Plane size={12} class="text-gray-400" />
+													{group.type || 'Type N/A'} • {group.totalSeats || 0} Seats
 												</div>
 												<div class="flex items-center gap-1.5">
 													<Plane size={12} class="text-gray-400" />
@@ -570,9 +564,15 @@
 
 						<button
 							class="w-full rounded-lg bg-gray-900 py-2.5 text-sm font-medium text-white transition-colors hover:bg-gray-800"
-							onclick={() => pkgState.addFlightItemToGroup()}
+							onclick={() => {
+								if (pkgState.editingFlightItemIndex !== null) {
+									pkgState.updateFlightItemInGroup();
+								} else {
+									pkgState.addFlightItemToGroup();
+								}
+							}}
 						>
-							Add Flight Leg
+							{pkgState.editingFlightItemIndex !== null ? 'Save Edit Flight Leg' : 'Add Flight Leg'}
 						</button>
 					</div>
 
@@ -591,12 +591,20 @@
 										<p class="text-xs text-gray-500">{item.carrier} • {item.departureDate}</p>
 									</div>
 								</div>
-								<button
-									class="text-gray-400 hover:text-red-500"
-									onclick={() => pkgState.removeFlightItemFromGroup(idx)}
-								>
-									<Trash2 size={16} />
-								</button>
+								<div class="flex items-center gap-2">
+									<button
+										class="text-gray-400 hover:text-[#972395]"
+										onclick={() => pkgState.editFlightItemInGroup(item, idx)}
+									>
+										<Edit size={16} />
+									</button>
+									<button
+										class="text-gray-400 hover:text-red-500"
+										onclick={() => pkgState.removeFlightItemFromGroup(idx)}
+									>
+										<Trash2 size={16} />
+									</button>
+								</div>
 							</li>
 						{/each}
 					</ul>

@@ -23,7 +23,7 @@
 	let formData = $state({
 		name: '',
 		email: '',
-		phoneNumber: '',
+		phone: '',
 		fax: '',
 		type: '',
 		openingBalance: '',
@@ -35,6 +35,7 @@
 		isAgent: false,
 		isSupplier: true,
 		agentType: '',
+		status: 'Active',
 		supplyingItems: []
 	});
 
@@ -49,51 +50,168 @@
 	}
 
 	// Simulated supplier data
-	const suppliers = [
+	let suppliers = $state([
 		{
 			id: 1,
 			name: 'Al-Haram Hotels Group',
 			email: 'contact@alharamhotels.com',
 			phone: '+966 12 345 6789',
+			fax: '+966 12 345 6790',
 			type: 'Supplier',
+			openingBalance: 0,
 			country: 'Saudi Arabia',
+			state: 'Makkah Region',
 			city: 'Makkah',
-			status: 'Active'
+			district: 'Ajyad',
+			address: 'Ajyad Street, Near Haram',
+			isAgent: false,
+			isSupplier: true,
+			agentType: '',
+			status: 'Active',
+			supplyingItems: [
+				{ itemType: 'hotel', itemName: 'Pullman Zamzam Makkah' },
+				{ itemType: 'hotel', itemName: 'Swissotel Makkah' }
+			]
 		},
 		{
 			id: 2,
 			name: 'Zamzam Catering Services',
 			email: 'info@zamzamcatering.com',
 			phone: '+966 55 123 4567',
+			fax: '',
 			type: 'Agent Supplier',
+			openingBalance: 1500,
 			country: 'Saudi Arabia',
+			state: 'Makkah Region',
 			city: 'Makkah',
-			status: 'Active'
+			district: 'Al Aziziyah',
+			address: 'King Abdul Aziz Road, Al Aziziyah District',
+			isAgent: true,
+			isSupplier: true,
+			agentType: 'sub-agent',
+			status: 'Active',
+			supplyingItems: [
+				{ itemType: 'food', itemName: 'Full Board Catering' },
+				{ itemType: 'food', itemName: 'Snack Box Premium' }
+			]
 		},
 		{
 			id: 3,
 			name: 'VIP Transport Co.',
 			email: 'bookings@viptransport.sa',
 			phone: '+966 50 987 6543',
+			fax: '',
 			type: 'Supplier',
+			openingBalance: 5000,
 			country: 'Saudi Arabia',
+			state: 'Makkah Region',
 			city: 'Jeddah',
-			status: 'Active'
+			district: 'Al Hamra',
+			address: 'Palestine Street, Al Hamra District',
+			isAgent: false,
+			isSupplier: true,
+			agentType: '',
+			status: 'Active',
+			supplyingItems: [
+				{ itemType: 'transport', itemName: 'GMC Yukon 2024' },
+				{ itemType: 'transport', itemName: 'Toyota Coaster' }
+			]
 		},
 		{
 			id: 4,
 			name: 'Madinah Local Guides',
 			email: 'tours@madinahguides.com',
 			phone: '+966 54 555 1212',
+			fax: '',
 			type: 'Agent Supplier',
+			openingBalance: 0,
 			country: 'Saudi Arabia',
+			state: 'Madinah Region',
 			city: 'Madinah',
-			status: 'Pending'
+			district: 'Al Haram',
+			address: 'King Fahd Road, Near Gate 25',
+			isAgent: true,
+			isSupplier: true,
+			agentType: 'travel-agent',
+			status: 'Nonactive',
+			supplyingItems: [
+				{ itemType: 'service', itemName: 'City Tour Guide' },
+				{ itemType: 'service', itemName: 'Ziarah Coordination' }
+			]
 		}
-	];
+	]);
 
 	let showForm = $state(false);
 	let activeTab = $state('basic');
+	let isEditing = $state(false);
+
+	function resetForm() {
+		formData = {
+			name: '',
+			email: '',
+			phone: '',
+			fax: '',
+			type: '',
+			openingBalance: '',
+			country: '',
+			state: '',
+			city: '',
+			district: '',
+			address: '',
+			isAgent: false,
+			isSupplier: true,
+			agentType: '',
+			status: 'Active',
+			supplyingItems: []
+		};
+		isEditing = false;
+		showForm = false;
+	}
+
+	function handleEdit(item) {
+		isEditing = true;
+		// Clone properly
+		formData = {
+			name: '',
+			email: '',
+			phone: '',
+			fax: '',
+			type: '',
+			openingBalance: '',
+			country: '',
+			state: '',
+			city: '',
+			district: '',
+			address: '',
+			isAgent: false,
+			isSupplier: true,
+			agentType: '',
+			status: 'Active',
+			supplyingItems: [],
+			...JSON.parse(JSON.stringify(item))
+		};
+
+		if (!item.isAgent && !item.isSupplier && item.type) {
+			if (item.type.includes('Agent')) formData.isAgent = true;
+			if (item.type.includes('Supplier')) formData.isSupplier = true;
+		}
+
+		showForm = true;
+	}
+
+	function handleSave() {
+		if (isEditing) {
+			const index = suppliers.findIndex((s) => s.id === formData.id);
+			if (index !== -1) suppliers[index] = { ...formData };
+		} else {
+			suppliers.push({
+				...formData,
+				id: Date.now(),
+				status: 'Active'
+			});
+		}
+		resetForm();
+	}
 </script>
 
 <svelte:head>
@@ -214,7 +332,7 @@
 										>
 										<button
 											class="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:border-[#972395] hover:text-[#972395]"
-											><Edit size={16} /></button
+											onclick={() => handleEdit(supplier)}><Edit size={16} /></button
 										>
 										<button
 											class="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:border-red-500 hover:text-red-500"
@@ -366,6 +484,35 @@
 								{/if}
 							</div>
 
+							<!-- Status Selection -->
+							<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+								<p class="mb-3 text-[13px] font-medium text-gray-700">
+									Status <span class="text-red-500">*</span>
+								</p>
+								<div class="flex items-center gap-6">
+									<label class="flex cursor-pointer items-center gap-2">
+										<input
+											type="radio"
+											name="status"
+											value="Active"
+											class="h-4 w-4 border-gray-300 text-[#972395] focus:ring-[#972395]"
+											bind:group={formData.status}
+										/>
+										<span class="text-sm text-gray-700">Active</span>
+									</label>
+									<label class="flex cursor-pointer items-center gap-2">
+										<input
+											type="radio"
+											name="status"
+											value="Nonactive"
+											class="h-4 w-4 border-gray-300 text-[#972395] focus:ring-[#972395]"
+											bind:group={formData.status}
+										/>
+										<span class="text-sm text-gray-700">Nonactive</span>
+									</label>
+								</div>
+							</div>
+
 							<!-- Form Fields -->
 							<div class="grid grid-cols-2 gap-5">
 								<div class="flex flex-col gap-1.5">
@@ -393,15 +540,15 @@
 									/>
 								</div>
 								<div class="flex flex-col gap-1.5">
-									<label for="phoneNumber" class="text-[13px] font-medium text-gray-700"
+									<label for="phone" class="text-[13px] font-medium text-gray-700"
 										>Phone Number <span class="text-red-500">*</span></label
 									>
 									<input
 										type="tel"
-										id="phoneNumber"
+										id="phone"
 										placeholder="Enter phone number"
 										class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-										bind:value={formData.phoneNumber}
+										bind:value={formData.phone}
 									/>
 								</div>
 								<div class="flex flex-col gap-1.5">
@@ -590,10 +737,7 @@
 						</button>
 						<button
 							class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
-							onclick={() => {
-								// Handle save logic
-								showForm = false;
-							}}
+							onclick={handleSave}
 						>
 							<Save size={16} />
 							Save Supplier

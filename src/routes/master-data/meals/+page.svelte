@@ -15,6 +15,7 @@
 	} from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
 	import Sidebar from '$lib/components/Sidebar.svelte';
+	import { mealStore } from '$lib/stores/mealStore.svelte.js';
 
 	// --- State ---
 	let activeTab = $state('food-type'); // 'food-type' | 'basis'
@@ -22,20 +23,10 @@
 	let isEditing = $state(false);
 
 	// --- Food Types Data ---
-	let foodTypes = $state([
-		{ id: 1, name: 'International', description: 'Standard international buffet' },
-		{ id: 2, name: 'Asian', description: 'Asian cuisine including rice and noodles' },
-		{ id: 3, name: 'Middle Eastern', description: 'Traditional Arab dishes' },
-		{ id: 4, name: 'Local', description: 'Local specialties' }
-	]);
+	let foodTypes = $derived((mealStore.foodTypes || []).filter((f) => f));
 
 	// --- Basis Data ---
-	let bases = $state([
-		{ id: 1, name: 'Full Board', foodTypeIds: [1, 3] },
-		{ id: 2, name: 'Half Board', foodTypeIds: [1] },
-		{ id: 3, name: 'Bed & Breakfast', foodTypeIds: [] },
-		{ id: 4, name: 'All Inclusive', foodTypeIds: [1, 2, 3, 4] }
-	]);
+	let bases = $derived((mealStore.bases || []).filter((b) => b));
 
 	let suppliers = $state([
 		{ id: 1, name: 'Catering Al-Woqood' },
@@ -102,10 +93,9 @@
 	function handleSave() {
 		if (activeTab === 'food-type') {
 			if (isEditing) {
-				const index = foodTypes.findIndex((f) => f.id === foodTypeForm.id);
-				if (index !== -1) foodTypes[index] = { ...foodTypeForm };
+				mealStore.updateFoodType(foodTypeForm.id, { ...foodTypeForm });
 			} else {
-				foodTypes.push({
+				mealStore.addFoodType({
 					id: Date.now(),
 					name: foodTypeForm.name,
 					description: foodTypeForm.description
@@ -113,10 +103,12 @@
 			}
 		} else if (activeTab === 'basis') {
 			if (isEditing) {
-				const index = bases.findIndex((b) => b.id === basisForm.id);
-				if (index !== -1) bases[index] = { ...basisForm, foodTypeIds: [...basisForm.foodTypeIds] };
+				mealStore.updateBasis(basisForm.id, {
+					...basisForm,
+					foodTypeIds: [...basisForm.foodTypeIds]
+				});
 			} else {
-				bases.push({
+				mealStore.addBasis({
 					id: Date.now(),
 					name: basisForm.name,
 					foodTypeIds: [...basisForm.foodTypeIds]
@@ -129,9 +121,9 @@
 	function handleDelete(id) {
 		if (confirm('Are you sure you want to delete this item?')) {
 			if (activeTab === 'food-type') {
-				foodTypes = foodTypes.filter((f) => f.id !== id);
+				mealStore.deleteFoodType(id);
 			} else {
-				bases = bases.filter((b) => b.id !== id);
+				mealStore.deleteBasis(id);
 			}
 		}
 	}
@@ -303,16 +295,14 @@
 			transition:fade={{ duration: 200 }}
 		>
 			<div
-				class="max-w-md w-full rounded-2xl bg-white shadow-2xl transition-all duration-300"
+				class="w-full max-w-md rounded-2xl bg-white shadow-2xl transition-all duration-300"
 				transition:slide={{ axis: 'y', duration: 300 }}
 			>
 				<div class="flex items-center justify-between border-b border-gray-100 p-6">
 					<div>
 						<h2 class="text-xl font-semibold text-gray-900">
 							{isEditing ? 'Edit' : 'Add New'}
-							{activeTab === 'food-type'
-								? 'Food Type'
-								: 'Basis'}
+							{activeTab === 'food-type' ? 'Food Type' : 'Basis'}
 						</h2>
 						<p class="mt-1 text-sm text-gray-500">
 							{activeTab === 'food-type'

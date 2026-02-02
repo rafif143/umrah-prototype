@@ -15,6 +15,7 @@
 			<label class="text-[13px] font-medium text-gray-700">Check-In Date</label>
 			<input
 				type="date"
+				bind:value={state.activeTrip.checkIn}
 				class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 			/>
 		</div>
@@ -22,6 +23,7 @@
 			<label class="text-[13px] font-medium text-gray-700">Check-Out Date</label>
 			<input
 				type="date"
+				bind:value={state.activeTrip.checkOut}
 				class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 			/>
 		</div>
@@ -32,6 +34,7 @@
 			<input
 				type="number"
 				placeholder="e.g., 45"
+				bind:value={state.activeTrip.paxCapacity}
 				class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 			/>
 		</div>
@@ -40,6 +43,7 @@
 			<input
 				type="number"
 				placeholder="e.g., 9"
+				bind:value={state.activeTrip.duration}
 				class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 			/>
 		</div>
@@ -48,6 +52,7 @@
 			<input
 				type="number"
 				placeholder="e.g., 8"
+				bind:value={state.activeTrip.durationNights}
 				class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 			/>
 		</div>
@@ -55,6 +60,7 @@
 			<label class="text-[13px] font-medium text-gray-700">Validity Start</label>
 			<input
 				type="date"
+				bind:value={state.activeTrip.validityStart}
 				class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 			/>
 		</div>
@@ -62,6 +68,7 @@
 			<label class="text-[13px] font-medium text-gray-700">Validity End</label>
 			<input
 				type="date"
+				bind:value={state.activeTrip.validityEnd}
 				class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 			/>
 		</div>
