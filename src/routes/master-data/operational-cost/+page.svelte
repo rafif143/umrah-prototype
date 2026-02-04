@@ -12,8 +12,8 @@
 		Tags,
 		Calculator
 	} from 'lucide-svelte';
-	import { fade, slide } from 'svelte/transition';
-	import Sidebar from '$lib/components/Sidebar.svelte';
+	import { fade, slide, fly } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
 
 	// Ensure activePage matches the new ID in Sidebar
 	// Sidebar ID is 'operational-cost', so we pass that.
@@ -247,61 +247,60 @@
 	/>
 </svelte:head>
 
-<div class="flex min-h-screen bg-gray-50 font-sans">
-	<!-- Sidebar -->
-	<Sidebar activePage="operational-cost" />
+<div class="p-6">
+	<!-- Page Header -->
+	<div class="mb-6 flex items-start justify-between">
+		<div>
+			<h1 class="text-2xl font-semibold text-gray-900">Operational Cost</h1>
+			<p class="text-sm text-gray-500">Manage operational categories and costings</p>
+		</div>
+		<button
+			class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
+			onclick={() => {
+				if (activeTab === 'category') {
+					showCategoryForm = true;
+				} else {
+					showCostingForm = true;
+				}
+			}}
+		>
+			<Plus size={18} />
+			Add {activeTab === 'category' ? 'Category' : 'Costing'}
+		</button>
+	</div>
 
-	<!-- Main Content -->
-	<main class="ml-[200px] min-h-screen flex-1 bg-gray-50/50">
-		<div class="p-6">
-			<!-- Page Header -->
-			<div class="mb-6 flex items-start justify-between">
-				<div>
-					<h1 class="text-2xl font-semibold text-gray-900">Operational Cost</h1>
-					<p class="text-sm text-gray-500">Manage operational categories and costings</p>
-				</div>
-				<button
-					class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
-					onclick={() => {
-						if (activeTab === 'category') {
-							showCategoryForm = true;
-						} else {
-							showCostingForm = true;
-						}
-					}}
-				>
-					<Plus size={18} />
-					Add {activeTab === 'category' ? 'Category' : 'Costing'}
-				</button>
-			</div>
+	<!-- Tabs -->
+	<div class="mb-6 rounded-xl bg-gray-100 p-1">
+		<div class="flex">
+			<button
+				class="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all duration-200 {activeTab ===
+				'category'
+					? 'bg-white text-[#972395] shadow-sm'
+					: 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-700'}"
+				onclick={() => (activeTab = 'category')}
+			>
+				<Tags size={16} />
+				Operational Category
+			</button>
+			<button
+				class="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all duration-200 {activeTab ===
+				'costing'
+					? 'bg-white text-[#972395] shadow-sm'
+					: 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-700'}"
+				onclick={() => (activeTab = 'costing')}
+			>
+				<Calculator size={16} />
+				Operational Costing
+			</button>
+		</div>
+	</div>
 
-			<!-- Tabs -->
-			<div class="mb-6 rounded-xl bg-gray-100 p-1">
-				<div class="flex">
-					<button
-						class="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all duration-200 {activeTab ===
-						'category'
-							? 'bg-white text-[#972395] shadow-sm'
-							: 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-700'}"
-						onclick={() => (activeTab = 'category')}
-					>
-						<Tags size={16} />
-						Operational Category
-					</button>
-					<button
-						class="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all duration-200 {activeTab ===
-						'costing'
-							? 'bg-white text-[#972395] shadow-sm'
-							: 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-700'}"
-						onclick={() => (activeTab = 'costing')}
-					>
-						<Calculator size={16} />
-						Operational Costing
-					</button>
-				</div>
-			</div>
-
-			<!-- Tab Content -->
+	<!-- Tab Content -->
+	{#key activeTab}
+		<div
+			in:fly={{ x: 20, duration: 300, delay: 300, easing: cubicOut }}
+			out:fly={{ x: -20, duration: 300, easing: cubicOut }}
+		>
 			{#if activeTab === 'category'}
 				<!-- CATEGORY TAB -->
 				<!-- Category List -->
@@ -795,7 +794,7 @@
 				{/if}
 			{/if}
 		</div>
-	</main>
+	{/key}
 </div>
 
 <style>

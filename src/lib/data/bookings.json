@@ -10,7 +10,31 @@
         "status": "Paid",
         "paymentMethod": "FPX",
         "agent": "Rayhar HQ",
-        "branch": "Kota Bharu"
+        "branch": "Kota Bharu",
+        "duration": "12 Hari 10 Malam",
+        "sector": "KUL-JED-KUL",
+        "pilgrims": [
+            {
+                "no": 1,
+                "name": "Uponk",
+                "ic": "031104-01-9932",
+                "phone": "+6285733235489",
+                "registrant": true,
+                "gender": "Lelaki",
+                "roomType": "Quad",
+                "dataStatus": "Lengkap"
+            },
+            {
+                "no": 2,
+                "name": "Siti Aisyah",
+                "ic": "050120-01-8821",
+                "phone": "+60123456789",
+                "registrant": false,
+                "gender": "Perempuan",
+                "roomType": "Quad",
+                "dataStatus": "Tidak Lengkap"
+            }
+        ]
     },
     {
         "id": "BK-2024-002",
@@ -23,7 +47,9 @@
         "status": "Pending",
         "paymentMethod": "Credit Card",
         "agent": "Ali Travel",
-        "branch": "Kuala Lumpur"
+        "branch": "Kuala Lumpur",
+        "duration": "14 Hari 12 Malam",
+        "sector": "KUL-MED-JED-KUL"
     },
     {
         "id": "BK-2024-003",
@@ -36,6 +62,8 @@
         "status": "Process",
         "paymentMethod": "Cash",
         "agent": "Rayhar KT",
-        "branch": "Kuala Terengganu"
+        "branch": "Kuala Terengganu",
+        "duration": "22 Hari 20 Malam",
+        "sector": "KUL-JED-MED-KUL"
     }
 ]

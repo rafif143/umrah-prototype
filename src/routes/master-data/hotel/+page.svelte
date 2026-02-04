@@ -21,8 +21,9 @@
 		Info,
 		Contact
 	} from 'lucide-svelte';
-	import { fade, slide } from 'svelte/transition';
-	import Sidebar from '$lib/components/Sidebar.svelte';
+	import { fade, slide, fly } from 'svelte/transition';
+	import { cubicOut } from 'svelte/easing';
+
 	import { hotelStore } from '$lib/stores/hotelStore.svelte.js';
 
 	// --- Configurable Lists Data ---
@@ -192,82 +193,81 @@
 	/>
 </svelte:head>
 
-<div class="flex min-h-screen bg-gray-50 font-sans">
-	<!-- Sidebar -->
-	<Sidebar activePage="hotels" />
-
-	<!-- Main Content -->
-	<main class="ml-[200px] min-h-screen flex-1 bg-gray-50/50">
-		<div class="p-6">
-			{#if showForm}
-				<!-- Add/Edit Hotel Form -->
-				<div class="mb-6 flex items-start justify-between">
-					<div class="flex items-start gap-3">
-						<button
-							class="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-all hover:border-[#972395] hover:bg-gray-50 hover:text-[#972395]"
-							onclick={() => (showForm = false)}
-						>
-							<ArrowLeft size={18} />
-						</button>
-						<div>
-							<h1 class="mb-1 text-2xl font-semibold text-gray-900">Add New Hotel</h1>
-							<p class="text-sm text-gray-500">Fill in hotel information</p>
-						</div>
-					</div>
-					<div class="flex gap-3">
-						<button
-							class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-							onclick={() => (showForm = false)}
-						>
-							Cancel
-						</button>
-						<button
-							class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
-						>
-							<Save size={18} />
-							Save Hotel
-						</button>
-					</div>
+<div class="p-6">
+	{#if showForm}
+		<!-- Add/Edit Hotel Form -->
+		<div class="mb-6 flex items-start justify-between">
+			<div class="flex items-start gap-3">
+				<button
+					class="flex h-10 w-10 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 transition-all hover:border-[#972395] hover:bg-gray-50 hover:text-[#972395]"
+					onclick={() => (showForm = false)}
+				>
+					<ArrowLeft size={18} />
+				</button>
+				<div>
+					<h1 class="mb-1 text-2xl font-semibold text-gray-900">Add New Hotel</h1>
+					<p class="text-sm text-gray-500">Fill in hotel information</p>
 				</div>
+			</div>
+			<div class="flex gap-3">
+				<button
+					class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-5 py-3 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+					onclick={() => (showForm = false)}
+				>
+					Cancel
+				</button>
+				<button
+					class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
+				>
+					<Save size={18} />
+					Save Hotel
+				</button>
+			</div>
+		</div>
 
-				<!-- Tabs -->
-				<!-- Tabs -->
-				<div class="mb-6 rounded-xl bg-gray-100 p-1">
-					<div class="flex">
-						<button
-							class="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all duration-200 {activeTab ===
-							'general'
-								? 'bg-white text-[#972395] shadow-sm ring-1 ring-gray-200'
-								: 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-900'}"
-							onclick={() => (activeTab = 'general')}
-						>
-							<Info size={16} />
-							General Information
-						</button>
-						<button
-							class="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all duration-200 {activeTab ===
-							'info'
-								? 'bg-white text-[#972395] shadow-sm ring-1 ring-gray-200'
-								: 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-900'}"
-							onclick={() => (activeTab = 'info')}
-						>
-							<Building2 size={16} />
-							Information Hotel
-						</button>
-						<button
-							class="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all duration-200 {activeTab ===
-							'cp'
-								? 'bg-white text-[#972395] shadow-sm ring-1 ring-gray-200'
-								: 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-900'}"
-							onclick={() => (activeTab = 'cp')}
-						>
-							<Contact size={16} />
-							CP Hotel
-						</button>
-					</div>
-				</div>
+		<!-- Tabs -->
+		<!-- Tabs -->
+		<div class="mb-6 rounded-xl bg-gray-100 p-1">
+			<div class="flex">
+				<button
+					class="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all duration-200 {activeTab ===
+					'general'
+						? 'bg-white text-[#972395] shadow-sm ring-1 ring-gray-200'
+						: 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-900'}"
+					onclick={() => (activeTab = 'general')}
+				>
+					<Info size={16} />
+					General Information
+				</button>
+				<button
+					class="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all duration-200 {activeTab ===
+					'info'
+						? 'bg-white text-[#972395] shadow-sm ring-1 ring-gray-200'
+						: 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-900'}"
+					onclick={() => (activeTab = 'info')}
+				>
+					<Building2 size={16} />
+					Information Hotel
+				</button>
+				<button
+					class="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-all duration-200 {activeTab ===
+					'cp'
+						? 'bg-white text-[#972395] shadow-sm ring-1 ring-gray-200'
+						: 'text-gray-500 hover:bg-gray-200/50 hover:text-gray-900'}"
+					onclick={() => (activeTab = 'cp')}
+				>
+					<Contact size={16} />
+					CP Hotel
+				</button>
+			</div>
+		</div>
 
-				<div class="flex flex-col gap-6">
+		<div class="flex flex-col gap-6 overflow-hidden">
+			{#key activeTab}
+				<div
+					in:fly={{ x: 20, duration: 300, delay: 300, easing: cubicOut }}
+					out:fly={{ x: -20, duration: 300, easing: cubicOut }}
+				>
 					{#if activeTab === 'general'}
 						<!-- General Information Hotel -->
 						<div class="rounded-xl border border-gray-200 bg-white p-6">
@@ -831,115 +831,115 @@
 						</div>
 					{/if}
 				</div>
-			{:else}
-				<!-- Hotel List -->
-				<div class="mb-6 flex items-start justify-between">
-					<div class="flex flex-col gap-1">
-						<h1 class="text-2xl font-semibold text-gray-900">Hotel Master Data</h1>
-						<p class="text-sm text-gray-500">Manage hotel information</p>
-					</div>
-					<button
-						class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
-						onclick={() => (showForm = true)}
-					>
-						<Plus size={18} />
-						Add Hotel
-					</button>
-				</div>
-
-				<!-- Search & Filter -->
-				<div class="mb-6 flex items-center justify-between">
-					<div
-						class="flex w-80 items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-4 py-2.5"
-					>
-						<Search size={18} class="text-gray-400" />
-						<input
-							type="text"
-							placeholder="Search hotels..."
-							class="flex-1 border-none bg-transparent text-sm outline-none placeholder:text-gray-400"
-						/>
-					</div>
-					<button
-						class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
-					>
-						<Filter size={16} />
-						Filter
-					</button>
-				</div>
-
-				<!-- Hotel Table -->
-				<div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
-					<table class="w-full border-collapse">
-						<thead>
-							<tr>
-								<th
-									class="border-b border-gray-200 bg-gray-50 px-4 py-3.5 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase"
-									>Name</th
-								>
-								<th
-									class="border-b border-gray-200 bg-gray-50 px-4 py-3.5 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase"
-									>Location</th
-								>
-								<th
-									class="border-b border-gray-200 bg-gray-50 px-4 py-3.5 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase"
-									>Rating</th
-								>
-								<th
-									class="border-b border-gray-200 bg-gray-50 px-4 py-3.5 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase"
-									>Status</th
-								>
-								<th
-									class="border-b border-gray-200 bg-gray-50 px-4 py-3.5 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase"
-									>Actions</th
-								>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-gray-200">
-							{#each hotels as hotel}
-								<tr class="hover:bg-gray-50">
-									<td class="px-4 py-3.5 text-sm font-medium whitespace-nowrap text-gray-900"
-										>{hotel.name}</td
-									>
-									<td class="px-4 py-3.5 text-sm text-gray-700">{hotel.city}, {hotel.country}</td>
-									<td class="px-4 py-3.5">
-										<div class="flex items-center text-yellow-400">
-											{#each Array(hotel.starRating) as _}
-												<Star size={14} class="fill-current" />
-											{/each}
-										</div>
-									</td>
-									<td class="px-4 py-3.5">
-										<span
-											class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {hotel.status ===
-											'Active'
-												? 'bg-green-100 text-green-800'
-												: 'bg-red-100 text-red-800'}"
-										>
-											{hotel.status}
-										</span>
-									</td>
-									<td class="px-4 py-3.5">
-										<div class="flex items-center gap-1.5">
-											<button
-												class="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:border-[#972395] hover:text-[#972395]"
-												><Eye size={16} /></button
-											>
-											<button
-												class="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:border-[#972395] hover:text-[#972395]"
-												onclick={() => loadHotel(hotel)}><Edit size={16} /></button
-											>
-											<button
-												class="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:border-red-500 hover:text-red-500"
-												><Trash2 size={16} /></button
-											>
-										</div>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			{/if}
+			{/key}
 		</div>
-	</main>
+	{:else}
+		<!-- Hotel List -->
+		<div class="mb-6 flex items-start justify-between">
+			<div class="flex flex-col gap-1">
+				<h1 class="text-2xl font-semibold text-gray-900">Hotel Master Data</h1>
+				<p class="text-sm text-gray-500">Manage hotel information</p>
+			</div>
+			<button
+				class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
+				onclick={() => (showForm = true)}
+			>
+				<Plus size={18} />
+				Add Hotel
+			</button>
+		</div>
+
+		<!-- Search & Filter -->
+		<div class="mb-6 flex items-center justify-between">
+			<div
+				class="flex w-80 items-center gap-2.5 rounded-lg border border-gray-200 bg-white px-4 py-2.5"
+			>
+				<Search size={18} class="text-gray-400" />
+				<input
+					type="text"
+					placeholder="Search hotels..."
+					class="flex-1 border-none bg-transparent text-sm outline-none placeholder:text-gray-400"
+				/>
+			</div>
+			<button
+				class="flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50"
+			>
+				<Filter size={16} />
+				Filter
+			</button>
+		</div>
+
+		<!-- Hotel Table -->
+		<div class="overflow-hidden rounded-xl border border-gray-200 bg-white">
+			<table class="w-full border-collapse">
+				<thead>
+					<tr>
+						<th
+							class="border-b border-gray-200 bg-gray-50 px-4 py-3.5 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase"
+							>Name</th
+						>
+						<th
+							class="border-b border-gray-200 bg-gray-50 px-4 py-3.5 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase"
+							>Location</th
+						>
+						<th
+							class="border-b border-gray-200 bg-gray-50 px-4 py-3.5 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase"
+							>Rating</th
+						>
+						<th
+							class="border-b border-gray-200 bg-gray-50 px-4 py-3.5 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase"
+							>Status</th
+						>
+						<th
+							class="border-b border-gray-200 bg-gray-50 px-4 py-3.5 text-left text-xs font-semibold tracking-wider text-gray-500 uppercase"
+							>Actions</th
+						>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-gray-200">
+					{#each hotels as hotel}
+						<tr class="hover:bg-gray-50">
+							<td class="px-4 py-3.5 text-sm font-medium whitespace-nowrap text-gray-900"
+								>{hotel.name}</td
+							>
+							<td class="px-4 py-3.5 text-sm text-gray-700">{hotel.city}, {hotel.country}</td>
+							<td class="px-4 py-3.5">
+								<div class="flex items-center text-yellow-400">
+									{#each Array(hotel.starRating) as _}
+										<Star size={14} class="fill-current" />
+									{/each}
+								</div>
+							</td>
+							<td class="px-4 py-3.5">
+								<span
+									class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {hotel.status ===
+									'Active'
+										? 'bg-green-100 text-green-800'
+										: 'bg-red-100 text-red-800'}"
+								>
+									{hotel.status}
+								</span>
+							</td>
+							<td class="px-4 py-3.5">
+								<div class="flex items-center gap-1.5">
+									<button
+										class="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:border-[#972395] hover:text-[#972395]"
+										><Eye size={16} /></button
+									>
+									<button
+										class="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:border-[#972395] hover:text-[#972395]"
+										onclick={() => loadHotel(hotel)}><Edit size={16} /></button
+									>
+									<button
+										class="flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 bg-white text-gray-500 transition-colors hover:border-red-500 hover:text-red-500"
+										><Trash2 size={16} /></button
+									>
+								</div>
+							</td>
+						</tr>
+					{/each}
+				</tbody>
+			</table>
+		</div>
+	{/if}
 </div>

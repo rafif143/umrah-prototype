@@ -10,8 +10,10 @@
 		CreditCard,
 		MapPin,
 		Building2,
-		Briefcase
+		Briefcase,
+		ChevronDown
 	} from 'lucide-svelte';
+	import { slide } from 'svelte/transition';
 	import BookingDrawer from './components/BookingDrawer.svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { bookingStore } from '$lib/stores/bookingStore.svelte.js';
@@ -19,6 +21,7 @@
 	let showDrawer = $state(false);
 	let searchQuery = $state('');
 	let selectedBooking = $state(null);
+	let openDropdownId = $state(null);
 
 	// Use store data
 	let bookings = $derived(
@@ -38,6 +41,12 @@
 	function closeDrawer() {
 		showDrawer = false;
 		selectedBooking = null;
+	}
+
+	const STATUS_OPTIONS = ['Process', 'Pending', 'Paid', 'Cancelled'];
+
+	function handleStatusChange(bookingId, newStatus) {
+		bookingStore.updateBooking(bookingId, { status: newStatus });
 	}
 </script>
 
@@ -125,27 +134,73 @@
 											{booking.date}
 										</div>
 									</td>
-									<td class="px-4 py-3 whitespace-nowrap">
-										<span
-											class={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-												booking.status === 'Paid'
-													? 'bg-green-50 text-green-700'
-													: booking.status === 'Pending'
-														? 'bg-yellow-50 text-yellow-700'
-														: 'bg-blue-50 text-blue-700'
-											}`}
-										>
-											<span
-												class={`h-1 w-1 rounded-full ${
+									<td class="relative px-4 py-3 whitespace-nowrap">
+										<div class="relative">
+											<button
+												class={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-medium transition-all hover:bg-gray-100 ${
 													booking.status === 'Paid'
-														? 'bg-green-500'
+														? 'bg-green-50 text-green-700'
 														: booking.status === 'Pending'
-															? 'bg-yellow-500'
-															: 'bg-blue-500'
+															? 'bg-yellow-50 text-yellow-700'
+															: booking.status === 'Process'
+																? 'bg-blue-50 text-blue-700'
+																: 'bg-gray-100 text-gray-600'
 												}`}
-											></span>
-											{booking.status}
-										</span>
+												onclick={() =>
+													(openDropdownId = openDropdownId === booking.id ? null : booking.id)}
+											>
+												<span
+													class={`h-1.5 w-1.5 rounded-full ${
+														booking.status === 'Paid'
+															? 'bg-green-500'
+															: booking.status === 'Pending'
+																? 'bg-yellow-500'
+																: booking.status === 'Process'
+																	? 'bg-blue-500'
+																	: 'bg-gray-500'
+													}`}
+												></span>
+												{booking.status}
+												<ChevronDown size={10} class="ml-0.5 opacity-50" />
+											</button>
+
+											{#if openDropdownId === booking.id}
+												<!-- Backdrop to close when clicking outside -->
+												<div
+													class="fixed inset-0 z-10 cursor-default"
+													onclick={() => (openDropdownId = null)}
+												></div>
+
+												<!-- Dropdown Menu -->
+												<div
+													class="absolute top-full left-0 z-20 mt-1 w-32 overflow-hidden rounded-lg border border-gray-100 bg-white p-1 shadow-lg ring-1 ring-black/5"
+													transition:slide={{ duration: 150 }}
+												>
+													{#each STATUS_OPTIONS as status}
+														<button
+															class="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-[10px] font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900"
+															onclick={() => {
+																handleStatusChange(booking.id, status);
+																openDropdownId = null;
+															}}
+														>
+															<span
+																class={`h-1.5 w-1.5 rounded-full ${
+																	status === 'Paid'
+																		? 'bg-green-500'
+																		: status === 'Pending'
+																			? 'bg-yellow-500'
+																			: status === 'Process'
+																				? 'bg-blue-500'
+																				: 'bg-gray-500'
+																}`}
+															></span>
+															{status}
+														</button>
+													{/each}
+												</div>
+											{/if}
+										</div>
 									</td>
 									<td
 										class="sticky right-0 w-[50px] bg-white px-4 py-3 text-right text-gray-900 group-hover:bg-gray-50/50"
