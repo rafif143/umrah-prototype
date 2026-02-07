@@ -38,16 +38,29 @@
 							<span class="text-xs text-gray-500">to {trip.checkOut}</span>
 						</div>
 					</div>
-					<div class="col-span-3 flex flex-col justify-center">
+					<div class="col-span-2 flex flex-col justify-center">
 						<span class="text-xs font-medium tracking-wide text-gray-500 uppercase">Duration</span>
 						<span class="text-sm font-medium text-gray-900">{trip.duration}</span>
 					</div>
-					<div class="col-span-3 flex flex-col justify-center">
+					<div class="col-span-2 flex flex-col justify-center">
+						<span class="text-xs font-medium tracking-wide text-gray-500 uppercase"
+							>Capacity Loaded</span
+						>
+						<div class="flex flex-col">
+							<span class="text-sm font-medium text-gray-900"
+								>{trip.currentPax || 0} / {trip.paxCapacity}</span
+							>
+							{#if (trip.currentPax || 0) > trip.paxCapacity}
+								<span class="text-[10px] font-bold text-red-600">Butuh penyesuaian lanjut</span>
+							{/if}
+						</div>
+					</div>
+					<div class="col-span-2 flex flex-col justify-center">
 						<span class="text-xs font-medium tracking-wide text-gray-500 uppercase"
 							>Flight Info</span
 						>
 						<div class="flex flex-col">
-							<span class="text-sm font-medium text-gray-900">{trip.flightCode}</span>
+							<span class="truncate text-sm font-medium text-gray-900">{trip.flightCode}</span>
 							<span class="text-xs text-gray-500">{trip.date}</span>
 						</div>
 					</div>
@@ -58,8 +71,8 @@
 					<div class="col-span-1 flex flex-col justify-center">
 						<span class="text-xs font-medium tracking-wide text-gray-500 uppercase">Status</span>
 						<span
-							class="inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide {trip.status ===
-							'Active'
+							class="inline-flex w-fit items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold tracking-wide {trip.status?.toLowerCase() ===
+							'active'
 								? 'bg-green-100 text-green-700'
 								: 'bg-yellow-100 text-yellow-700'}"
 						>

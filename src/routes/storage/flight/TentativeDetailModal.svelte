@@ -3,6 +3,7 @@
 	import { fly, fade } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
 	import { formatDate } from './flightUtils.js';
+	import FlightUsageTable from './FlightUsageTable.svelte';
 
 	let { show = false, booking = null, onClose, onEdit } = $props();
 </script>
@@ -98,6 +99,11 @@
 						<p class="text-sm text-gray-600">{booking.notes}</p>
 					</div>
 				{/if}
+
+				<!-- Flight Usage Table -->
+				<div class="mt-6">
+					<FlightUsageTable bookingId={booking.id} isTentative={true} />
+				</div>
 			</div>
 
 			<!-- Footer -->

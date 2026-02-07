@@ -12,10 +12,14 @@
 	import TentativeTable from './TentativeTable.svelte';
 	import TentativeFormModal from './TentativeFormModal.svelte';
 	import TentativeDetailModal from './TentativeDetailModal.svelte';
+	import ComingSoonModal from './ComingSoonModal.svelte';
 
 	// UI State
 	let activeTab = $state('confirm');
 	let searchQuery = $state('');
+
+	// Coming Soon Modal State
+	let showComingSoonModal = $state(false);
 
 	// Confirm modal state
 	let showConfirmFormModal = $state(false);
@@ -109,6 +113,10 @@
 		viewingTentativeBooking = null;
 	}
 
+	function handleConvertTentative(booking) {
+		showComingSoonModal = true;
+	}
+
 	function handleSaveTentativeBooking(bookingData, existingId) {
 		if (existingId) {
 			flightStorageStore.updateTentativeBooking(existingId, bookingData);
@@ -127,7 +135,7 @@
 <div class="flex min-h-screen bg-gray-50 font-sans">
 	<Sidebar activePage="/storage/flight" />
 
-	<main class="ml-[200px] flex flex-1 flex-col overflow-hidden px-6 py-6">
+	<main class="ml-[230px] flex flex-1 flex-col overflow-hidden px-6 py-6">
 		<!-- Header Section -->
 		<div class="mb-4 flex items-center justify-between">
 			<div class="flex items-center gap-3">
@@ -221,6 +229,7 @@
 				onView={openTentativeDetailModal}
 				onEdit={openTentativeFormModal}
 				onDelete={handleDeleteTentativeBooking}
+				onConvert={handleConvertTentative}
 			/>
 		{/if}
 	</main>
@@ -255,3 +264,6 @@
 	onClose={closeTentativeDetailModal}
 	onEdit={openTentativeFormModal}
 />
+
+<!-- Helper Modals -->
+<ComingSoonModal show={showComingSoonModal} onClose={() => (showComingSoonModal = false)} />

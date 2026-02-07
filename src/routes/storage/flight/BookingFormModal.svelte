@@ -222,12 +222,12 @@
 						<!-- Travel Agent -->
 						<div class="flex flex-col gap-1.5">
 							<label for="travelAgent" class="text-[13px] font-medium text-gray-700">
-								Booking Name / Travel Agent <span class="text-red-500">*</span>
+								Booking Name <span class="text-red-500">*</span>
 							</label>
 							<input
 								type="text"
 								id="travelAgent"
-								placeholder="Enter company name"
+								placeholder="Enter booking name"
 								class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={formData.travelAgent}
 							/>

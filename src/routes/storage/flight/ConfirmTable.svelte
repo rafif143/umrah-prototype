@@ -8,10 +8,12 @@
 		Plane,
 		Clock,
 		Calendar,
-		Users
+		Users,
+		Link
 	} from 'lucide-svelte';
 	import { formatDate, formatTime, getAirlineName } from './flightUtils.js';
 	import { airlineStore } from '$lib/stores/airlineStore.svelte.js';
+	import { packageStore } from '$lib/stores/packageStore.svelte.js';
 
 	let { bookings = [], onView, onEdit, onDelete } = $props();
 </script>
@@ -24,6 +26,11 @@
 					<th class="px-4 py-3 font-semibold whitespace-nowrap text-gray-900">Name Booking</th>
 					<th class="px-4 py-3 font-semibold whitespace-nowrap text-gray-900">Route Info</th>
 					<th class="px-4 py-3 font-semibold whitespace-nowrap text-gray-900">PNR & Seats</th>
+					<th class="px-4 py-3 text-center font-semibold whitespace-nowrap text-gray-900"
+						>Linked Package</th
+					>
+					<th class="px-4 py-3 text-center font-semibold whitespace-nowrap text-gray-900">Status</th
+					>
 					<th class="sticky right-0 bg-gray-50 px-4 py-3 text-right font-semibold text-gray-900"
 						>Actions</th
 					>
@@ -42,6 +49,13 @@
 						[]}
 					{@const totalSeats = booking.totalSeats || 0}
 					{@const pendingPnrs = pnrs.filter((p) => !p.pnr || p.pnr === '').length}
+					{@const usage = (packageStore.packages || [])
+						.flatMap((p) =>
+							(p.tripDates || [])
+								.filter((td) => td.flightId === booking.id)
+								.map((td) => ({ pkgName: p.name, tripDate: td.date }))
+						)
+						.at(0)}
 
 					<tr class="group transition-colors hover:bg-gray-50/50">
 						<td class="px-4 py-3">
@@ -122,6 +136,47 @@
 								</div>
 							</div>
 						</td>
+						<td class="px-4 py-3 text-center">
+							{#if usage}
+								<div class="flex flex-col items-center justify-center gap-0.5">
+									<span
+										class="inline-block max-w-[140px] truncate rounded bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700 hover:text-clip"
+										title={usage.pkgName}
+									>
+										{usage.pkgName}
+									</span>
+									<span class="text-[10px] text-gray-500">
+										{usage.tripDate}
+									</span>
+								</div>
+							{:else}
+								<span class="text-xs text-gray-400">-</span>
+							{/if}
+						</td>
+						<td class="px-4 py-3 text-center">
+							{#if usage}
+								{@const tripDate = new Date(usage.tripDate)}
+								{@const today = new Date()}
+								{@const isPast = tripDate < today}
+
+								<span
+									class="inline-flex rounded-full px-2 py-0.5 text-[10px] font-medium
+									{booking.usageStatus === 'Has been used' || isPast
+										? 'bg-orange-100 text-orange-700'
+										: booking.usageStatus === 'Not Used' && !usage
+											? 'bg-gray-100 text-gray-700'
+											: 'bg-green-100 text-green-700'}"
+								>
+									{booking.usageStatus || (isPast ? 'Has been used' : 'Use Now')}
+								</span>
+							{:else}
+								<span
+									class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-700"
+								>
+									Not Used
+								</span>
+							{/if}
+						</td>
 						<td
 							class="sticky right-0 w-[120px] bg-white px-4 py-3 text-right group-hover:bg-gray-50/50"
 						>
@@ -153,7 +208,7 @@
 					</tr>
 				{:else}
 					<tr>
-						<td colspan="4" class="px-4 py-12 text-center">
+						<td colspan="6" class="px-4 py-12 text-center">
 							<div class="flex flex-col items-center gap-3 text-gray-400">
 								<Plane size={40} strokeWidth={1} />
 								<div>

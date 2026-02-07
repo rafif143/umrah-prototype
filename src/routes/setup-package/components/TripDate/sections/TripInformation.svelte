@@ -28,9 +28,28 @@
 			/>
 		</div>
 		<div class="flex flex-col gap-1.5">
-			<label class="text-[13px] font-medium text-gray-700"
-				>Pax Capacity <span class="text-red-500">*</span></label
-			>
+			<label class="text-[13px] font-medium text-gray-700">Current Pax</label>
+			<input
+				type="number"
+				placeholder="e.g., 25"
+				bind:value={state.activeTrip.currentPax}
+				class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
+			/>
+		</div>
+		<div class="flex flex-col gap-1.5">
+			<div class="flex items-center justify-between">
+				<label class="text-[13px] font-medium text-gray-700"
+					>Pax Capacity <span class="text-red-500">*</span></label
+				>
+				<label class="flex cursor-pointer items-center gap-1.5">
+					<input
+						type="checkbox"
+						bind:checked={state.activeTrip.allowOverload}
+						class="rounded border-gray-300 text-[#972395] focus:ring-[#972395]"
+					/>
+					<span class="text-[10px] font-medium text-gray-500">Allow Overload</span>
+				</label>
+			</div>
 			<input
 				type="number"
 				placeholder="e.g., 45"

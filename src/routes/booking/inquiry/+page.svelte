@@ -27,7 +27,7 @@
 <div class="flex min-h-screen bg-gray-50 font-sans">
 	<Sidebar activePage="/booking/inquiry" />
 
-	<main class="ml-[200px] min-h-screen flex-1 bg-gray-50/50">
+	<main class="ml-[230px] min-h-screen flex-1 bg-gray-50/50">
 		<div class="flex h-full flex-col p-6">
 			<!-- Page Header -->
 			<div class="mb-6">

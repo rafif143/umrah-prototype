@@ -2,7 +2,7 @@ import { persistedState } from './persistedState.svelte.js';
 import initialData from '../data/flightStorage.json';
 
 // Create a persisted store for Flight Storage data
-const flightStorageState = persistedState('umrah_flight_storage', initialData);
+const flightStorageState = persistedState('umrah_flight_storage_v8', initialData);
 
 export const flightStorageStore = {
     get confirmBookings() {

@@ -14,6 +14,7 @@
 	import { cubicOut } from 'svelte/easing';
 	import { formatDate, formatTime, getAirlineName } from './flightUtils.js';
 	import { airlineStore } from '$lib/stores/airlineStore.svelte.js';
+	import FlightUsageTable from './FlightUsageTable.svelte';
 
 	let { show = false, booking = null, onClose, onEdit } = $props();
 
@@ -370,6 +371,11 @@
 						</div>
 					</div>
 				{/if}
+
+				<!-- Flight Usage Table -->
+				<div class="mt-6 mb-6">
+					<FlightUsageTable bookingId={displayData.id} />
+				</div>
 
 				<!-- Notes Section -->
 				{#if displayData.notes}

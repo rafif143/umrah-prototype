@@ -40,7 +40,7 @@
 	<Sidebar activePage="package-management" />
 
 	<!-- Main Content -->
-	<main class="ml-[200px] min-h-screen flex-1 bg-gray-50/50">
+	<main class="ml-[230px] min-h-screen flex-1 bg-gray-50/50">
 		<div class="p-6">
 			<!-- Header -->
 			<div class="mb-6 flex items-start justify-between">

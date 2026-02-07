@@ -11,7 +11,7 @@
 
 	<!-- Main Content Wrapper -->
 	<main
-		class="ml-[200px] min-h-screen flex-1 bg-gradient-to-br from-gray-50 via-purple-50/30 to-gray-50"
+		class="ml-[230px] min-h-screen flex-1 bg-gradient-to-br from-gray-50 via-purple-50/30 to-gray-50"
 	>
 		<div class="h-full">
 			{@render children()}
