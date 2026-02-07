@@ -1,7 +1,8 @@
 export const sidebarState = $state({
     masterData: true,
     bookingManagement: false,
-    pricingManagement: false
+    pricingManagement: false,
+    storage: false
 });
 
 export function toggleMenu(menu) {

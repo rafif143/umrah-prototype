@@ -15,7 +15,8 @@
 		UserCheck,
 		CalendarRange,
 		FileQuestion,
-		BookOpen
+		BookOpen,
+		Database
 	} from 'lucide-svelte';
 	import { slide, fly, fade, scale } from 'svelte/transition';
 	import { cubicOut, elasticOut, quintOut } from 'svelte/easing';
@@ -53,6 +54,11 @@
 			icon: Truck,
 			href: '/booking/transfer-passenger'
 		}
+	];
+
+	const storageSubItems = [
+		{ id: 'storage-flight', label: 'Flight', icon: Plane, href: '/storage/flight' },
+		{ id: 'storage-hotel', label: 'Hotel', icon: Building2, href: '/storage/hotel' }
 	];
 </script>
 
@@ -244,6 +250,82 @@
 							>
 								<!-- Active dot indicator -->
 								{#if activePage === item.id || (item.href && activePage === item.href) || (activePage === 'hotel' && item.id === 'hotels')}
+									<div
+										class="absolute top-1/2 left-0 h-1 w-1 -translate-y-1/2 rounded-full bg-white shadow-lg shadow-white/50"
+										in:scale={{ duration: 300, start: 0, easing: elasticOut }}
+									></div>
+								{/if}
+
+								<div
+									class="flex h-5 w-5 items-center justify-center rounded bg-white/5 transition-all duration-200 group-hover:scale-110 group-hover:bg-white/15"
+								>
+									<Icon size={12} strokeWidth={2} />
+								</div>
+								<span>{item.label}</span>
+
+								<!-- Hover effect -->
+								<div
+									class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
+								>
+									<div class="absolute inset-0 bg-gradient-to-r from-white/5 to-transparent"></div>
+								</div>
+							</a>
+						{/each}
+					</div>
+				</div>
+			{/if}
+		</div>
+
+		<!-- Storage -->
+		<div>
+			<button
+				class="group relative flex w-full cursor-pointer items-center gap-2.5 overflow-hidden rounded-lg bg-transparent px-2.5 py-2.5 text-left text-[13px] font-normal text-white/90 transition-all duration-300 hover:bg-white/10"
+				onclick={() => toggleMenu('storage')}
+			>
+				<!-- Icon with background -->
+				<div
+					class="flex h-6 w-6 items-center justify-center rounded-md bg-white/10 transition-all duration-300 group-hover:scale-110 group-hover:bg-white/20"
+				>
+					<Database size={14} strokeWidth={2} />
+				</div>
+				<span class="flex-1">Storage</span>
+				<div
+					class="flex h-5 w-5 items-center justify-center rounded transition-all duration-300 group-hover:bg-white/10 {sidebarState.storage
+						? 'rotate-180 bg-white/15'
+						: ''}"
+				>
+					<ChevronDown size={14} strokeWidth={2} />
+				</div>
+
+				<!-- Hover glow effect -->
+				<div
+					class="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+				>
+					<div
+						class="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent"
+					></div>
+				</div>
+			</button>
+
+			{#if sidebarState.storage}
+				<div
+					class="mt-1 overflow-hidden rounded-lg bg-black/10"
+					in:slide={{ duration: 400, easing: cubicOut }}
+					out:slide={{ duration: 300, easing: cubicOut }}
+				>
+					<div class="space-y-0.5 p-1">
+						{#each storageSubItems as item, i}
+							{@const Icon = item.icon}
+							<a
+								href={item.href || `#${item.id}`}
+								class="group relative flex items-center gap-2 overflow-hidden rounded-md py-2 pr-2.5 pl-2 text-xs transition-all duration-200 {activePage ===
+									item.id ||
+								(item.href && activePage === item.href)
+									? 'bg-white/15 font-semibold shadow-md'
+									: 'font-normal text-white/85 hover:bg-white/10'}"
+							>
+								<!-- Active dot indicator -->
+								{#if activePage === item.id || (item.href && activePage === item.href)}
 									<div
 										class="absolute top-1/2 left-0 h-1 w-1 -translate-y-1/2 rounded-full bg-white shadow-lg shadow-white/50"
 										in:scale={{ duration: 300, start: 0, easing: elasticOut }}

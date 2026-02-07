@@ -388,65 +388,9 @@ export class PackageState {
     // Calculation tab state
     calculationTab = $state('room-simulation');
 
-    // Static Data
-    // Flight State
-    flightList = $state([
-        {
-            id: 'dummy-flight-1',
-            name: 'Saudi Airlines Direct',
-            type: 'Direct',
-            airline: 'Saudi Airlines',
-            totalSeats: '45',
-            items: [
-                {
-                    id: 'leg-1',
-                    type: 'Departure',
-                    supplier: 'Saudi Airlines',
-                    carrier: 'Saudi Airlines',
-                    carrierNo: 'SV 820',
-                    departureDate: '2024-03-20',
-                    fromCity: 'Kuala Lumpur (KUL)',
-                    departureTime: { hour: '04', minute: '30', ampm: 'PM' },
-                    toCity: 'Jeddah (JED)',
-                    arrivalTime: { hour: '08', minute: '15', ampm: 'PM' },
-                    registrationTime: '01:30 PM',
-                    reportingTime: '02:30 PM',
-                    notes: 'Group check-in at Counter H',
-                    totalUmrahDay: false,
-                    skip7DaysRule: false,
-                    costs: {
-                        airfare: { adultCost: 4200, adultSell: 4500, childCost: 3800, childSell: 4000, infantCost: 500, infantSell: 500 },
-                        tax: { adultCost: 150, adultSell: 150, childCost: 150, childSell: 150, infantCost: 50, infantSell: 50 },
-                        ur: { adultCost: 0, adultSell: 0, childCost: 0, childSell: 0, infantCost: 0, infantSell: 0 },
-                        total: { adultCost: 4350, adultSell: 4650, childCost: 3950, childSell: 4150, infantCost: 550, infantSell: 550 }
-                    }
-                },
-                {
-                    id: 'leg-2',
-                    type: 'Arrival',
-                    supplier: 'Saudi Airlines',
-                    carrier: 'Saudi Airlines',
-                    carrierNo: 'SV 821',
-                    departureDate: '2024-03-30',
-                    fromCity: 'Madinah (MED)',
-                    departureTime: { hour: '10', minute: '15', ampm: 'PM' },
-                    toCity: 'Kuala Lumpur (KUL)',
-                    arrivalTime: { hour: '11', minute: '45', ampm: 'AM' },
-                    registrationTime: '07:15 PM',
-                    reportingTime: '08:15 PM',
-                    notes: '',
-                    totalUmrahDay: false,
-                    skip7DaysRule: false,
-                    costs: {
-                        airfare: { adultCost: 0, adultSell: 0, childCost: 0, childSell: 0, infantCost: 0, infantSell: 0 },
-                        tax: { adultCost: 0, adultSell: 0, childCost: 0, childSell: 0, infantCost: 0, infantSell: 0 },
-                        ur: { adultCost: 0, adultSell: 0, childCost: 0, childSell: 0, infantCost: 0, infantSell: 0 },
-                        total: { adultCost: 0, adultSell: 0, childCost: 0, childSell: 0, infantCost: 0, infantSell: 0 }
-                    }
-                }
-            ]
-        }
-    ]);
+    // Flight State - Now picks from confirmed storage bookings
+    flightList = $state([]);
+
     flightGroupForm = $state(this.getInitialFlightGroupForm());
     flightItemForm = $state(this.getInitialFlightItemForm());
     showFlightModal = $state(false);

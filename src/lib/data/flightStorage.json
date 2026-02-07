@@ -1,0 +1,328 @@
+{
+    "confirmBookings": [
+        {
+            "id": "1707300001",
+            "travelAgent": "Syarifah Umrah Travel",
+            "pnrGroups": [
+                {
+                    "airline": "MH",
+                    "pnr": "ABC123",
+                    "pnrPending": false,
+                    "sectors": [
+                        {
+                            "type": "Departure",
+                            "supplier": "Supplier A",
+                            "departureHall": "KLIA 1",
+                            "carrier": "MH",
+                            "carrierNo": "8001",
+                            "fromCity": "KUL",
+                            "toCity": "JED",
+                            "departureDate": "2026-03-15",
+                            "departureTime": {
+                                "hour": "08",
+                                "minute": "30"
+                            },
+                            "arrivalTime": {
+                                "hour": "14",
+                                "minute": "00"
+                            },
+                            "registrationTime": "3 JAM",
+                            "reportingTime": "2 JAM",
+                            "notes": "",
+                            "totalUmrahDay": "10"
+                        },
+                        {
+                            "type": "Transit",
+                            "supplier": "Supplier A",
+                            "departureHall": "JED T1",
+                            "carrier": "MH",
+                            "carrierNo": "8002",
+                            "fromCity": "JED",
+                            "toCity": "MED",
+                            "departureDate": "2026-03-20",
+                            "departureTime": {
+                                "hour": "14",
+                                "minute": "00"
+                            },
+                            "arrivalTime": {
+                                "hour": "15",
+                                "minute": "30"
+                            },
+                            "registrationTime": "",
+                            "reportingTime": "",
+                            "notes": "",
+                            "totalUmrahDay": ""
+                        }
+                    ]
+                },
+                {
+                    "airline": "SV",
+                    "pnr": "XYZ789",
+                    "pnrPending": false,
+                    "sectors": [
+                        {
+                            "type": "Arrival",
+                            "supplier": "Supplier B",
+                            "departureHall": "MED T2",
+                            "carrier": "SV",
+                            "carrierNo": "1122",
+                            "fromCity": "MED",
+                            "toCity": "JED",
+                            "departureDate": "2026-03-25",
+                            "departureTime": {
+                                "hour": "10",
+                                "minute": "00"
+                            },
+                            "arrivalTime": {
+                                "hour": "11",
+                                "minute": "15"
+                            },
+                            "registrationTime": "",
+                            "reportingTime": "",
+                            "notes": "",
+                            "totalUmrahDay": ""
+                        }
+                    ]
+                }
+            ],
+            "notes": "Group VIP 20 pax - Include lounge access",
+            "createdAt": "2026-02-05T10:00:00Z"
+        },
+        {
+            "id": "1707300002",
+            "travelAgent": "Al-Madinah Tours",
+            "pnrGroups": [
+                {
+                    "airline": "SV",
+                    "pnr": "",
+                    "pnrPending": true,
+                    "sectors": [
+                        {
+                            "type": "Departure",
+                            "supplier": "",
+                            "departureHall": "CGK T3",
+                            "carrier": "SV",
+                            "carrierNo": "817",
+                            "fromCity": "CGK",
+                            "toCity": "JED",
+                            "departureDate": "2026-04-01",
+                            "departureTime": {
+                                "hour": "22",
+                                "minute": "00"
+                            },
+                            "arrivalTime": {
+                                "hour": "03",
+                                "minute": "30"
+                            },
+                            "registrationTime": "3 JAM",
+                            "reportingTime": "2 JAM",
+                            "notes": "",
+                            "totalUmrahDay": "9"
+                        },
+                        {
+                            "type": "Arrival",
+                            "supplier": "",
+                            "departureHall": "JED T1",
+                            "carrier": "SV",
+                            "carrierNo": "816",
+                            "fromCity": "JED",
+                            "toCity": "CGK",
+                            "departureDate": "2026-04-10",
+                            "departureTime": {
+                                "hour": "01",
+                                "minute": "30"
+                            },
+                            "arrivalTime": {
+                                "hour": "15",
+                                "minute": "00"
+                            },
+                            "registrationTime": "",
+                            "reportingTime": "",
+                            "notes": "",
+                            "totalUmrahDay": ""
+                        }
+                    ]
+                }
+            ],
+            "notes": "Regular group - 15 pax",
+            "createdAt": "2026-02-06T14:30:00Z"
+        },
+        {
+            "id": "1707300003",
+            "travelAgent": "Barakah Travel & Tours",
+            "pnrGroups": [
+                {
+                    "airline": "GA",
+                    "pnr": "GAR456",
+                    "pnrPending": false,
+                    "sectors": [
+                        {
+                            "type": "Departure",
+                            "supplier": "Supplier A",
+                            "departureHall": "CGK T3",
+                            "carrier": "GA",
+                            "carrierNo": "986",
+                            "fromCity": "CGK",
+                            "toCity": "JED",
+                            "departureDate": "2026-03-18",
+                            "departureTime": {
+                                "hour": "19",
+                                "minute": "45"
+                            },
+                            "arrivalTime": {
+                                "hour": "00",
+                                "minute": "30"
+                            },
+                            "registrationTime": "3 JAM",
+                            "reportingTime": "2 JAM",
+                            "notes": "",
+                            "totalUmrahDay": "12"
+                        }
+                    ]
+                },
+                {
+                    "airline": "SV",
+                    "pnr": "",
+                    "pnrPending": true,
+                    "sectors": [
+                        {
+                            "type": "Transit",
+                            "supplier": "",
+                            "departureHall": "",
+                            "carrier": "SV",
+                            "carrierNo": "1050",
+                            "fromCity": "JED",
+                            "toCity": "MED",
+                            "departureDate": "2026-03-22",
+                            "departureTime": {
+                                "hour": "16",
+                                "minute": "00"
+                            },
+                            "arrivalTime": {
+                                "hour": "17",
+                                "minute": "15"
+                            },
+                            "registrationTime": "",
+                            "reportingTime": "",
+                            "notes": "",
+                            "totalUmrahDay": ""
+                        },
+                        {
+                            "type": "Transit",
+                            "supplier": "",
+                            "departureHall": "",
+                            "carrier": "SV",
+                            "carrierNo": "1051",
+                            "fromCity": "MED",
+                            "toCity": "JED",
+                            "departureDate": "2026-03-28",
+                            "departureTime": {
+                                "hour": "09",
+                                "minute": "00"
+                            },
+                            "arrivalTime": {
+                                "hour": "10",
+                                "minute": "15"
+                            },
+                            "registrationTime": "",
+                            "reportingTime": "",
+                            "notes": "",
+                            "totalUmrahDay": ""
+                        }
+                    ]
+                },
+                {
+                    "airline": "GA",
+                    "pnr": "GAR457",
+                    "pnrPending": false,
+                    "sectors": [
+                        {
+                            "type": "Arrival",
+                            "supplier": "Supplier A",
+                            "departureHall": "JED T1",
+                            "carrier": "GA",
+                            "carrierNo": "987",
+                            "fromCity": "JED",
+                            "toCity": "CGK",
+                            "departureDate": "2026-03-30",
+                            "departureTime": {
+                                "hour": "23",
+                                "minute": "30"
+                            },
+                            "arrivalTime": {
+                                "hour": "14",
+                                "minute": "00"
+                            },
+                            "registrationTime": "",
+                            "reportingTime": "",
+                            "notes": "",
+                            "totalUmrahDay": ""
+                        }
+                    ]
+                }
+            ],
+            "notes": "Executive package - 8 pax, wheelchair assistance needed",
+            "createdAt": "2026-02-07T09:15:00Z"
+        },
+        {
+            "id": "1707300004",
+            "travelAgent": "Mecca Express",
+            "pnrGroups": [
+                {
+                    "airline": "MH",
+                    "pnr": "MHX999",
+                    "pnrPending": false,
+                    "sectors": [
+                        {
+                            "type": "Departure",
+                            "supplier": "",
+                            "departureHall": "KLIA 1",
+                            "carrier": "MH",
+                            "carrierNo": "8005",
+                            "fromCity": "KUL",
+                            "toCity": "JED",
+                            "departureDate": "2026-05-01",
+                            "departureTime": {
+                                "hour": "07",
+                                "minute": "00"
+                            },
+                            "arrivalTime": {
+                                "hour": "12",
+                                "minute": "30"
+                            },
+                            "registrationTime": "3 JAM",
+                            "reportingTime": "2 JAM",
+                            "notes": "",
+                            "totalUmrahDay": "11"
+                        },
+                        {
+                            "type": "Arrival",
+                            "supplier": "",
+                            "departureHall": "JED T1",
+                            "carrier": "MH",
+                            "carrierNo": "8006",
+                            "fromCity": "JED",
+                            "toCity": "KUL",
+                            "departureDate": "2026-05-12",
+                            "departureTime": {
+                                "hour": "18",
+                                "minute": "00"
+                            },
+                            "arrivalTime": {
+                                "hour": "08",
+                                "minute": "30"
+                            },
+                            "registrationTime": "",
+                            "reportingTime": "",
+                            "notes": "",
+                            "totalUmrahDay": ""
+                        }
+                    ]
+                }
+            ],
+            "notes": "Ramadan package - 30 pax",
+            "createdAt": "2026-02-07T08:00:00Z"
+        }
+    ],
+    "tentativeBookings": []
+}
