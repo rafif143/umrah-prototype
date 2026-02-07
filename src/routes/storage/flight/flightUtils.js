@@ -21,13 +21,33 @@ export const createEmptySector = () => ({
 });
 
 /**
- * Creates an empty PNR group object
+ * Creates an empty PNR object
  */
-export const createEmptyPnrGroup = () => ({
-    airline: '',
+export const createEmptyPnr = () => ({
     pnr: '',
-    pnrPending: false,
-    sectors: [createEmptySector()]
+    class: '',
+    name: '',
+    number: '',
+    seats: 0
+});
+
+/**
+ * Creates an empty Booking Data object (New Structure)
+ */
+export const createEmptyBooking = () => ({
+    id: '',
+    travelAgent: '',
+    airline: '',
+    totalSeats: 0,
+    pnrs: [createEmptyPnr()],
+    sectors: [createEmptySector()],
+    costs: {
+        airfare: { adultCost: 0, adultSell: 0, childCost: 0, childSell: 0, infantCost: 0, infantSell: 0 },
+        tax: { adultCost: 0, adultSell: 0, childCost: 0, childSell: 0, infantCost: 0, infantSell: 0 },
+        ur: { adultCost: 0, adultSell: 0, childCost: 0, childSell: 0, infantCost: 0, infantSell: 0 },
+        total: { adultCost: 0, adultSell: 0, childCost: 0, childSell: 0, infantCost: 0, infantSell: 0 }
+    },
+    notes: ''
 });
 
 /**
