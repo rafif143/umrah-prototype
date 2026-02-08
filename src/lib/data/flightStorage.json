@@ -1,19 +1,19 @@
 {
     "confirmBookings": [
         {
-            "id": "1707300001",
+            "id": "10001",
             "travelAgent": "Booking Flight 1",
             "airline": "SV",
-            "usageStatus": "Has been used",
-            "totalSeats": 45,
+            "usageStatus": "Use Now",
+            "totalSeats": 50,
             "pnrs": [
                 {
-                    "pnr": "SV820GRP",
+                    "pnr": "SV828GRP",
                     "pnrPending": false,
                     "class": "Economy",
                     "name": "Group A",
                     "number": "",
-                    "seats": 45
+                    "seats": 50
                 }
             ],
             "sectors": [
@@ -22,10 +22,10 @@
                     "supplier": "Saudia",
                     "departureHall": "KLIA 1",
                     "carrier": "SV",
-                    "carrierNo": "820",
+                    "carrierNo": "828",
                     "fromCity": "KUL",
                     "toCity": "JED",
-                    "departureDate": "2024-03-20",
+                    "departureDate": "2026-05-27",
                     "departureTime": {
                         "hour": "02",
                         "minute": "30"
@@ -42,118 +42,19 @@
                 {
                     "type": "Arrival",
                     "supplier": "Saudia",
-                    "departureHall": "JED North",
+                    "departureHall": "JED T1",
                     "carrier": "SV",
-                    "carrierNo": "821",
+                    "carrierNo": "829",
                     "fromCity": "JED",
                     "toCity": "KUL",
-                    "departureDate": "2024-03-31",
+                    "departureDate": "2026-06-07",
                     "departureTime": {
                         "hour": "22",
-                        "minute": "00"
-                    },
-                    "arrivalTime": {
-                        "hour": "11",
                         "minute": "30"
                     },
-                    "registrationTime": "",
-                    "reportingTime": "",
-                    "notes": "",
-                    "totalUmrahDay": ""
-                }
-            ],
-            "costs": {
-                "airfare": {
-                    "adultCost": 3200,
-                    "adultSell": 3500,
-                    "childCost": 2800,
-                    "childSell": 3000,
-                    "infantCost": 500,
-                    "infantSell": 500
-                },
-                "tax": {
-                    "adultCost": 150,
-                    "adultSell": 150,
-                    "childCost": 150,
-                    "childSell": 150,
-                    "infantCost": 50,
-                    "infantSell": 50
-                },
-                "ur": {
-                    "adultCost": 0,
-                    "adultSell": 0,
-                    "childCost": 0,
-                    "childSell": 0,
-                    "infantCost": 0,
-                    "infantSell": 0
-                },
-                "total": {
-                    "adultCost": 3350,
-                    "adultSell": 3650,
-                    "childCost": 2950,
-                    "childSell": 3150,
-                    "infantCost": 550,
-                    "infantSell": 550
-                }
-            },
-            "notes": "March Group - Full allocation",
-            "createdAt": "2024-01-05T10:00:00Z"
-        },
-        {
-            "id": "1707300002",
-            "travelAgent": "Booking Flight 2",
-            "airline": "MH",
-            "usageStatus": "Not Used",
-            "totalSeats": 35,
-            "pnrs": [
-                {
-                    "pnr": "MH150GRP",
-                    "pnrPending": false,
-                    "class": "Economy",
-                    "name": "Group B",
-                    "number": "",
-                    "seats": 35
-                }
-            ],
-            "sectors": [
-                {
-                    "type": "Departure",
-                    "supplier": "Malaysia Airlines",
-                    "departureHall": "KLIA 1",
-                    "carrier": "MH",
-                    "carrierNo": "150",
-                    "fromCity": "KUL",
-                    "toCity": "JED",
-                    "departureDate": "2024-04-15",
-                    "departureTime": {
-                        "hour": "15",
-                        "minute": "00"
-                    },
                     "arrivalTime": {
-                        "hour": "19",
-                        "minute": "30"
-                    },
-                    "registrationTime": "4 JAM",
-                    "reportingTime": "3 JAM",
-                    "notes": "",
-                    "totalUmrahDay": "12"
-                },
-                {
-                    "type": "Arrival",
-                    "supplier": "Malaysia Airlines",
-                    "departureHall": "JED T1",
-                    "carrier": "MH",
-                    "carrierNo": "151",
-                    "fromCity": "JED",
-                    "toCity": "KUL",
-                    "departureDate": "2024-04-26",
-                    "departureTime": {
-                        "hour": "21",
+                        "hour": "12",
                         "minute": "00"
-                    },
-                    "arrivalTime": {
-                        "hour": "10",
-                        "minute": "30"
                     },
                     "registrationTime": "",
                     "reportingTime": "",
@@ -166,7 +67,7 @@
                     "adultCost": 3500,
                     "adultSell": 3800,
                     "childCost": 3000,
-                    "childSell": 3200,
+                    "childSell": 3300,
                     "infantCost": 500,
                     "infantSell": 500
                 },
@@ -190,126 +91,19 @@
                     "adultCost": 3650,
                     "adultSell": 3950,
                     "childCost": 3150,
-                    "childSell": 3350,
+                    "childSell": 3450,
                     "infantCost": 550,
                     "infantSell": 550
                 }
             },
-            "notes": "April Group - Post-Ramadan",
-            "createdAt": "2024-02-01T14:30:00Z"
+            "notes": "May Economy Group",
+            "createdAt": "2026-01-01T08:00:00Z"
         },
         {
-            "id": "1707300003",
-            "travelAgent": "Booking Flight 3",
-            "airline": "SV",
-            "usageStatus": "Use Now",
-            "totalSeats": 50,
-            "pnrs": [
-                {
-                    "pnr": "SV828VIP",
-                    "pnrPending": false,
-                    "class": "Business",
-                    "name": "VIP Group",
-                    "number": "",
-                    "seats": 10
-                },
-                {
-                    "pnr": "SV828ECO",
-                    "pnrPending": false,
-                    "class": "Economy",
-                    "name": "Economy Group",
-                    "number": "",
-                    "seats": 40
-                }
-            ],
-            "sectors": [
-                {
-                    "type": "Departure",
-                    "supplier": "Saudia",
-                    "departureHall": "KLIA 1",
-                    "carrier": "SV",
-                    "carrierNo": "828",
-                    "fromCity": "KUL",
-                    "toCity": "JED",
-                    "departureDate": "2026-05-20",
-                    "departureTime": {
-                        "hour": "01",
-                        "minute": "30"
-                    },
-                    "arrivalTime": {
-                        "hour": "05",
-                        "minute": "00"
-                    },
-                    "registrationTime": "4 JAM",
-                    "reportingTime": "3 JAM",
-                    "notes": "",
-                    "totalUmrahDay": "12"
-                },
-                {
-                    "type": "Arrival",
-                    "supplier": "Saudia",
-                    "departureHall": "JED North",
-                    "carrier": "SV",
-                    "carrierNo": "829",
-                    "fromCity": "JED",
-                    "toCity": "KUL",
-                    "departureDate": "2026-05-31",
-                    "departureTime": {
-                        "hour": "23",
-                        "minute": "00"
-                    },
-                    "arrivalTime": {
-                        "hour": "12",
-                        "minute": "30"
-                    },
-                    "registrationTime": "",
-                    "reportingTime": "",
-                    "notes": "",
-                    "totalUmrahDay": ""
-                }
-            ],
-            "costs": {
-                "airfare": {
-                    "adultCost": 4000,
-                    "adultSell": 4500,
-                    "childCost": 3500,
-                    "childSell": 3800,
-                    "infantCost": 600,
-                    "infantSell": 600
-                },
-                "tax": {
-                    "adultCost": 200,
-                    "adultSell": 200,
-                    "childCost": 200,
-                    "childSell": 200,
-                    "infantCost": 50,
-                    "infantSell": 50
-                },
-                "ur": {
-                    "adultCost": 0,
-                    "adultSell": 0,
-                    "childCost": 0,
-                    "childSell": 0,
-                    "infantCost": 0,
-                    "infantSell": 0
-                },
-                "total": {
-                    "adultCost": 4200,
-                    "adultSell": 4700,
-                    "childCost": 3700,
-                    "childSell": 4000,
-                    "infantCost": 650,
-                    "infantSell": 650
-                }
-            },
-            "notes": "May Shared Group - VIP & Economy",
-            "createdAt": "2024-03-01T09:15:00Z"
-        },
-        {
-            "id": "1707300004",
-            "travelAgent": "Booking Flight 4",
+            "id": "10002",
+            "travelAgent": "Booking Flight 2",
             "airline": "MH",
-            "usageStatus": "Not Used",
+            "usageStatus": "Use Now",
             "totalSeats": 30,
             "pnrs": [
                 {
@@ -330,7 +124,7 @@
                     "carrierNo": "152",
                     "fromCity": "KUL",
                     "toCity": "JED",
-                    "departureDate": "2024-06-20",
+                    "departureDate": "2026-06-15",
                     "departureTime": {
                         "hour": "14",
                         "minute": "00"
@@ -352,7 +146,7 @@
                     "carrierNo": "153",
                     "fromCity": "JED",
                     "toCity": "KUL",
-                    "departureDate": "2024-06-30",
+                    "departureDate": "2026-06-25",
                     "departureTime": {
                         "hour": "20",
                         "minute": "00"
@@ -402,86 +196,108 @@
                 }
             },
             "notes": "June VIP Group",
-            "createdAt": "2024-03-15T08:00:00Z"
+            "createdAt": "2026-01-01T08:00:00Z"
         },
         {
-            "id": "1707300005",
-            "travelAgent": "Booking Flight 5",
-            "airline": "SV",
+            "id": "10003",
+            "travelAgent": "Booking Flight 3",
+            "airline": "TK",
             "usageStatus": "Use Now",
-            "totalSeats": 10,
+            "totalSeats": 40,
             "pnrs": [
                 {
-                    "pnr": "SV816VIP",
+                    "pnr": "TK100GRP",
                     "pnrPending": false,
-                    "class": "Business",
-                    "name": "VIP May",
+                    "class": "Economy",
+                    "name": "Istanbul Plus",
                     "number": "",
-                    "seats": 10
+                    "seats": 40
                 }
             ],
             "sectors": [
                 {
                     "type": "Departure",
-                    "supplier": "Saudia",
+                    "supplier": "Turkish Airlines",
                     "departureHall": "KLIA 1",
-                    "carrier": "SV",
-                    "carrierNo": "816",
+                    "carrier": "TK",
+                    "carrierNo": "60",
                     "fromCity": "KUL",
-                    "toCity": "JED",
-                    "departureDate": "2026-05-20",
+                    "toCity": "IST",
+                    "departureDate": "2026-06-20",
                     "departureTime": {
-                        "hour": "14",
-                        "minute": "00"
+                        "hour": "23",
+                        "minute": "05"
                     },
                     "arrivalTime": {
-                        "hour": "18",
-                        "minute": "30"
+                        "hour": "05",
+                        "minute": "15"
                     },
                     "registrationTime": "4 JAM",
                     "reportingTime": "3 JAM",
-                    "notes": "",
-                    "totalUmrahDay": "10"
+                    "notes": "Transit Istanbul",
+                    "totalUmrahDay": "14"
                 },
                 {
-                    "type": "Arrival",
-                    "supplier": "Saudia",
-                    "departureHall": "JED North",
-                    "carrier": "SV",
-                    "carrierNo": "817",
-                    "fromCity": "JED",
-                    "toCity": "KUL",
-                    "departureDate": "2026-05-30",
+                    "type": "Transit",
+                    "supplier": "Turkish Airlines",
+                    "departureHall": "IST Int",
+                    "carrier": "TK",
+                    "carrierNo": "98",
+                    "fromCity": "IST",
+                    "toCity": "JED",
+                    "departureDate": "2026-06-23",
                     "departureTime": {
-                        "hour": "20",
-                        "minute": "00"
+                        "hour": "01",
+                        "minute": "15"
                     },
                     "arrivalTime": {
-                        "hour": "09",
+                        "hour": "04",
                         "minute": "30"
                     },
                     "registrationTime": "",
                     "reportingTime": "",
                     "notes": "",
                     "totalUmrahDay": ""
+                },
+                {
+                    "type": "Arrival",
+                    "supplier": "Turkish Airlines",
+                    "departureHall": "JED North",
+                    "carrier": "TK",
+                    "carrierNo": "99",
+                    "fromCity": "JED",
+                    "toCity": "KUL",
+                    "departureDate": "2026-07-04",
+                    "departureTime": {
+                        "hour": "18",
+                        "minute": "45"
+                    },
+                    "arrivalTime": {
+                        "hour": "10",
+                        "minute": "15"
+                    },
+                    "registrationTime": "",
+                    "reportingTime": "",
+                    "notes": "Via IST",
+                    "totalUmrahDay": ""
                 }
             ],
             "costs": {
                 "airfare": {
-                    "adultCost": 8000,
-                    "adultSell": 8500,
-                    "childCost": 7500,
-                    "childSell": 7800,
-                    "infantCost": 1000,
-                    "infantSell": 1000
+                    "adultCost": 4500,
+                    "adultSell": 4800,
+                    "childCost": 4000,
+                    "childSell": 4300,
+                    "infantCost": 600,
+                    "infantSell": 600
                 },
                 "tax": {
-                    "adultCost": 300,
-                    "adultSell": 300,
-                    "childCost": 300,
-                    "childSell": 300,
-                    "infantCost": 100,
-                    "infantSell": 100
+                    "adultCost": 250,
+                    "adultSell": 250,
+                    "childCost": 250,
+                    "childSell": 250,
+                    "infantCost": 50,
+                    "infantSell": 50
                 },
                 "ur": {
                     "adultCost": 0,
@@ -492,109 +308,17 @@
                     "infantSell": 0
                 },
                 "total": {
-                    "adultCost": 8300,
-                    "adultSell": 8800,
-                    "childCost": 7800,
-                    "childSell": 8100,
-                    "infantCost": 1100,
-                    "infantSell": 1100
+                    "adultCost": 4750,
+                    "adultSell": 5050,
+                    "childCost": 4250,
+                    "childSell": 4550,
+                    "infantCost": 650,
+                    "infantSell": 650
                 }
             },
-            "notes": "May VIP Group",
-            "createdAt": "2024-03-15T08:00:00Z"
+            "notes": "Turkey Plus Group",
+            "createdAt": "2026-01-01T08:00:00Z"
         }
     ],
-    "tentativeBookings": [
-        {
-            "id": "1707300051",
-            "name": "Tentative - MH Group April (Linked)",
-            "sectors": [
-                {
-                    "origin": "KUL",
-                    "destination": "JED",
-                    "departureDate": "2026-04-15"
-                },
-                {
-                    "origin": "JED",
-                    "destination": "KUL",
-                    "departureDate": "2026-04-26"
-                }
-            ],
-            "notes": "Linked to Pakej Umrah Economy",
-            "createdAt": "2024-01-15T09:00:00Z"
-        },
-        {
-            "id": "1707300052",
-            "name": "Tentative - VIP June (Linked)",
-            "sectors": [
-                {
-                    "origin": "KUL",
-                    "destination": "JED",
-                    "departureDate": "2026-06-20"
-                },
-                {
-                    "origin": "JED",
-                    "destination": "KUL",
-                    "departureDate": "2026-06-30"
-                }
-            ],
-            "notes": "Linked to Pakej Umrah VIP",
-            "createdAt": "2024-02-20T11:00:00Z"
-        },
-        {
-            "id": "1707300053",
-            "name": "Tentative - Unused Sample 1",
-            "sectors": [
-                {
-                    "origin": "KUL",
-                    "destination": "MED",
-                    "departureDate": "2024-08-01"
-                },
-                {
-                    "origin": "JED",
-                    "destination": "KUL",
-                    "departureDate": "2024-08-12"
-                }
-            ],
-            "notes": "Sample unused flight 1",
-            "createdAt": "2024-04-01T10:00:00Z"
-        },
-        {
-            "id": "1707300054",
-            "name": "Tentative - Unused Sample 2",
-            "sectors": [
-                {
-                    "origin": "KUL",
-                    "destination": "JED",
-                    "departureDate": "2024-12-15"
-                },
-                {
-                    "origin": "JED",
-                    "destination": "KUL",
-                    "departureDate": "2024-12-27"
-                }
-            ],
-            "notes": "Sample unused flight 2",
-            "createdAt": "2024-05-15T14:00:00Z"
-        },
-        {
-            "id": "1707300055",
-            "name": "Tentative - Converted Sample",
-            "sectors": [
-                {
-                    "origin": "KUL",
-                    "destination": "JED",
-                    "departureDate": "2025-01-10"
-                },
-                {
-                    "origin": "JED",
-                    "destination": "KUL",
-                    "departureDate": "2025-01-22"
-                }
-            ],
-            "notes": "This flight has been converted to confirmed.",
-            "status": "Converted",
-            "createdAt": "2024-06-01T09:30:00Z"
-        }
-    ]
+    "tentativeBookings": []
 }

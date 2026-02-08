@@ -2,7 +2,7 @@ import { persistedState } from './persistedState.svelte.js';
 import initialAirlines from '../data/airlines.json';
 
 // Create a persisted store for Airline Master Data
-const airlineState = persistedState('umrah_master_airlines', initialAirlines);
+const airlineState = persistedState('umrah_master_airlines_prod_v1', initialAirlines);
 
 export const airlineStore = {
     get airlines() { return airlineState.value.airlines; },

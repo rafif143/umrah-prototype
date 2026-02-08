@@ -2,7 +2,7 @@ import { persistedState } from './persistedState.svelte.js';
 import initialPackages from '../data/packages.json';
 
 // Create a persisted store for Packages
-const packageState = persistedState('umrah_packages_v7', initialPackages);
+const packageState = persistedState('umrah_packages_prod_v1', initialPackages);
 
 export const packageStore = {
     get packages() {

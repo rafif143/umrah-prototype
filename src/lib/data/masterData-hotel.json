@@ -1,216 +1,80 @@
-{
-    "hotels": [
-        {
-            "id": 1,
-            "name": "Makkah Clock Royal Tower, A Fairmont Hotel",
-            "shortName": "Fairmont Makkah",
-            "city": "Makkah",
-            "country": "Saudi Arabia",
-            "state": "Makkah Region",
-            "district": "Ajyad",
-            "distanceFromCity": "0m",
-            "starRating": 5,
-            "status": "Active",
-            "email": "makkah@fairmont.com",
-            "phoneNumber": "+966 12 571 7777",
-            "fax": "+966 12 571 7666",
-            "openingBalance": 0,
-            "type": "credit",
-            "address": "King Abdul Aziz Endowment, Ajyad Street, Makkah 24231, Saudi Arabia",
-            "isAllotment": true,
-            "cpName": "Ahmed Al-Harbi",
-            "cpDesignation": "Sales Manager",
-            "cpPhone": "+966 12 571 7000",
-            "cpMobile": "+966 50 123 4567",
-            "cpEmail": "ahmed.harbi@fairmont.com",
-            "cpFax": "+966 12 571 7001",
-            "roomTypes": [
-                {
-                    "id": "2",
-                    "name": "Double",
-                    "capacity": 2
-                },
-                {
-                    "id": "4",
-                    "name": "Quad",
-                    "capacity": 4
-                }
-            ],
-            "basis": [
-                {
-                    "id": "2",
-                    "name": "Bed & Breakfast"
-                }
-            ],
-            "foodTypes": [
-                {
-                    "id": "1",
-                    "name": "International"
-                }
-            ],
-            "hotelViews": [
-                {
-                    "id": "1",
-                    "name": "Kaaba View"
-                },
-                {
-                    "id": "2",
-                    "name": "Haram View"
-                }
-            ]
-        },
-        {
-            "id": 2,
-            "name": "Pullman Zamzam Madina",
-            "shortName": "Pullman Madina",
-            "city": "Madinah",
-            "country": "Saudi Arabia",
-            "state": "Madinah Region",
-            "district": "Central Area",
-            "distanceFromCity": "150m",
-            "starRating": 5,
-            "status": "Active",
-            "email": "pullman.madina@accor.com",
-            "phoneNumber": "+966 14 821 0500",
-            "fax": "+966 14 821 0501",
-            "openingBalance": 10000,
-            "type": "debit",
-            "address": "Amr Bin Al Jomooh Street, Central Area, Madinah 41411, Saudi Arabia",
-            "isAllotment": false,
-            "cpName": "Khalid Al-Otaibi",
-            "cpDesignation": "Reservations Manager",
-            "cpPhone": "+966 14 821 0600",
-            "cpMobile": "+966 55 987 6543",
-            "cpEmail": "khalid.otaibi@accor.com",
-            "cpFax": "+966 14 821 0601",
-            "roomTypes": [
-                {
-                    "id": "2",
-                    "name": "Double",
-                    "capacity": 2
-                },
-                {
-                    "id": "3",
-                    "name": "Triple",
-                    "capacity": 3
-                }
-            ],
-            "basis": [
-                {
-                    "id": "2",
-                    "name": "Bed & Breakfast"
-                },
-                {
-                    "id": "3",
-                    "name": "Half Board"
-                }
-            ],
-            "foodTypes": [
-                {
-                    "id": "3",
-                    "name": "Middle Eastern"
-                },
-                {
-                    "id": "1",
-                    "name": "International"
-                }
-            ],
-            "hotelViews": [
-                {
-                    "id": "3",
-                    "name": "City View"
-                }
-            ]
-        }
-    ],
-    "roomTypes": [
-        {
-            "id": "1",
-            "name": "Single",
-            "capacity": 1
-        },
-        {
-            "id": "2",
-            "name": "Double",
-            "capacity": 2
-        },
-        {
-            "id": "3",
-            "name": "Triple",
-            "capacity": 3
-        },
-        {
-            "id": "4",
-            "name": "Quad",
-            "capacity": 4
-        },
-        {
-            "id": "5",
-            "name": "Quint",
-            "capacity": 5
-        },
-        {
-            "id": "6",
-            "name": "Sharing",
-            "capacity": 6
-        }
-    ],
-    "basisTypes": [
-        {
-            "id": "1",
-            "name": "Room Only"
-        },
-        {
-            "id": "2",
-            "name": "Bed & Breakfast"
-        },
-        {
-            "id": "3",
-            "name": "Half Board"
-        },
-        {
-            "id": "4",
-            "name": "Full Board"
-        },
-        {
-            "id": "5",
-            "name": "All Inclusive"
-        }
-    ],
-    "foodTypes": [
-        {
-            "id": "1",
-            "name": "International"
-        },
-        {
-            "id": "2",
-            "name": "Asian"
-        },
-        {
-            "id": "3",
-            "name": "Middle Eastern"
-        },
-        {
-            "id": "4",
-            "name": "Local"
-        }
-    ],
-    "hotelViews": [
-        {
-            "id": "1",
-            "name": "Kaaba View"
-        },
-        {
-            "id": "2",
-            "name": "Haram View"
-        },
-        {
-            "id": "3",
-            "name": "City View"
-        },
-        {
-            "id": "4",
-            "name": "No View"
-        }
-    ]
-}
+[
+    {
+        "id": "h-makkah-001",
+        "name": "Swissotel Makkah",
+        "city": "Makkah",
+        "starRating": 5,
+        "location": "Abraj Al Bait",
+        "distanceToHaram": "0m",
+        "features": [
+            "Direct Haram Access",
+            "Restaurant",
+            "WiFi"
+        ]
+    },
+    {
+        "id": "h-makkah-002",
+        "name": "Pullman Zamzam Makkah",
+        "city": "Makkah",
+        "starRating": 5,
+        "location": "Abraj Al Bait",
+        "distanceToHaram": "0m",
+        "features": [
+            "Kaaba View",
+            "Room Service",
+            "Prayer Hall"
+        ]
+    },
+    {
+        "id": "h-makkah-003",
+        "name": "Anjum Hotel Makkah",
+        "city": "Makkah",
+        "starRating": 5,
+        "location": "Jabal Al Kaaba",
+        "distanceToHaram": "100m",
+        "features": [
+            "Spacious Rooms",
+            "Tunnel Access",
+            "Buffet"
+        ]
+    },
+    {
+        "id": "h-madinah-001",
+        "name": "Anwar Al Madinah Mövenpick",
+        "city": "Madinah",
+        "starRating": 5,
+        "location": "Central Area",
+        "distanceToHaram": "50m",
+        "features": [
+            "Direct Access",
+            "Shopping Mall",
+            "Executive Lounge"
+        ]
+    },
+    {
+        "id": "h-madinah-002",
+        "name": "Shahd Al Madinah",
+        "city": "Madinah",
+        "starRating": 5,
+        "location": "Central Area",
+        "distanceToHaram": "80m",
+        "features": [
+            "Modern Design",
+            "Restaurant",
+            "Concierge"
+        ]
+    },
+    {
+        "id": "h-madinah-003",
+        "name": "Rawda Royal Inn",
+        "city": "Madinah",
+        "starRating": 4,
+        "location": "Central Area",
+        "distanceToHaram": "150m",
+        "features": [
+            "Affordable",
+            "Clean",
+            "Near Ladies Gate"
+        ]
+    }
+]

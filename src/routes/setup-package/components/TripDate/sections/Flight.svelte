@@ -26,6 +26,35 @@
 	// Modal state
 	let showPickerModal = $state(false);
 	let showDetailModal = $state(false);
+
+	// Sync flight from activeTrip
+	$effect(() => {
+		if (pkgState.flightList.length === 0 && pkgState.activeTrip?.flightId) {
+			const flightId = pkgState.activeTrip.flightId.toString();
+			const storedFlight =
+				flightStorageStore.confirmBookings.find((b) => b.id?.toString() === flightId) ||
+				flightStorageStore.tentativeBookings.find((b) => b.id?.toString() === flightId);
+
+			if (storedFlight) {
+				const isConfirm = !!storedFlight.travelAgent; // Heuristic for confirm booking
+				const flightData = {
+					id: Date.now().toString(),
+					storageId: storedFlight.id,
+					name: isConfirm ? storedFlight.travelAgent : storedFlight.name,
+					type: isConfirm ? 'confirm' : 'tentative',
+					airline: storedFlight.airline || null,
+					totalSeats: storedFlight.totalSeats || 0,
+					pnrs: storedFlight.pnrs || [],
+					sectors: storedFlight.sectors || [],
+					pnrGroups: storedFlight.pnrGroups,
+					notes: storedFlight.notes
+				};
+				// Use untracked to avoid infinite loops if we were reading flightList (though we check length === 0)
+				pkgState.flightList = [flightData];
+			}
+		}
+	});
+
 	// NEW: Tentative Form state
 	let showTentativeForm = $state(false);
 	let tentativeFormData = $state({
