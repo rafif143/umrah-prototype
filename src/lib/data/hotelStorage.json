@@ -1,0 +1,885 @@
+{
+    "hotels": [
+        {
+            "hotelId": "h-makkah-001",
+            "hotelName": "Swissotel Makkah",
+            "city": "Makkah",
+            "starRating": 5,
+            "contracts": [
+                {
+                    "id": "contract-001",
+                    "name": "Kontrak 1",
+                    "contractPeriod": {
+                        "from": "2026-03-01",
+                        "to": "2026-03-15"
+                    },
+                    "flatRatePerRoomPerNight": 500,
+                    "sellingPricePerRoomPerNight": 650,
+                    "totalRooms": 50,
+                    "rooms": [
+                        {
+                            "id": "R001",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R002",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R003",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R004",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R005",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R006",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R007",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R008",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R009",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R010",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R011",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R012",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R013",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R014",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R015",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R016",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R017",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R018",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R019",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R020",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R021",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R022",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R023",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R024",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R025",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R026",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R027",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R028",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R029",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R030",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R031",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R032",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R033",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R034",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R035",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R036",
+                            "type": "quint",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R037",
+                            "type": "quint",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R038",
+                            "type": "quint",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R039",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R040",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R041",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R042",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R043",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R044",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R045",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R046",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R047",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R048",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R049",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R050",
+                            "type": "double",
+                            "originalType": "double"
+                        }
+                    ],
+                    "waves": [
+                        {
+                            "id": "w-001-1",
+                            "name": "Gelombang 1",
+                            "checkIn": "2026-03-01",
+                            "checkOut": "2026-03-04",
+                            "roomsUsed": 25,
+                            "roomIds": [
+                                "R001",
+                                "R002",
+                                "R003",
+                                "R004",
+                                "R005",
+                                "R006",
+                                "R007",
+                                "R008",
+                                "R009",
+                                "R010",
+                                "R021",
+                                "R022",
+                                "R023",
+                                "R024",
+                                "R025",
+                                "R039",
+                                "R040",
+                                "R041",
+                                "R042",
+                                "R043",
+                                "R036",
+                                "R037",
+                                "R038",
+                                "R011",
+                                "R012"
+                            ]
+                        },
+                        {
+                            "id": "w-001-2",
+                            "name": "Gelombang 2",
+                            "checkIn": "2026-03-11",
+                            "checkOut": "2026-03-15",
+                            "roomsUsed": 50,
+                            "roomIds": [
+                                "R001",
+                                "R002",
+                                "R003",
+                                "R004",
+                                "R005",
+                                "R006",
+                                "R007",
+                                "R008",
+                                "R009",
+                                "R010",
+                                "R011",
+                                "R012",
+                                "R013",
+                                "R014",
+                                "R015",
+                                "R016",
+                                "R017",
+                                "R018",
+                                "R019",
+                                "R020",
+                                "R021",
+                                "R022",
+                                "R023",
+                                "R024",
+                                "R025",
+                                "R026",
+                                "R027",
+                                "R028",
+                                "R029",
+                                "R030",
+                                "R031",
+                                "R032",
+                                "R033",
+                                "R034",
+                                "R035",
+                                "R036",
+                                "R037",
+                                "R038",
+                                "R039",
+                                "R040",
+                                "R041",
+                                "R042",
+                                "R043",
+                                "R044",
+                                "R045",
+                                "R046",
+                                "R047",
+                                "R048",
+                                "R049",
+                                "R050"
+                            ]
+                        }
+                    ],
+                    "isOverflow": false,
+                    "notes": "Main Makkah contract, peak season March. R036-R038 dimanipulasi dari double ke quint."
+                },
+                {
+                    "id": "contract-004",
+                    "name": "Kontrak 2",
+                    "contractPeriod": {
+                        "from": "2026-04-01",
+                        "to": "2026-04-10"
+                    },
+                    "flatRatePerRoomPerNight": 480,
+                    "sellingPricePerRoomPerNight": 630,
+                    "totalRooms": 30,
+                    "rooms": [
+                        {
+                            "id": "R001",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R002",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R003",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R004",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R005",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R006",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R007",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R008",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R009",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R010",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R011",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R012",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R013",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R014",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R015",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R016",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R017",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R018",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R019",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R020",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R021",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R022",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R023",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R024",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R025",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R026",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R027",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R028",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R029",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R030",
+                            "type": "double",
+                            "originalType": "double"
+                        }
+                    ],
+                    "waves": [
+                        {
+                            "id": "w-004-1",
+                            "name": "Gelombang 1",
+                            "checkIn": "2026-04-01",
+                            "checkOut": "2026-04-10",
+                            "roomsUsed": 30,
+                            "roomIds": [
+                                "R001",
+                                "R002",
+                                "R003",
+                                "R004",
+                                "R005",
+                                "R006",
+                                "R007",
+                                "R008",
+                                "R009",
+                                "R010",
+                                "R011",
+                                "R012",
+                                "R013",
+                                "R014",
+                                "R015",
+                                "R016",
+                                "R017",
+                                "R018",
+                                "R019",
+                                "R020",
+                                "R021",
+                                "R022",
+                                "R023",
+                                "R024",
+                                "R025",
+                                "R026",
+                                "R027",
+                                "R028",
+                                "R029",
+                                "R030"
+                            ]
+                        }
+                    ],
+                    "isOverflow": false,
+                    "notes": "April follow-up contract"
+                }
+            ]
+        },
+        {
+            "hotelId": "h-madinah-001",
+            "hotelName": "Anwar Al Madinah Mövenpick",
+            "city": "Madinah",
+            "starRating": 5,
+            "contracts": [
+                {
+                    "id": "contract-002",
+                    "name": "Kontrak 1",
+                    "contractPeriod": {
+                        "from": "2026-03-03",
+                        "to": "2026-03-12"
+                    },
+                    "flatRatePerRoomPerNight": 400,
+                    "sellingPricePerRoomPerNight": 520,
+                    "totalRooms": 30,
+                    "rooms": [
+                        {
+                            "id": "R001",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R002",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R003",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R004",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R005",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R006",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R007",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R008",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R009",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R010",
+                            "type": "quad",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R011",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R012",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R013",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R014",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R015",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R016",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R017",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R018",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R019",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R020",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R021",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R022",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R023",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R024",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R025",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R026",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R027",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R028",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R029",
+                            "type": "double",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R030",
+                            "type": "double",
+                            "originalType": "double"
+                        }
+                    ],
+                    "waves": [
+                        {
+                            "id": "w-002-1",
+                            "name": "Gelombang 1",
+                            "checkIn": "2026-03-03",
+                            "checkOut": "2026-03-12",
+                            "roomsUsed": 28,
+                            "roomIds": [
+                                "R001",
+                                "R002",
+                                "R003",
+                                "R004",
+                                "R005",
+                                "R006",
+                                "R007",
+                                "R008",
+                                "R011",
+                                "R012",
+                                "R013",
+                                "R014",
+                                "R015",
+                                "R016",
+                                "R017",
+                                "R018",
+                                "R019",
+                                "R021",
+                                "R022",
+                                "R023",
+                                "R024",
+                                "R025",
+                                "R026",
+                                "R027",
+                                "R028",
+                                "R029",
+                                "R030",
+                                "R010"
+                            ]
+                        }
+                    ],
+                    "isOverflow": false,
+                    "notes": "Madinah single wave contract"
+                }
+            ]
+        },
+        {
+            "hotelId": "h-makkah-002",
+            "hotelName": "Pullman Zamzam Makkah",
+            "city": "Makkah",
+            "starRating": 5,
+            "contracts": [
+                {
+                    "id": "contract-003",
+                    "name": "Kontrak 1 (Overflow)",
+                    "contractPeriod": {
+                        "from": "2026-03-01",
+                        "to": "2026-03-15"
+                    },
+                    "flatRatePerRoomPerNight": 650,
+                    "sellingPricePerRoomPerNight": 800,
+                    "totalRooms": 10,
+                    "rooms": [
+                        {
+                            "id": "R001",
+                            "type": "quint",
+                            "originalType": "quint"
+                        },
+                        {
+                            "id": "R002",
+                            "type": "quint",
+                            "originalType": "quint"
+                        },
+                        {
+                            "id": "R003",
+                            "type": "quint",
+                            "originalType": "quint"
+                        },
+                        {
+                            "id": "R004",
+                            "type": "quint",
+                            "originalType": "quint"
+                        },
+                        {
+                            "id": "R005",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R006",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R007",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R008",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R009",
+                            "type": "triple",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R010",
+                            "type": "triple",
+                            "originalType": "triple"
+                        }
+                    ],
+                    "waves": [
+                        {
+                            "id": "w-003-1",
+                            "name": "Gelombang 1",
+                            "checkIn": "2026-03-11",
+                            "checkOut": "2026-03-15",
+                            "roomsUsed": 10,
+                            "roomIds": [
+                                "R001",
+                                "R002",
+                                "R003",
+                                "R004",
+                                "R005",
+                                "R006",
+                                "R007",
+                                "R008",
+                                "R009",
+                                "R010"
+                            ]
+                        }
+                    ],
+                    "isOverflow": true,
+                    "overflowFrom": "Swissotel Makkah",
+                    "notes": "Overflow dari Swissotel Makkah"
+                }
+            ]
+        }
+    ]
+}
