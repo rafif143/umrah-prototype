@@ -571,24 +571,16 @@
                     ],
                     "isOverflow": false,
                     "notes": "April follow-up contract"
-                }
-            ]
-        },
-        {
-            "hotelId": "h-madinah-001",
-            "hotelName": "Anwar Al Madinah Mövenpick",
-            "city": "Madinah",
-            "starRating": 5,
-            "contracts": [
+                },
                 {
-                    "id": "contract-002",
-                    "name": "Kontrak 1",
+                    "id": "contract-005",
+                    "name": "Kontrak Kosong",
                     "contractPeriod": {
-                        "from": "2026-03-03",
-                        "to": "2026-03-12"
+                        "from": "2026-05-01",
+                        "to": "2026-05-10"
                     },
-                    "flatRatePerRoomPerNight": 400,
-                    "sellingPricePerRoomPerNight": 520,
+                    "flatRatePerRoomPerNight": 450,
+                    "sellingPricePerRoomPerNight": 600,
                     "totalRooms": 30,
                     "rooms": [
                         {
@@ -744,140 +736,18 @@
                     ],
                     "waves": [
                         {
-                            "id": "w-002-1",
+                            "id": "w-005-1",
                             "name": "Gelombang 1",
-                            "checkIn": "2026-03-03",
-                            "checkOut": "2026-03-12",
-                            "roomsUsed": 28,
-                            "roomIds": [
-                                "R001",
-                                "R002",
-                                "R003",
-                                "R004",
-                                "R005",
-                                "R006",
-                                "R007",
-                                "R008",
-                                "R011",
-                                "R012",
-                                "R013",
-                                "R014",
-                                "R015",
-                                "R016",
-                                "R017",
-                                "R018",
-                                "R019",
-                                "R021",
-                                "R022",
-                                "R023",
-                                "R024",
-                                "R025",
-                                "R026",
-                                "R027",
-                                "R028",
-                                "R029",
-                                "R030",
-                                "R010"
-                            ]
+                            "checkIn": "2026-05-01",
+                            "checkOut": "2026-05-10",
+                            "roomsUsed": 0,
+                            "roomIds": [],
+                            "color": "#9ca3af",
+                            "flatRate": 450
                         }
                     ],
                     "isOverflow": false,
-                    "notes": "Madinah single wave contract"
-                }
-            ]
-        },
-        {
-            "hotelId": "h-makkah-002",
-            "hotelName": "Pullman Zamzam Makkah",
-            "city": "Makkah",
-            "starRating": 5,
-            "contracts": [
-                {
-                    "id": "contract-003",
-                    "name": "Kontrak 1 (Overflow)",
-                    "contractPeriod": {
-                        "from": "2026-03-01",
-                        "to": "2026-03-15"
-                    },
-                    "flatRatePerRoomPerNight": 650,
-                    "sellingPricePerRoomPerNight": 800,
-                    "totalRooms": 10,
-                    "rooms": [
-                        {
-                            "id": "R001",
-                            "type": "quint",
-                            "originalType": "quint"
-                        },
-                        {
-                            "id": "R002",
-                            "type": "quint",
-                            "originalType": "quint"
-                        },
-                        {
-                            "id": "R003",
-                            "type": "quint",
-                            "originalType": "quint"
-                        },
-                        {
-                            "id": "R004",
-                            "type": "quint",
-                            "originalType": "quint"
-                        },
-                        {
-                            "id": "R005",
-                            "type": "triple",
-                            "originalType": "triple"
-                        },
-                        {
-                            "id": "R006",
-                            "type": "triple",
-                            "originalType": "triple"
-                        },
-                        {
-                            "id": "R007",
-                            "type": "triple",
-                            "originalType": "triple"
-                        },
-                        {
-                            "id": "R008",
-                            "type": "triple",
-                            "originalType": "triple"
-                        },
-                        {
-                            "id": "R009",
-                            "type": "triple",
-                            "originalType": "triple"
-                        },
-                        {
-                            "id": "R010",
-                            "type": "triple",
-                            "originalType": "triple"
-                        }
-                    ],
-                    "waves": [
-                        {
-                            "id": "w-003-1",
-                            "name": "Gelombang 1",
-                            "checkIn": "2026-03-11",
-                            "checkOut": "2026-03-15",
-                            "roomsUsed": 10,
-                            "roomIds": [
-                                "R001",
-                                "R002",
-                                "R003",
-                                "R004",
-                                "R005",
-                                "R006",
-                                "R007",
-                                "R008",
-                                "R009",
-                                "R010"
-                            ]
-                        }
-                    ],
-                    "isOverflow": true,
-                    "overflowFrom": "Swissotel Makkah",
-                    "notes": "Overflow dari Swissotel Makkah"
+                    "notes": "Kontrak kosong untuk testing manipulasi"
                 }
             ]
         }

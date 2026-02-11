@@ -9,6 +9,8 @@
 	import AddContractModal from './AddContractModal.svelte';
 	import { slide } from 'svelte/transition';
 
+	import { sidebarState } from '$lib/runes/sidebarState.svelte.js';
+
 	let searchQuery = $state('');
 	let expandedHotelId = $state(null);
 	let expandedContractId = $state(null);
@@ -54,7 +56,10 @@
 <div class="flex min-h-screen bg-gray-50 font-sans">
 	<Sidebar activePage="/storage/hotel" />
 
-	<main class="ml-[230px] flex flex-1 flex-col overflow-hidden px-6 py-6">
+	<main
+		class="flex flex-1 flex-col overflow-hidden px-6 py-6 transition-all duration-300"
+		style="margin-left: {sidebarState.isCollapsed ? '72px' : '230px'}"
+	>
 		<!-- Header -->
 		<div class="mb-4 flex items-center justify-between">
 			<div class="flex items-center gap-3">
@@ -188,7 +193,7 @@
 												class="space-y-4 border-t border-gray-100 px-5 py-4"
 												transition:slide={{ duration: 200 }}
 											>
-												<ContractDetail {contract} />
+												<ContractDetail {contract} hotelId={hotel.hotelId} />
 												<WaveTimeline {contract} />
 												{#if contract.notes}
 													<div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">

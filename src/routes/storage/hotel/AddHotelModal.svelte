@@ -32,8 +32,13 @@
 			hotelId: selectedHotel.id,
 			hotelName: selectedHotel.name,
 			city: selectedHotel.city,
-			starRating: selectedHotel.starRating
+			starRating: selectedHotel.starRating,
+			location: selectedHotel.location,
+			distanceToHaram: selectedHotel.distanceToHaram,
+			features: selectedHotel.features
 		});
+		// Optional: simple alert for now as requested in plan
+		// alert('Hotel added successfully!');
 		resetAndClose();
 	}
 

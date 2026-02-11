@@ -44,8 +44,8 @@
 		return -1;
 	}
 
-	// Grayscale shades per wave
-	const waveShades = ['#374151', '#6b7280', '#9ca3af', '#d1d5db'];
+	// Grayscale shades per wave - REMOVED in favor of custom colors
+	// const waveShades = ['#374151', '#6b7280', '#9ca3af', '#d1d5db'];
 </script>
 
 <div class="rounded-lg border" style="border-color: #e5e7eb; background: white;">
@@ -67,7 +67,7 @@
 					<span class="text-[8px] font-medium" style="color: #9ca3af;">{formatDay(date)}</span>
 					<div
 						class="h-5 w-full rounded-sm"
-						style="background: {wIdx >= 0 ? waveShades[wIdx % waveShades.length] : '#f3f4f6'};"
+						style="background: {wIdx >= 0 ? contract.waves[wIdx]?.color || '#374151' : '#f3f4f6'};"
 					></div>
 				</div>
 			{/each}
@@ -82,7 +82,7 @@
 				>
 					<span
 						class="h-2.5 w-2.5 shrink-0 rounded-sm"
-						style="background: {waveShades[i % waveShades.length]};"
+						style="background: {wave.color || '#374151'};"
 					></span>
 					<span class="font-semibold" style="color: #374151;">{wave.name}</span>
 					<span style="color: #9ca3af;">

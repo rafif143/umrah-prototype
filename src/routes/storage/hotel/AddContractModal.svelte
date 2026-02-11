@@ -1,5 +1,5 @@
 <script>
-	import { X, Plus, Trash2, Calendar } from 'lucide-svelte';
+	import { X, Plus, Trash2, Calendar, Palette } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
 	import { hotelStorageStore } from '$lib/stores/hotelStorageStore.svelte.js';
 
@@ -9,8 +9,6 @@
 	let contractName = $state('');
 	let dateFrom = $state('');
 	let dateTo = $state('');
-	let flatRate = $state('');
-	let sellingPrice = $state('');
 	let notes = $state('');
 
 	// --- Room Capacities ---
@@ -27,6 +25,8 @@
 	let newWaveCheckIn = $state('');
 	let newWaveCheckOut = $state('');
 	let newWaveRoomCount = $state('');
+	let newWaveColor = $state('#972395'); // Default purple
+	let newWaveFlatRate = $state('');
 
 	function addWave() {
 		if (!newWaveName || !newWaveCheckIn || !newWaveCheckOut || !newWaveRoomCount) return;
@@ -40,13 +40,17 @@
 				name: newWaveName,
 				checkIn: newWaveCheckIn,
 				checkOut: newWaveCheckOut,
-				roomCount: count
+				roomCount: count,
+				color: newWaveColor,
+				flatRate: parseFloat(newWaveFlatRate) || 0
 			}
 		];
 		newWaveName = '';
 		newWaveCheckIn = '';
 		newWaveCheckOut = '';
 		newWaveRoomCount = '';
+		newWaveColor = '#972395';
+		newWaveFlatRate = '';
 	}
 
 	function removeWave(id) {
@@ -87,7 +91,10 @@
 				name: w.name,
 				checkIn: w.checkIn,
 				checkOut: w.checkOut,
+				checkOut: w.checkOut,
 				roomsUsed: w.roomCount,
+				color: w.color,
+				flatRate: w.flatRate,
 				roomIds
 			};
 		});
@@ -102,8 +109,6 @@
 		const contract = {
 			name: contractName,
 			contractPeriod: { from: dateFrom, to: dateTo },
-			flatRatePerRoomPerNight: parseFloat(flatRate) || 0,
-			sellingPricePerRoomPerNight: parseFloat(sellingPrice) || 0,
 			totalRooms,
 			rooms,
 			waves: generatedWaves,
@@ -119,8 +124,6 @@
 		contractName = '';
 		dateFrom = '';
 		dateTo = '';
-		flatRate = '';
-		sellingPrice = '';
 		notes = '';
 		doubleCount = 0;
 		tripleCount = 0;
@@ -131,6 +134,7 @@
 		newWaveCheckIn = '';
 		newWaveCheckOut = '';
 		newWaveRoomCount = '';
+		newWaveFlatRate = '';
 		onClose();
 	}
 </script>
@@ -211,33 +215,7 @@
 					</div>
 				</div>
 
-				<!-- Pricing -->
-				<div class="grid grid-cols-2 gap-3">
-					<div>
-						<label for="flatRate" class="mb-1.5 block text-xs font-medium text-gray-600"
-							>Flat Rate / Room / Night</label
-						>
-						<input
-							type="number"
-							id="flatRate"
-							placeholder="0"
-							class="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-							bind:value={flatRate}
-						/>
-					</div>
-					<div>
-						<label for="sellingPrice" class="mb-1.5 block text-xs font-medium text-gray-600"
-							>Selling Price / Room / Night</label
-						>
-						<input
-							type="number"
-							id="sellingPrice"
-							placeholder="0"
-							class="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-							bind:value={sellingPrice}
-						/>
-					</div>
-				</div>
+				<!-- Pricing moved to Wave -->
 
 				<!-- Room Capacity -->
 				<div>
@@ -320,13 +298,24 @@
 										<div class="text-xs text-gray-500">
 											{wave.checkIn} → {wave.checkOut} · {wave.roomCount} kamar
 										</div>
+										<div class="mt-0.5 text-[10px] text-gray-400">
+											Base: <span class="font-medium text-gray-600"
+												>{wave.flatRate?.toLocaleString()}</span
+											>
+										</div>
 									</div>
-									<button
-										class="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
-										onclick={() => removeWave(wave.id)}
-									>
-										<Trash2 size={14} />
-									</button>
+									<div class="flex items-center gap-2">
+										<div
+											class="h-4 w-4 rounded-full border border-gray-200"
+											style="background-color: {wave.color}"
+										></div>
+										<button
+											class="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
+											onclick={() => removeWave(wave.id)}
+										>
+											<Trash2 size={14} />
+										</button>
+									</div>
 								</div>
 							{/each}
 						</div>
@@ -350,7 +339,7 @@
 								bind:value={newWaveRoomCount}
 							/>
 						</div>
-						<div class="grid grid-cols-2 gap-2">
+						<div class="grid grid-cols-[1fr_1fr_auto] gap-2">
 							<input
 								type="date"
 								class="rounded-md border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#972395]"
@@ -360,6 +349,22 @@
 								type="date"
 								class="rounded-md border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#972395]"
 								bind:value={newWaveCheckOut}
+							/>
+							<div class="flex items-center rounded-md border border-gray-200 bg-white px-2">
+								<input
+									type="color"
+									class="h-6 w-6 cursor-pointer border-none bg-transparent p-0"
+									bind:value={newWaveColor}
+									title="Pilih warna gelombang"
+								/>
+							</div>
+						</div>
+						<div class="grid grid-cols-2 gap-2">
+							<input
+								type="number"
+								placeholder="Flat Rate"
+								class="rounded-md border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#972395]"
+								bind:value={newWaveFlatRate}
 							/>
 						</div>
 						<button
