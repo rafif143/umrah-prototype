@@ -1,6 +1,7 @@
 <script>
-	import { Plus, Edit, X, Save } from 'lucide-svelte';
+	import { Plus, Edit, X, Save, Star, MapPin, Navigation } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
+	import MultiSelect from '$lib/components/MultiSelect.svelte';
 
 	/** @type {{ state: import('../../packageState.svelte.js').PackageState }} */
 	let { state } = $props();
@@ -48,13 +49,34 @@
 						{#each activeVariant.hotels as item, index}
 							<tr class="transition-colors hover:bg-gray-50">
 								<td class="px-4 py-3 font-medium text-gray-900">{item.city}</td>
-								<td class="px-4 py-3 text-gray-600">{item.hotel}</td>
 								<td class="px-4 py-3">
-									<span
-										class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700"
-									>
-										{item.roomType}
-									</span>
+									<div class="flex items-center gap-2">
+										<span class="text-gray-700">{item.hotel}</span>
+										{#if item.selectedHotelData?.starRating}
+											<div class="flex gap-0.5">
+												{#each Array(item.selectedHotelData.starRating) as _}
+													<Star size={10} class="fill-yellow-400 text-yellow-400" />
+												{/each}
+											</div>
+										{/if}
+									</div>
+								</td>
+								<td class="px-4 py-3">
+									<div class="flex flex-wrap gap-1">
+										{#if Array.isArray(item.roomType)}
+											{#each item.roomType as rt}
+												<span
+													class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700"
+													>{rt}</span
+												>
+											{/each}
+										{:else}
+											<span
+												class="inline-flex items-center rounded-full bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700"
+												>{item.roomType}</span
+											>
+										{/if}
+									</div>
 								</td>
 								<td class="px-4 py-3 text-gray-600">{item.checkIn}</td>
 								<td class="px-4 py-3 text-gray-600">{item.checkOut}</td>
@@ -141,6 +163,7 @@
 							<select
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.accommodationForm.city}
+								onchange={() => state.onAccommodationCityChange()}
 							>
 								<option value="">Select city</option>
 								<option value="Makkah">Makkah</option>
@@ -154,13 +177,16 @@
 							>
 							<select
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-								bind:value={state.accommodationForm.hotel}
+								value={state.accommodationForm.hotelId}
+								onchange={(e) => state.selectHotelForAccommodation(e.target.value)}
+								disabled={!state.accommodationForm.city}
 							>
-								<option value="">Select hotel</option>
-								<option value="Al Safwah Royale Orchid">Al Safwah Royale Orchid</option>
-								<option value="Hilton Makkah">Hilton Makkah</option>
-								<option value="Swissotel Makkah">Swissotel Makkah</option>
-								<option value="Oberoi Madina">Oberoi Madina</option>
+								<option value=""
+									>{state.accommodationForm.city ? 'Select hotel' : 'Select city first'}</option
+								>
+								{#each state.hotelsForSelectedCity as hotel}
+									<option value={hotel.hotelId}>{hotel.hotelName}</option>
+								{/each}
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
@@ -177,6 +203,60 @@
 							</select>
 						</div>
 					</div>
+
+					<!-- Hotel Detail Card -->
+					{#if state.accommodationForm.selectedHotelData}
+						{@const hd = state.accommodationForm.selectedHotelData}
+						<div
+							class="mt-4 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-white p-4 transition-all"
+							transition:slide={{ duration: 200 }}
+						>
+							<div class="flex items-start justify-between">
+								<div class="flex items-center gap-3">
+									<div
+										class="flex h-10 w-10 items-center justify-center rounded-full bg-[#972395]/10 text-[#972395]"
+									>
+										<Star size={18} />
+									</div>
+									<div>
+										<div class="flex items-center gap-2">
+											<h4 class="text-sm font-semibold text-gray-900">{hd.hotelName}</h4>
+											<div class="flex gap-0.5">
+												{#each Array(hd.starRating) as _}
+													<Star size={12} class="fill-yellow-400 text-yellow-400" />
+												{/each}
+											</div>
+										</div>
+										<div class="mt-1 flex items-center gap-3 text-xs text-gray-500">
+											{#if hd.location}
+												<span class="flex items-center gap-1">
+													<MapPin size={10} />
+													{hd.location}
+												</span>
+											{/if}
+											{#if hd.distanceToHaram}
+												<span class="flex items-center gap-1">
+													<Navigation size={10} />
+													{hd.distanceToHaram} from Haram
+												</span>
+											{/if}
+										</div>
+									</div>
+								</div>
+							</div>
+							{#if hd.features && hd.features.length > 0}
+								<div class="mt-3 flex flex-wrap gap-1.5">
+									{#each hd.features as feature}
+										<span
+											class="inline-flex items-center rounded-full bg-white px-2.5 py-1 text-[11px] font-medium text-purple-700 shadow-sm ring-1 ring-purple-200"
+										>
+											{feature}
+										</span>
+									{/each}
+								</div>
+							{/if}
+						</div>
+					{/if}
 				</div>
 
 				<!-- Section 2: Room & Stay Details -->
@@ -191,19 +271,12 @@
 					</div>
 					<div class="grid grid-cols-4 gap-4">
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700"
-								>Room Type <span class="text-red-500">*</span></label
-							>
-							<select
-								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-								bind:value={state.accommodationForm.roomType}
-							>
-								<option value="">Select room type</option>
-								<option value="DBL">DBL</option>
-								<option value="TWN">TWN</option>
-								<option value="TRP">TRP</option>
-								<option value="QUD">QUD</option>
-							</select>
+							<MultiSelect
+								label="Room Type *"
+								options={['DBL', 'TWN', 'TRP', 'QUD']}
+								selected={state.accommodationForm.roomType}
+								onchange={(val) => (state.accommodationForm.roomType = val)}
+							/>
 						</div>
 						<div class="flex flex-col gap-1.5">
 							<label class="text-[13px] font-medium text-gray-700"

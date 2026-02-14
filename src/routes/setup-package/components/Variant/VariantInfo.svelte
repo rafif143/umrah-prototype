@@ -50,20 +50,6 @@
 		/>
 	</div>
 
-	<!-- Room Configuration -->
-	<div>
-		<label class="mb-1 block text-sm font-medium text-gray-700">Room Configuration</label>
-		<select
-			bind:value={activeVariant.type}
-			class="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#972395] focus:ring-[#972395]"
-		>
-			<option value="Quad">Quad</option>
-			<option value="Triple">Triple</option>
-			<option value="Double">Double</option>
-			<option value="Single">Single</option>
-		</select>
-	</div>
-
 	<!-- Pax Capacity -->
 	<div>
 		<label class="mb-1 block text-sm font-medium text-gray-700">Pax Capacity</label>

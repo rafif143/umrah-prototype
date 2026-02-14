@@ -1,5 +1,6 @@
 import { Info, FileText, CheckCircle, HelpCircle, Image, Map, Plane, Hotel, Users, CreditCard, Package } from 'lucide-svelte';
 import { flightStorageStore } from '$lib/stores/flightStorageStore.svelte.js';
+import { hotelStorageStore } from '$lib/stores/hotelStorageStore.svelte.js';
 
 export class PackageState {
     // Top Level Tabs
@@ -133,8 +134,10 @@ export class PackageState {
     accommodationForm = $state({
         city: '',
         hotel: '',
+        hotelId: '',
+        selectedHotelData: null, // { hotelName, city, starRating, location, distanceToHaram, features }
         supplier: '',
-        roomType: '',
+        roomType: [],
         checkIn: '',
         checkOut: '',
         nights: 0,
@@ -150,10 +153,46 @@ export class PackageState {
         childCost: 0, childSell: 0, childOrs: 0, childTotal: 0
     });
 
+    // Get hotels filtered by selected city
+    get hotelsForSelectedCity() {
+        const city = this.accommodationForm.city;
+        if (!city) return [];
+        return hotelStorageStore.hotels.filter(h => h.city === city);
+    }
+
+    // Select hotel from storage and auto-fill details
+    selectHotelForAccommodation(hotelId) {
+        const hotel = hotelStorageStore.hotels.find(h => h.hotelId === hotelId);
+        if (hotel) {
+            this.accommodationForm.hotel = hotel.hotelName;
+            this.accommodationForm.hotelId = hotel.hotelId;
+            this.accommodationForm.selectedHotelData = {
+                hotelName: hotel.hotelName,
+                city: hotel.city,
+                starRating: hotel.starRating || 0,
+                location: hotel.location || '',
+                distanceToHaram: hotel.distanceToHaram || '',
+                features: hotel.features || []
+            };
+        } else {
+            this.accommodationForm.hotel = '';
+            this.accommodationForm.hotelId = '';
+            this.accommodationForm.selectedHotelData = null;
+        }
+    }
+
+    // When city changes, reset hotel selection
+    onAccommodationCityChange() {
+        this.accommodationForm.hotel = '';
+        this.accommodationForm.hotelId = '';
+        this.accommodationForm.selectedHotelData = null;
+    }
+
     resetAccommodationForm() {
         this.editingAccommodationIndex = null;
         this.accommodationForm = {
-            city: '', hotel: '', supplier: '', roomType: '', checkIn: '', checkOut: '', nights: 0,
+            city: '', hotel: '', hotelId: '', selectedHotelData: null,
+            supplier: '', roomType: [], checkIn: '', checkOut: '', nights: 0,
             basis: '', rateCode: '', packageMeals: '', hotelView: '',
             vat: '', municipalityTax: '', vatPercent: 15, municipalityTaxPercent: 5,
             adultCost: 0, adultSell: 0, adultOrs: 0, adultTotal: 0,
