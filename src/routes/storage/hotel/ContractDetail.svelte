@@ -1,6 +1,6 @@
 <script>
 	import { hotelStorageStore } from '$lib/stores/hotelStorageStore.svelte.js';
-	import { Palette, NotebookPen } from 'lucide-svelte';
+	import { Palette, NotebookPen, Briefcase, Calendar } from 'lucide-svelte';
 	import WaveDetailDrawer from './WaveDetailDrawer.svelte';
 	import RoomDetailModal from './RoomDetailModal.svelte';
 	import BookingAllocationDrawer from './BookingAllocationDrawer.svelte';
@@ -344,23 +344,57 @@
 	class="p-2 transition-all duration-300"
 	style="margin-right: {showAllocationDrawer ? '320px' : '0'}"
 >
-	<!-- Wave tabs -->
-	<div class="mb-3 flex items-center gap-1.5">
-		<span class="mr-1 text-[10px] font-semibold uppercase" style="color: #9ca3af;">Wave:</span>
-		{#each contract.waves || [] as wave}
-			<button
-				class="rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all"
-				style={activeWaveId === wave.id
-					? `background: ${wave.color || '#972395'}; color: white; border-color: ${wave.color || '#972395'};`
-					: 'background: white; color: #6b7280; border-color: #e5e7eb;'}
-				onclick={() => {
-					selectedWaveId = wave.id;
-					isEditing = false;
-				}}
+	<!-- Wave Switcher & Info -->
+	<div class="mb-4">
+		<div class="mb-2 flex items-center gap-2">
+			<span class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Wave</span>
+			<div class="relative">
+				<select
+					class="cursor-pointer appearance-none rounded-md bg-gray-100 py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-700 transition-colors outline-none hover:bg-gray-200 focus:ring-2 focus:ring-[#972395]/20"
+					value={activeWaveId}
+					onchange={(e) => {
+						selectedWaveId = e.currentTarget.value;
+					}}
+				>
+					{#each contract.waves || [] as wave}
+						<option value={wave.id}>{wave.name}</option>
+					{/each}
+				</select>
+				<div
+					class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"
+				>
+					<svg class="h-3 w-3 fill-current opacity-70" viewBox="0 0 20 20">
+						<path
+							d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+						/>
+					</svg>
+				</div>
+			</div>
+		</div>
+
+		{#if activeWave}
+			<div
+				class="flex items-center gap-4 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-600"
 			>
-				{wave.name} ({wave.roomsUsed})
-			</button>
-		{/each}
+				<div class="flex items-center gap-1.5">
+					<Briefcase class="h-3.5 w-3.5 text-gray-400" />
+					<span
+						>Use in package: <span class="font-medium text-gray-900"
+							>{activeWave.tripName || '-'}</span
+						></span
+					>
+				</div>
+				<div class="h-3 w-px bg-gray-200"></div>
+				<div class="flex items-center gap-1.5">
+					<Calendar class="h-3.5 w-3.5 text-gray-400" />
+					<span
+						>Trip date: <span class="font-medium text-gray-900"
+							>{activeWave.checkIn} — {activeWave.checkOut}</span
+						></span
+					>
+				</div>
+			</div>
+		{/if}
 	</div>
 
 	<!-- Actions -->
@@ -481,6 +515,7 @@
 	<WaveDetailDrawer
 		show={showDrawer}
 		wave={activeWave}
+		allWaves={contract.waves || []}
 		roomSummary={roomSummary()}
 		{typeColors}
 		totalOccupied={totalOccupied()}

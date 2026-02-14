@@ -1,19 +1,20 @@
 <script>
-	import { X, Calendar, Briefcase, Users } from 'lucide-svelte';
+	import { X, Calendar } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
-	import { bookingStore } from '$lib/stores/bookingStore.svelte.js';
+	import { gregorianToHijri, hijriToGregorian, hijriMonths } from '$lib/utils/hijri.js';
+	import HijriDatePicker from '$lib/components/HijriDatePicker.svelte';
 
 	let {
 		show = false,
 		wave = null,
+		allWaves = [],
 		roomSummary = {},
 		typeColors = {},
 		totalEmpty = 0,
 		totalOccupied = 0,
 		totalManipulated = 0,
 		onClose,
-		onSave,
-		onManageAllocation
+		onSave
 	} = $props();
 
 	let waveName = $state('');
@@ -21,35 +22,56 @@
 	let checkOut = $state('');
 	let color = $state('');
 	let flatRate = $state('');
-	let tripName = $state('');
-
-	// Get unique trip names from bookings
-	let tripOptions = $derived.by(() => {
-		const packages = bookingStore.bookings.map((b) => b.packageName).filter(Boolean);
-		return [...new Set(packages)];
-	});
+	let dateMode = $state('gregorian'); // 'gregorian' | 'hijri'
+	let hijriIn = $state({ day: 1, month: 0, year: 1446 });
+	let hijriOut = $state({ day: 1, month: 0, year: 1446 });
 
 	$effect(() => {
 		if (show && wave) {
 			waveName = wave.name || '';
 			checkIn = wave.checkIn || '';
 			checkOut = wave.checkOut || '';
-			color = wave.color || '#972395';
+			if (checkOut) hijriOut = gregorianToHijri(checkOut);
 			color = wave.color || '#972395';
 			flatRate = wave.flatRate || '';
-			tripName = wave.tripName || '';
 		}
 	});
 
+	function checkOverlap(start, end, waves, currentId) {
+		// Use string comparison for YYYY-MM-DD to avoid timezone issues
+		// Conflict if: NewStart < ExistingEnd AND NewEnd > ExistingStart
+		for (const w of waves) {
+			if (w.id === currentId) continue; // Skip self
+
+			// Ensure valid dates
+			if (!w.checkIn || !w.checkOut) continue;
+
+			if (start < w.checkOut && end > w.checkIn) {
+				return w;
+			}
+		}
+		return null;
+	}
+
 	function handleSave() {
+		// Validation
+		if (checkIn && checkOut) {
+			const conflict = checkOverlap(checkIn, checkOut, allWaves, wave?.id);
+			if (conflict) {
+				alert(
+					`Tanggal bentrok dengan gelombang "${conflict.name}" (${conflict.checkIn} - ${conflict.checkOut}).\nSilakan pilih tanggal lain.`
+				);
+				return;
+			}
+		}
+
 		if (onSave) {
 			onSave({
 				name: waveName,
 				checkIn,
 				checkOut,
 				color,
-				flatRate: parseFloat(flatRate) || 0,
-				tripName
+				flatRate: parseFloat(flatRate) || 0
 			});
 		}
 		onClose();
@@ -100,19 +122,23 @@
 						{#each Object.entries(roomSummary) as [type, counts]}
 							{@const tc = typeColors[type]}
 							{#if tc}
-								<div class="flex items-center justify-between text-xs">
+								<div class="grid grid-cols-[1fr_auto_auto_auto] items-center gap-x-4 text-xs">
 									<div class="flex items-center gap-2">
 										<span class="h-2 w-2 rounded-full" style="background: {tc.hex};"></span>
 										<span class="font-medium text-gray-700">{tc.label}</span>
 									</div>
-									<div class="text-gray-500">
+									<div class="w-[60px] text-right text-gray-500 tabular-nums">
 										<span class="font-semibold text-gray-900">{counts.total}</span> Total
-										<span class="mx-1 text-gray-400">·</span>
+									</div>
+									<div class="w-[80px] text-right text-gray-500 tabular-nums">
 										<span class={counts.occupied > 0 ? 'font-medium text-green-600' : ''}
 											>{counts.occupied} Occupied</span
 										>
+									</div>
+									<div class="flex w-[60px] justify-end">
 										{#if counts.manipulated > 0}
-											<span class="ml-1 rounded bg-red-50 px-1 py-0.5 text-[10px] text-red-500"
+											<span
+												class="rounded bg-red-50 px-1.5 py-0.5 text-[10px] font-medium text-red-500 tabular-nums"
 												>+{counts.manipulated} manip</span
 											>
 										{/if}
@@ -159,39 +185,105 @@
 					</div>
 
 					<!-- Dates -->
-					<div class="grid grid-cols-2 gap-3">
-						<div>
-							<label for="checkIn" class="mb-1.5 block text-xs font-medium text-gray-600"
-								>Check In</label
-							>
-							<div class="relative">
-								<Calendar
-									size={14}
-									class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
-								/>
-								<input
-									type="date"
-									id="checkIn"
-									class="w-full rounded-lg border border-gray-200 bg-white py-2.5 pr-3 pl-9 text-xs outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-									bind:value={checkIn}
-								/>
+					<div class="space-y-3">
+						<!-- Date System Switcher -->
+						<div class="flex items-center gap-2">
+							<span class="text-xs font-medium text-gray-600">Sistem Tanggal:</span>
+							<div class="flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+								<button
+									class="rounded px-3 py-1 text-xs font-medium transition-colors {dateMode ===
+									'gregorian'
+										? 'bg-white text-[#972395] shadow-sm'
+										: 'text-gray-500 hover:text-gray-700'}"
+									onclick={() => (dateMode = 'gregorian')}
+								>
+									Masehi
+								</button>
+								<button
+									class="rounded px-3 py-1 text-xs font-medium transition-colors {dateMode ===
+									'hijri'
+										? 'bg-white text-[#972395] shadow-sm'
+										: 'text-gray-500 hover:text-gray-700'}"
+									onclick={() => (dateMode = 'hijri')}
+								>
+									Hijriyah
+								</button>
 							</div>
 						</div>
-						<div>
-							<label for="checkOut" class="mb-1.5 block text-xs font-medium text-gray-600"
-								>Check Out</label
-							>
-							<div class="relative">
-								<Calendar
-									size={14}
-									class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
-								/>
-								<input
-									type="date"
-									id="checkOut"
-									class="w-full rounded-lg border border-gray-200 bg-white py-2.5 pr-3 pl-9 text-xs outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-									bind:value={checkOut}
-								/>
+
+						<div class="grid grid-cols-2 gap-3">
+							<!-- Check In -->
+							<div class="space-y-2">
+								<div>
+									<label for="checkIn" class="mb-1.5 block text-xs font-medium text-gray-600"
+										>Check In</label
+									>
+									<div class="relative">
+										<Calendar
+											size={14}
+											class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
+										/>
+										<input
+											type="date"
+											id="checkIn"
+											class="w-full rounded-lg border border-gray-200 bg-white py-2.5 pr-3 pl-9 text-xs outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+											bind:value={checkIn}
+											disabled={dateMode === 'hijri'}
+											oninput={() => {
+												if (checkIn) hijriIn = gregorianToHijri(checkIn);
+											}}
+										/>
+									</div>
+								</div>
+								<!-- Hijri In -->
+								<div class="rounded-lg {dateMode === 'hijri' ? '' : ''}">
+									<label class="mb-1 block text-[10px] font-medium text-gray-500">Hijriyah</label>
+									<HijriDatePicker
+										value={hijriIn}
+										disabled={dateMode === 'gregorian'}
+										onChange={(val) => {
+											hijriIn = val;
+											checkIn = hijriToGregorian(val.day, val.month, val.year);
+										}}
+									/>
+								</div>
+							</div>
+
+							<!-- Check Out -->
+							<div class="space-y-2">
+								<div>
+									<label for="checkOut" class="mb-1.5 block text-xs font-medium text-gray-600"
+										>Check Out</label
+									>
+									<div class="relative">
+										<Calendar
+											size={14}
+											class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
+										/>
+										<input
+											type="date"
+											id="checkOut"
+											class="w-full rounded-lg border border-gray-200 bg-white py-2.5 pr-3 pl-9 text-xs outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+											bind:value={checkOut}
+											disabled={dateMode === 'hijri'}
+											oninput={() => {
+												if (checkOut) hijriOut = gregorianToHijri(checkOut);
+											}}
+										/>
+									</div>
+								</div>
+								<!-- Hijri Out -->
+								<div class="rounded-lg {dateMode === 'hijri' ? '' : ''}">
+									<label class="mb-1 block text-[10px] font-medium text-gray-500">Hijriyah</label>
+									<HijriDatePicker
+										value={hijriOut}
+										disabled={dateMode === 'gregorian'}
+										onChange={(val) => {
+											hijriOut = val;
+											checkOut = hijriToGregorian(val.day, val.month, val.year);
+										}}
+									/>
+								</div>
 							</div>
 						</div>
 					</div>
@@ -226,39 +318,6 @@
 						</div>
 					</div>
 				</div>
-			</div>
-
-			<!-- Trip & Allocation -->
-			<div class="border-t border-gray-100 p-6">
-				<h4 class="mb-4 text-xs font-semibold tracking-wider text-gray-500 uppercase">
-					Trip Connection
-				</h4>
-
-				<div class="mb-4">
-					<label class="mb-1.5 block text-xs font-medium text-gray-600">Linked Trip Package</label>
-					<div class="relative">
-						<select
-							bind:value={tripName}
-							class="w-full appearance-none rounded-lg border border-gray-200 bg-white px-3 py-2.5 pl-9 text-xs font-medium text-gray-900 transition-all outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-						>
-							<option value="">Select a trip package...</option>
-							{#each tripOptions as trip}
-								<option value={trip}>{trip}</option>
-							{/each}
-						</select>
-						<Briefcase size={14} class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
-					</div>
-				</div>
-
-				{#if tripName}
-					<button
-						class="flex w-full items-center justify-center gap-2 rounded-lg border border-[#972395]/20 bg-[#972395]/5 px-4 py-2.5 text-sm font-medium text-[#972395] transition-colors hover:bg-[#972395]/10"
-						onclick={() => onManageAllocation && onManageAllocation(tripName)}
-					>
-						<Users size={16} />
-						Manage Allocations
-					</button>
-				{/if}
 			</div>
 
 			<!-- Footer -->

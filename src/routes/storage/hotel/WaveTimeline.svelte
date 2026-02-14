@@ -39,9 +39,26 @@
 		const d = date.getTime();
 		for (let i = 0; i < (contract.waves || []).length; i++) {
 			const w = contract.waves[i];
+			// Standard day check: usually favors STARTING wave (inclusive start, exclusive end)
+			// But for visual timeline, we might want to prioritize transition logic in the template
 			if (d >= new Date(w.checkIn).getTime() && d < new Date(w.checkOut).getTime()) return i;
 		}
 		return -1;
+	}
+
+	function getTransitionWaves(date) {
+		const dQuery = date.toISOString().slice(0, 10); // Standardize to YYYY-MM-DD
+		const waves = contract.waves || [];
+
+		// Find wave where CheckOut == date
+		const ending = waves.find((w) => w.checkOut === dQuery);
+		// Find wave where CheckIn == date
+		const starting = waves.find((w) => w.checkIn === dQuery);
+
+		if (ending && starting && ending.id !== starting.id) {
+			return { ending, starting };
+		}
+		return null;
 	}
 
 	// Grayscale shades per wave - REMOVED in favor of custom colors
@@ -60,15 +77,64 @@
 
 	<div class="px-4 py-3">
 		<!-- Date bar -->
-		<div class="mb-2 flex gap-px">
+		<div class="relative mb-2 flex gap-px">
 			{#each dateRange() as date}
 				{@const wIdx = getDayWaveIndex(date)}
-				<div class="flex flex-1 flex-col items-center gap-0.5" style="min-width: 0;">
+				{@const transition = getTransitionWaves(date)}
+
+				<div class="group flex flex-1 flex-col items-center gap-0.5" style="min-width: 0;">
 					<span class="text-[8px] font-medium" style="color: #9ca3af;">{formatDay(date)}</span>
-					<div
-						class="h-5 w-full rounded-sm"
-						style="background: {wIdx >= 0 ? contract.waves[wIdx]?.color || '#374151' : '#f3f4f6'};"
-					></div>
+					{#if transition}
+						<div class="flex h-5 w-full gap-px overflow-visible rounded-sm bg-white">
+							<div
+								class="group/end relative h-full flex-1 rounded-l-sm"
+								style="background: {transition.ending.color || '#374151'};"
+							>
+								<!-- Tooltip End -->
+								<div
+									class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded bg-gray-800 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white opacity-0 transition-opacity group-hover/end:block group-hover/end:opacity-100"
+								>
+									Out: {transition.ending.name}
+									<div
+										class="absolute top-full left-1/2 -ml-1 border-4 border-transparent border-t-gray-800"
+									></div>
+								</div>
+							</div>
+							<div
+								class="group/start relative h-full flex-1 rounded-r-sm"
+								style="background: {transition.starting.color || '#374151'};"
+							>
+								<!-- Tooltip Start -->
+								<div
+									class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded bg-gray-800 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white opacity-0 transition-opacity group-hover/start:block group-hover/start:opacity-100"
+								>
+									In: {transition.starting.name}
+									<div
+										class="absolute top-full left-1/2 -ml-1 border-4 border-transparent border-t-gray-800"
+									></div>
+								</div>
+							</div>
+						</div>
+					{:else}
+						<div
+							class="group/item relative h-5 w-full rounded-sm"
+							style="background: {wIdx >= 0
+								? contract.waves[wIdx]?.color || '#374151'
+								: '#f3f4f6'};"
+						>
+							{#if wIdx >= 0}
+								<!-- Normal Tooltip -->
+								<div
+									class="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1 hidden -translate-x-1/2 rounded bg-gray-800 px-1.5 py-0.5 text-[10px] whitespace-nowrap text-white opacity-0 transition-opacity group-hover/item:block group-hover/item:opacity-100"
+								>
+									{contract.waves[wIdx].name}
+									<div
+										class="absolute top-full left-1/2 -ml-1 border-4 border-transparent border-t-gray-800"
+									></div>
+								</div>
+							{/if}
+						</div>
+					{/if}
 				</div>
 			{/each}
 		</div>

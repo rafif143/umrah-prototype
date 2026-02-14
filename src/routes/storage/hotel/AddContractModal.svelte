@@ -2,13 +2,18 @@
 	import { X, Plus, Trash2, Calendar, Palette } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
 	import { hotelStorageStore } from '$lib/stores/hotelStorageStore.svelte.js';
+	import { gregorianToHijri, hijriToGregorian, hijriMonths } from '$lib/utils/hijri.js';
+	import HijriDatePicker from '$lib/components/HijriDatePicker.svelte';
 
 	let { show = false, hotelId = '', hotelName = '', onClose } = $props();
 
 	// --- Contract Form ---
 	let contractName = $state('');
+	let dateMode = $state('gregorian'); // 'gregorian' | 'hijri'
 	let dateFrom = $state('');
 	let dateTo = $state('');
+	let hijriFrom = $state({ day: 1, month: 0, year: 1446 });
+	let hijriTo = $state({ day: 1, month: 0, year: 1446 });
 	let notes = $state('');
 
 	// --- Room Capacities ---
@@ -184,33 +189,110 @@
 				</div>
 
 				<!-- Date Range -->
-				<div class="grid grid-cols-2 gap-3">
-					<div>
-						<label for="dateFrom" class="mb-1.5 block text-xs font-medium text-gray-600"
-							>Tanggal Mulai</label
-						>
-						<div class="relative">
-							<Calendar size={14} class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
-							<input
-								type="date"
-								id="dateFrom"
-								class="w-full rounded-lg border border-gray-200 bg-white py-2.5 pr-3 pl-9 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-								bind:value={dateFrom}
-							/>
+				<div class="space-y-3">
+					<!-- Date System Switcher -->
+					<div class="flex items-center gap-2">
+						<span class="text-xs font-medium text-gray-600">Sistem Tanggal:</span>
+						<div class="flex rounded-lg border border-gray-200 bg-gray-50 p-1">
+							<button
+								class="rounded px-3 py-1 text-xs font-medium transition-colors {dateMode ===
+								'gregorian'
+									? 'bg-white text-[#972395] shadow-sm'
+									: 'text-gray-500 hover:text-gray-700'}"
+								onclick={() => (dateMode = 'gregorian')}
+							>
+								Masehi
+							</button>
+							<button
+								class="rounded px-3 py-1 text-xs font-medium transition-colors {dateMode === 'hijri'
+									? 'bg-white text-[#972395] shadow-sm'
+									: 'text-gray-500 hover:text-gray-700'}"
+								onclick={() => (dateMode = 'hijri')}
+							>
+								Hijriyah
+							</button>
 						</div>
 					</div>
-					<div>
-						<label for="dateTo" class="mb-1.5 block text-xs font-medium text-gray-600"
-							>Tanggal Selesai</label
-						>
-						<div class="relative">
-							<Calendar size={14} class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
-							<input
-								type="date"
-								id="dateTo"
-								class="w-full rounded-lg border border-gray-200 bg-white py-2.5 pr-3 pl-9 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-								bind:value={dateTo}
-							/>
+
+					<div class="grid grid-cols-2 gap-3">
+						<!-- Start Date -->
+						<div class="space-y-2">
+							<div>
+								<label for="dateFrom" class="mb-1.5 block text-xs font-medium text-gray-600"
+									>Tanggal Mulai (Masehi)</label
+								>
+								<div class="relative">
+									<Calendar
+										size={14}
+										class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
+									/>
+									<input
+										type="date"
+										id="dateFrom"
+										class="w-full rounded-lg border border-gray-200 bg-white py-2.5 pr-3 pl-9 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+										bind:value={dateFrom}
+										disabled={dateMode === 'hijri'}
+										oninput={() => {
+											if (dateFrom) {
+												const h = gregorianToHijri(dateFrom);
+												hijriFrom = { ...h };
+											}
+										}}
+									/>
+								</div>
+							</div>
+							<!-- Hijri Start -->
+							<div class="rounded-lg {dateMode === 'hijri' ? '' : ''}">
+								<label class="mb-1 block text-[10px] font-medium text-gray-500">Hijriyah</label>
+								<HijriDatePicker
+									value={hijriFrom}
+									disabled={dateMode === 'gregorian'}
+									onChange={(val) => {
+										hijriFrom = val;
+										dateFrom = hijriToGregorian(val.day, val.month, val.year);
+									}}
+								/>
+							</div>
+						</div>
+
+						<!-- End Date -->
+						<div class="space-y-2">
+							<div>
+								<label for="dateTo" class="mb-1.5 block text-xs font-medium text-gray-600"
+									>Tanggal Selesai (Masehi)</label
+								>
+								<div class="relative">
+									<Calendar
+										size={14}
+										class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400"
+									/>
+									<input
+										type="date"
+										id="dateTo"
+										class="w-full rounded-lg border border-gray-200 bg-white py-2.5 pr-3 pl-9 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395] disabled:cursor-not-allowed disabled:bg-gray-100 disabled:text-gray-500"
+										bind:value={dateTo}
+										disabled={dateMode === 'hijri'}
+										oninput={() => {
+											if (dateTo) {
+												const h = gregorianToHijri(dateTo);
+												hijriTo = { ...h };
+											}
+										}}
+									/>
+								</div>
+							</div>
+							<!-- Hijri End -->
+							<div class="rounded-lg {dateMode === 'hijri' ? '' : ''}">
+								<label class="mb-1 block text-[10px] font-medium text-gray-500">Hijriyah</label>
+								<HijriDatePicker
+									value={hijriTo}
+									disabled={dateMode === 'gregorian'}
+									onChange={(val) => {
+										hijriTo = val;
+										dateTo = hijriToGregorian(val.day, val.month, val.year);
+									}}
+								/>
+							</div>
 						</div>
 					</div>
 				</div>

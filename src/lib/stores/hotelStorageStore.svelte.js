@@ -1,7 +1,7 @@
 import { persistedState } from './persistedState.svelte.js';
 import initialData from '$lib/data/hotelStorage.json';
 
-const hotelStorageState = persistedState('hotelStorage_v2', initialData);
+const hotelStorageState = persistedState('hotelStorage_v3', initialData);
 
 export const hotelStorageStore = {
     get hotels() {
