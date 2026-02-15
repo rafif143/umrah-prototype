@@ -145,6 +145,35 @@
 			</div>
 
 			<div class="space-y-6 p-6">
+				<!-- Hotel Contract Auto-Fill (Optional) -->
+				<div class="rounded-xl border border-blue-200 bg-blue-50 p-5">
+					<div class="mb-3 flex items-center gap-3">
+						<div
+							class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white"
+						>
+							★
+						</div>
+						<h3 class="text-sm font-semibold text-gray-900">
+							Select Available Contract (Optional)
+						</h3>
+					</div>
+					<div class="grid grid-cols-1 gap-4">
+						<select
+							class="w-full rounded-lg border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+							bind:value={state.accommodationForm.selectedWaveId}
+							onchange={(e) => state.selectHotelWaveForAccommodation(e.target.value)}
+						>
+							<option value="">-- Choose Hotel Contract --</option>
+							{#each state.availableHotelWaves as wave}
+								<option value={wave.id}>{wave.fullLabel}</option>
+							{/each}
+						</select>
+						<p class="text-xs text-blue-600">
+							Selecting a contract will auto-fill City, Hotel, and Dates.
+						</p>
+					</div>
+				</div>
+
 				<!-- Section 1: Basic Information -->
 				<div class="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
 					<div class="mb-4 flex items-center gap-3">

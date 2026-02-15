@@ -15,6 +15,7 @@
 	let expandedHotelId = $state(null);
 	let expandedContractId = $state(null);
 	let activeFilter = $state('all');
+	let statusFilter = $state('all');
 	let showAddHotelModal = $state(false);
 	let showAddContractModal = $state(false);
 	let selectedHotelForContract = $state(null);
@@ -46,15 +47,29 @@
 		expandedContractId = expandedContractId === id ? null : id;
 	}
 
+	function getFilteredContracts(contracts) {
+		if (statusFilter === 'all') return contracts;
+		return contracts.filter((c) => {
+			const hasAlloc = c.waves?.some((w) => w.allocations && Object.keys(w.allocations).length > 0);
+			return statusFilter === 'used' ? hasAlloc : !hasAlloc;
+		});
+	}
+
 	const filters = [
 		{ key: 'all', label: 'All' },
 		{ key: 'makkah', label: 'Makkah' },
 		{ key: 'madinah', label: 'Madinah' }
 	];
+
+	const statusFilters = [
+		{ key: 'all', label: 'All' },
+		{ key: 'unused', label: 'Unused' },
+		{ key: 'used', label: 'Used' }
+	];
 </script>
 
 <div class="flex min-h-screen bg-gray-50 font-sans">
-	<Sidebar activePage="/storage/hotel" />
+	<Sidebar activePage="hotel-allotment" />
 
 	<main
 		class="flex flex-1 flex-col overflow-hidden px-6 py-6 transition-all duration-300"
@@ -69,7 +84,7 @@
 					<Building2 size={20} />
 				</div>
 				<div>
-					<h1 class="text-xl font-bold text-gray-900">Hotel Storage</h1>
+					<h1 class="text-xl font-bold text-gray-900">Hotel Allotment</h1>
 					<p class="text-sm text-gray-500">Manage hotel contracts & room allocation</p>
 				</div>
 			</div>
@@ -82,22 +97,7 @@
 			</button>
 		</div>
 
-		<!-- Filter Tabs -->
-		<div class="mb-4 flex w-fit items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
-			{#each filters as f}
-				<button
-					class="rounded-md px-4 py-2 text-sm font-medium transition-colors
-                        {activeFilter === f.key
-						? 'bg-[#972395] text-white'
-						: 'text-gray-600 hover:bg-gray-50'}"
-					onclick={() => (activeFilter = f.key)}
-				>
-					{f.label}
-				</button>
-			{/each}
-		</div>
-
-		<!-- Search & Filter -->
+		<!-- Search, Location Filter & Filter -->
 		<div class="mb-4 flex items-center gap-3">
 			<div class="relative max-w-md flex-1">
 				<Search size={16} class="absolute top-1/2 left-3 -translate-y-1/2 text-gray-400" />
@@ -108,13 +108,17 @@
 					bind:value={searchQuery}
 				/>
 			</div>
-			<div class="h-6 w-px bg-gray-200"></div>
-			<button
-				class="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
-			>
-				<Filter size={16} />
-				Filters
-			</button>
+			<div class="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
+				{#each filters as f}
+					<button
+						class="rounded-md px-3 py-1.5 text-sm font-medium transition-colors
+							{activeFilter === f.key ? 'bg-[#972395] text-white' : 'text-gray-600 hover:bg-gray-50'}"
+						onclick={() => (activeFilter = f.key)}
+					>
+						{f.label}
+					</button>
+				{/each}
+			</div>
 		</div>
 
 		<!-- Hotel List -->
@@ -164,9 +168,24 @@
 							transition:slide={{ duration: 200 }}
 						>
 							<div class="mb-3 flex items-center justify-between">
-								<h4 class="text-xs font-semibold tracking-wider text-gray-500 uppercase">
-									Daftar Kontrak
-								</h4>
+								<div class="flex items-center gap-3">
+									<h4 class="text-xs font-semibold tracking-wider text-gray-500 uppercase">
+										Daftar Kontrak
+									</h4>
+									<div
+										class="flex items-center gap-0.5 rounded-md border border-gray-200 bg-white p-0.5"
+									>
+										{#each statusFilters as sf}
+											<button
+												class="rounded px-2 py-1 text-[11px] font-medium transition-colors
+													{statusFilter === sf.key ? 'bg-[#972395] text-white' : 'text-gray-500 hover:bg-gray-50'}"
+												onclick={() => (statusFilter = sf.key)}
+											>
+												{sf.label}
+											</button>
+										{/each}
+									</div>
+								</div>
 								<button
 									class="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-[#972395] transition-colors hover:border-[#972395] hover:bg-purple-50"
 									onclick={() => {
@@ -179,7 +198,7 @@
 								</button>
 							</div>
 							<div class="space-y-3">
-								{#each hotel.contracts as contract, idx (contract.id)}
+								{#each getFilteredContracts(hotel.contracts) as contract, idx (contract.id)}
 									<div class="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
 										<ContractCard
 											{contract}

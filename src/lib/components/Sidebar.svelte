@@ -58,8 +58,7 @@
 	];
 
 	const storageSubItems = [
-		{ id: 'storage-flight', label: 'Flight', icon: Plane, href: '/storage/flight' },
-		{ id: 'storage-hotel', label: 'Hotel', icon: Building2, href: '/storage/hotel' }
+		{ id: 'storage-flight', label: 'Flight', icon: Plane, href: '/storage/flight' }
 	];
 </script>
 

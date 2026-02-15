@@ -272,6 +272,7 @@
                         {
                             "id": "w-001-1",
                             "name": "Gelombang 1",
+                            "tripName": "MH 01 Maret 2026 - Premium",
                             "checkIn": "2026-03-01",
                             "checkOut": "2026-03-04",
                             "roomsUsed": 25,
@@ -306,6 +307,7 @@
                         {
                             "id": "w-001-2",
                             "name": "Gelombang 2",
+                            "tripName": "SV 11 Maret 2026 - Economy",
                             "checkIn": "2026-03-11",
                             "checkOut": "2026-03-15",
                             "roomsUsed": 50,
@@ -361,6 +363,15 @@
                                 "R049",
                                 "R050"
                             ]
+                        },
+                        {
+                            "id": "w-001-3",
+                            "name": "Gelombang 3",
+                            "tripName": "",
+                            "checkIn": "2026-03-20",
+                            "checkOut": "2026-03-25",
+                            "roomsUsed": 0,
+                            "roomIds": []
                         }
                     ],
                     "isOverflow": false,

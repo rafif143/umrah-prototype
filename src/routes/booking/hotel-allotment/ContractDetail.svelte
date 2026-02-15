@@ -7,8 +7,33 @@
 	import AllocationAlertModal from './AllocationAlertModal.svelte';
 	import SwapRoomModal from './SwapRoomModal.svelte';
 	import { sidebarState } from '$lib/runes/sidebarState.svelte.js';
+	import { gregorianToHijri, hijriMonths } from '$lib/utils/hijri.js';
 
 	let { contract, hotelId } = $props();
+
+	function formatGregorian(dateStr) {
+		if (!dateStr) return '-';
+		try {
+			const date = new Date(dateStr);
+			return new Intl.DateTimeFormat('id-ID', {
+				day: 'numeric',
+				month: 'long',
+				year: 'numeric'
+			}).format(date);
+		} catch (e) {
+			return dateStr;
+		}
+	}
+
+	function formatHijri(dateStr) {
+		if (!dateStr) return '';
+		try {
+			const { day, month, year } = gregorianToHijri(dateStr);
+			return `${day} ${hijriMonths[month]} ${year}`;
+		} catch (e) {
+			return '';
+		}
+	}
 
 	// Wave switcher — default to first wave
 	let defaultWaveId = $derived(contract.waves?.[0]?.id || null);
@@ -346,53 +371,57 @@
 >
 	<!-- Wave Switcher & Info -->
 	<div class="mb-4">
-		<div class="mb-2 flex items-center gap-2">
-			<span class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Wave</span>
-			<div class="relative">
-				<select
-					class="cursor-pointer appearance-none rounded-md bg-gray-100 py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-700 transition-colors outline-none hover:bg-gray-200 focus:ring-2 focus:ring-[#972395]/20"
-					value={activeWaveId}
-					onchange={(e) => {
-						selectedWaveId = e.currentTarget.value;
-					}}
-				>
-					{#each contract.waves || [] as wave}
-						<option value={wave.id}>{wave.name}</option>
-					{/each}
-				</select>
-				<div
-					class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"
-				>
-					<svg class="h-3 w-3 fill-current opacity-70" viewBox="0 0 20 20">
-						<path
-							d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-						/>
-					</svg>
+		<div class="mb-2 flex items-center gap-4">
+			<div class="flex items-center gap-2">
+				<span class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Wave</span>
+				<div class="relative">
+					<select
+						class="cursor-pointer appearance-none rounded-md bg-gray-100 py-1.5 pr-8 pl-3 text-xs font-semibold text-gray-700 transition-colors outline-none hover:bg-gray-200 focus:ring-2 focus:ring-[#972395]/20"
+						value={activeWaveId}
+						onchange={(e) => {
+							selectedWaveId = e.currentTarget.value;
+						}}
+					>
+						{#each contract.waves || [] as wave}
+							<option value={wave.id}>{wave.name}</option>
+						{/each}
+					</select>
+					<div
+						class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-500"
+					>
+						<svg class="h-3 w-3 fill-current opacity-70" viewBox="0 0 20 20">
+							<path
+								d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+							/>
+						</svg>
+					</div>
 				</div>
 			</div>
+
+			{#if activeWave}
+				<div class="h-4 w-px bg-gray-300"></div>
+				<div class="flex items-center gap-2">
+					<Calendar class="h-3.5 w-3.5 text-gray-400" />
+					<div class="flex flex-col">
+						<span class="text-xs leading-none font-medium text-gray-900">
+							{formatGregorian(activeWave.checkIn)} — {formatGregorian(activeWave.checkOut)}
+						</span>
+						<span class="text-[10px] leading-tight text-gray-500">
+							{formatHijri(activeWave.checkIn)} — {formatHijri(activeWave.checkOut)}
+						</span>
+					</div>
+				</div>
+			{/if}
 		</div>
 
 		{#if activeWave}
-			<div
-				class="flex items-center gap-4 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2 text-xs text-gray-600"
-			>
-				<div class="flex items-center gap-1.5">
-					<Briefcase class="h-3.5 w-3.5 text-gray-400" />
-					<span
-						>Use in package: <span class="font-medium text-gray-900"
-							>{activeWave.tripName || '-'}</span
-						></span
-					>
-				</div>
-				<div class="h-3 w-px bg-gray-200"></div>
-				<div class="flex items-center gap-1.5">
-					<Calendar class="h-3.5 w-3.5 text-gray-400" />
-					<span
-						>Trip date: <span class="font-medium text-gray-900"
-							>{activeWave.checkIn} — {activeWave.checkOut}</span
-						></span
-					>
-				</div>
+			<div class="flex items-center gap-2 text-xs text-gray-600">
+				<Briefcase class="h-3.5 w-3.5 text-gray-400" />
+				<span
+					>Use in package: <span class="font-medium text-gray-900"
+						>{activeWave.tripName || '-'}</span
+					></span
+				>
 			</div>
 		{/if}
 	</div>

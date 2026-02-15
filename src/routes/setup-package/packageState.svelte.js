@@ -59,8 +59,48 @@ export class PackageState {
         return flightStorageStore.confirmBookings;
     }
 
-    // Selected Flight ID
-    selectedFlightId = $state('');
+    // Available Hotel Waves (Unused)
+    get availableHotelWaves() {
+        const waves = [];
+        for (const hotel of hotelStorageStore.hotels) {
+            for (const contract of hotel.contracts) {
+                for (const wave of contract.waves) {
+                    if (!wave.tripName) {
+                        waves.push({
+                            ...wave,
+                            hotelName: hotel.hotelName,
+                            contractName: contract.name,
+                            fullLabel: `${hotel.hotelName} - ${contract.name} - ${wave.name} (${wave.checkIn} to ${wave.checkOut})`
+                        });
+                    }
+                }
+            }
+        }
+        return waves;
+    }
+
+    // Selected Hotel Wave for this Package
+    selectedHotelWaveId = $state('');
+
+    get selectedHotelWave() {
+        return this.availableHotelWaves.find(w => w.id === this.selectedHotelWaveId) || null;
+    }
+
+    // Select Hotel Wave and Pre-fill Accommodation Form
+    selectHotelWaveForAccommodation(waveId) {
+        const wave = this.availableHotelWaves.find(w => w.id === waveId);
+        if (wave) {
+            this.accommodationForm.selectedWaveId = waveId;
+            this.accommodationForm.city = hotelStorageStore.hotels.find(h => h.hotelName === wave.hotelName)?.city || '';
+            this.accommodationForm.hotelId = hotelStorageStore.hotels.find(h => h.hotelName === wave.hotelName)?.hotelId || '';
+            // Trigger hotel selection logic to fill details
+            this.selectHotelForAccommodation(this.accommodationForm.hotelId);
+
+            this.accommodationForm.checkIn = wave.checkIn;
+            this.accommodationForm.checkOut = wave.checkOut;
+            this.calculateNights();
+        }
+    }
 
     // --- Actions ---
 
