@@ -1,9 +1,10 @@
 <script>
-	import { Building2, Plus, Search, Filter, Star, ChevronDown } from 'lucide-svelte';
+	import { Building2, Plus, Search, Filter, Star, ChevronDown, LayoutGrid, List } from 'lucide-svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { hotelStorageStore } from '$lib/stores/hotelStorageStore.svelte.js';
 	import ContractCard from './ContractCard.svelte';
 	import ContractDetail from './ContractDetail.svelte';
+	import ContractGridView from './ContractGridView.svelte';
 	import WaveTimeline from './WaveTimeline.svelte';
 	import AddHotelModal from './AddHotelModal.svelte';
 	import AddContractModal from './AddContractModal.svelte';
@@ -18,6 +19,7 @@
 	let statusFilter = $state('all');
 	let showAddHotelModal = $state(false);
 	let showAddContractModal = $state(false);
+	let viewMode = $state('grid');
 	let selectedHotelForContract = $state(null);
 
 	let hotels = $derived(
@@ -209,18 +211,49 @@
 
 										{#if expandedContractId === contract.id}
 											<div
-												class="space-y-4 border-t border-gray-100 px-5 py-4"
+												class="border-t border-gray-100"
 												transition:slide={{ duration: 200 }}
 											>
-												<ContractDetail {contract} hotelId={hotel.hotelId} />
-												<WaveTimeline {contract} />
-												{#if contract.notes}
-													<div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
-														<span
-															class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
-															>Catatan</span
-														>
-														<p class="mt-1 text-xs text-gray-600">{contract.notes}</p>
+												<!-- View Mode Toggle -->
+												<div class="flex items-center justify-end gap-1 px-5 pt-3 pb-1">
+													<span class="mr-2 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Tampilan</span>
+													<button
+														class="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors
+															{viewMode === 'grid' ? 'bg-[#972395] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}"
+														onclick={() => (viewMode = 'grid')}
+													>
+														<LayoutGrid size={12} />
+														Grid
+													</button>
+													<button
+														class="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors
+															{viewMode === 'card' ? 'bg-[#972395] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}"
+														onclick={() => (viewMode = 'card')}
+													>
+														<List size={12} />
+														Card
+													</button>
+												</div>
+
+												{#if viewMode === 'grid'}
+													<!-- Grid View (Spreadsheet Style) -->
+													<div class="px-3 py-3">
+														<ContractGridView {contract} hotelId={hotel.hotelId} />
+													</div>
+												{:else}
+													<!-- Card View (Original) -->
+													<div class="space-y-4 px-5 py-4">
+														<ContractDetail {contract} hotelId={hotel.hotelId} />
+														<WaveTimeline {contract} />
+														{#if contract.notes}
+															<div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+																<span
+																	class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
+																	>Catatan</span
+																>
+																<p class="mt-1 text-xs text-gray-600">{contract.notes}</p>
+															</div>
+														{/if}
 													</div>
 												{/if}
 											</div>
