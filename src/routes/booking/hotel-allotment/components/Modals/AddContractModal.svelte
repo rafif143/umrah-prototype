@@ -5,7 +5,7 @@
 	import { gregorianToHijri, hijriToGregorian, hijriMonths } from '$lib/utils/hijri.js';
 	import HijriDatePicker from '$lib/components/HijriDatePicker.svelte';
 
-	let { show = false, hotelId = '', hotelName = '', onClose } = $props();
+	let { show = false, hotelId = '', hotelName = '', editingContract = null, onClose } = $props();
 
 	// --- Contract Form ---
 	let contractName = $state('');
@@ -22,45 +22,37 @@
 	let quadCount = $state(0);
 	let quintCount = $state(0);
 
-	let totalRooms = $derived(doubleCount + tripleCount + quadCount + quintCount);
-
-	// --- Waves ---
-	let waves = $state([]);
-	let newWaveName = $state('');
-	let newWaveCheckIn = $state('');
-	let newWaveCheckOut = $state('');
-	let newWaveRoomCount = $state('');
-	let newWaveColor = $state('#972395'); // Default purple
-	let newWaveFlatRate = $state('');
-
-	function addWave() {
-		if (!newWaveName || !newWaveCheckIn || !newWaveCheckOut || !newWaveRoomCount) return;
-		const count = parseInt(newWaveRoomCount);
-		if (count <= 0 || count > totalRooms) return;
-
-		waves = [
-			...waves,
-			{
-				id: `w-${Date.now()}`,
-				name: newWaveName,
-				checkIn: newWaveCheckIn,
-				checkOut: newWaveCheckOut,
-				roomCount: count,
-				color: newWaveColor,
-				flatRate: parseFloat(newWaveFlatRate) || 0
+	// Initialize form when editing
+	$effect(() => {
+		if (show && editingContract) {
+			contractName = editingContract.name || '';
+			dateFrom = editingContract.contractPeriod?.from || '';
+			dateTo = editingContract.contractPeriod?.to || '';
+			notes = editingContract.notes || '';
+			
+			// Count rooms by type
+			const rooms = editingContract.rooms || [];
+			doubleCount = rooms.filter(r => r.originalType === 'double').length;
+			tripleCount = rooms.filter(r => r.originalType === 'triple').length;
+			quadCount = rooms.filter(r => r.originalType === 'quad').length;
+			quintCount = rooms.filter(r => r.originalType === 'quint').length;
+			
+			// Update hijri dates
+			if (dateFrom) {
+				const h = gregorianToHijri(dateFrom);
+				hijriFrom = { ...h };
 			}
-		];
-		newWaveName = '';
-		newWaveCheckIn = '';
-		newWaveCheckOut = '';
-		newWaveRoomCount = '';
-		newWaveColor = '#972395';
-		newWaveFlatRate = '';
-	}
+			if (dateTo) {
+				const h = gregorianToHijri(dateTo);
+				hijriTo = { ...h };
+			}
+		} else if (show && !editingContract) {
+			// Reset for new contract
+			resetForm();
+		}
+	});
 
-	function removeWave(id) {
-		waves = waves.filter((w) => w.id !== id);
-	}
+	let totalRooms = $derived(doubleCount + tripleCount + quadCount + quintCount);
 
 	// --- Generate rooms array from capacity counts ---
 	function generateRooms() {
@@ -87,45 +79,40 @@
 		return rooms;
 	}
 
-	// --- Distribute rooms into waves sequentially ---
-	function generateWaves(rooms) {
-		return waves.map((w) => {
-			const roomIds = rooms.slice(0, w.roomCount).map((r) => r.id);
-			return {
-				id: w.id,
-				name: w.name,
-				checkIn: w.checkIn,
-				checkOut: w.checkOut,
-				checkOut: w.checkOut,
-				roomsUsed: w.roomCount,
-				color: w.color,
-				flatRate: w.flatRate,
-				roomIds
-			};
-		});
-	}
-
 	function handleSubmit() {
 		if (!contractName || !dateFrom || !dateTo || totalRooms === 0) return;
 
 		const rooms = generateRooms();
-		const generatedWaves = generateWaves(rooms);
 
-		const contract = {
-			name: contractName,
-			contractPeriod: { from: dateFrom, to: dateTo },
-			totalRooms,
-			rooms,
-			waves: generatedWaves,
-			isOverflow: false,
-			notes
-		};
+		if (editingContract) {
+			// Update existing contract
+			const updatedContract = {
+				...editingContract,
+				name: contractName,
+				contractPeriod: { from: dateFrom, to: dateTo },
+				totalRooms,
+				rooms,
+				notes
+			};
+			hotelStorageStore.updateContract(hotelId, editingContract.id, updatedContract);
+		} else {
+			// Create new contract
+			const contract = {
+				name: contractName,
+				contractPeriod: { from: dateFrom, to: dateTo },
+				totalRooms,
+				rooms,
+				waves: [], // Empty waves array - will be added later via "Tambah Gelombang" button
+				isOverflow: false,
+				notes
+			};
+			hotelStorageStore.addContract(hotelId, contract);
+		}
 
-		hotelStorageStore.addContract(hotelId, contract);
 		resetAndClose();
 	}
 
-	function resetAndClose() {
+	function resetForm() {
 		contractName = '';
 		dateFrom = '';
 		dateTo = '';
@@ -134,12 +121,10 @@
 		tripleCount = 0;
 		quadCount = 0;
 		quintCount = 0;
-		waves = [];
-		newWaveName = '';
-		newWaveCheckIn = '';
-		newWaveCheckOut = '';
-		newWaveRoomCount = '';
-		newWaveFlatRate = '';
+	}
+
+	function resetAndClose() {
+		resetForm();
 		onClose();
 	}
 </script>
@@ -162,7 +147,9 @@
 			<!-- Header -->
 			<div class="flex items-center justify-between border-b border-gray-100 p-6">
 				<div>
-					<h2 class="text-lg font-semibold text-gray-900">Add Contract</h2>
+					<h2 class="text-lg font-semibold text-gray-900">
+						{editingContract ? 'Edit Contract' : 'Add Contract'}
+					</h2>
 					<p class="mt-0.5 text-sm text-gray-500">{hotelName}</p>
 				</div>
 				<button
@@ -363,102 +350,6 @@
 					</div>
 				</div>
 
-				<!-- Waves -->
-				<div>
-					<span class="mb-2 block text-xs font-medium text-gray-600">Gelombang</span>
-
-					<!-- Existing Waves -->
-					{#if waves.length > 0}
-						<div class="mb-3 space-y-2">
-							{#each waves as wave (wave.id)}
-								<div
-									class="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-2.5"
-									transition:slide={{ duration: 150 }}
-								>
-									<div class="min-w-0">
-										<div class="text-sm font-medium text-gray-900">{wave.name}</div>
-										<div class="text-xs text-gray-500">
-											{wave.checkIn} → {wave.checkOut} · {wave.roomCount} kamar
-										</div>
-										<div class="mt-0.5 text-[10px] text-gray-400">
-											Base: <span class="font-medium text-gray-600"
-												>{wave.flatRate?.toLocaleString()}</span
-											>
-										</div>
-									</div>
-									<div class="flex items-center gap-2">
-										<div
-											class="h-4 w-4 rounded-full border border-gray-200"
-											style="background-color: {wave.color}"
-										></div>
-										<button
-											class="rounded p-1 text-gray-400 hover:bg-red-50 hover:text-red-500"
-											onclick={() => removeWave(wave.id)}
-										>
-											<Trash2 size={14} />
-										</button>
-									</div>
-								</div>
-							{/each}
-						</div>
-					{/if}
-
-					<!-- Add Wave Form -->
-					<div class="space-y-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 p-3">
-						<div class="grid grid-cols-2 gap-2">
-							<input
-								type="text"
-								placeholder="Nama gelombang"
-								class="rounded-md border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#972395]"
-								bind:value={newWaveName}
-							/>
-							<input
-								type="number"
-								min="1"
-								max={totalRooms}
-								placeholder="Jumlah kamar"
-								class="rounded-md border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#972395]"
-								bind:value={newWaveRoomCount}
-							/>
-						</div>
-						<div class="grid grid-cols-[1fr_1fr_auto] gap-2">
-							<input
-								type="date"
-								class="rounded-md border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#972395]"
-								bind:value={newWaveCheckIn}
-							/>
-							<input
-								type="date"
-								class="rounded-md border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#972395]"
-								bind:value={newWaveCheckOut}
-							/>
-							<div class="flex items-center rounded-md border border-gray-200 bg-white px-2">
-								<input
-									type="color"
-									class="h-6 w-6 cursor-pointer border-none bg-transparent p-0"
-									bind:value={newWaveColor}
-									title="Pilih warna gelombang"
-								/>
-							</div>
-						</div>
-						<div class="grid grid-cols-2 gap-2">
-							<input
-								type="number"
-								placeholder="Flat Rate"
-								class="rounded-md border border-gray-200 bg-white px-3 py-2 text-xs outline-none focus:border-[#972395]"
-								bind:value={newWaveFlatRate}
-							/>
-						</div>
-						<button
-							class="flex w-full items-center justify-center gap-1 rounded-md border border-gray-200 bg-white py-2 text-xs font-medium text-gray-600 transition-colors hover:border-[#972395] hover:text-[#972395]"
-							onclick={addWave}
-						>
-							<Plus size={12} />
-							Add Wave
-						</button>
-					</div>
-				</div>
-
 				<!-- Notes -->
 				<div>
 					<label for="notes" class="mb-1.5 block text-xs font-medium text-gray-600">Catatan</label>
@@ -490,7 +381,7 @@
 					disabled={!contractName || !dateFrom || !dateTo || totalRooms === 0}
 					onclick={handleSubmit}
 				>
-					Save Contract
+					{editingContract ? 'Update Contract' : 'Save Contract'}
 				</button>
 			</div>
 		</div>

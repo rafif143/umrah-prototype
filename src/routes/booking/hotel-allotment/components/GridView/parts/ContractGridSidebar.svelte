@@ -1,5 +1,5 @@
 <script>
-	import { Plus, Pencil, AlertTriangle, ChevronDown, GripVertical } from 'lucide-svelte';
+	import { Plus, Pencil, AlertTriangle, ChevronDown, GripVertical, Package } from 'lucide-svelte';
 	import {
 		getAssignedJamaah,
 		getOrderedRooms,
@@ -14,7 +14,8 @@
 		isFullyAllocated = false,
 		onAddWave,
 		onEditWave,
-		onDragStart
+		onDragStart,
+		onImportPackage
 	} = $props();
 
 	let expandedWaveKeys = $state(new Set([0]));
@@ -62,6 +63,18 @@
 						<AlertTriangle size={14} color="#ef4444" />
 					</div>
 				{/if}
+
+				<button
+					class="icon-btn-ghost"
+					onclick={(e) => {
+						e.stopPropagation();
+						onImportPackage(wave, i);
+					}}
+					title="Import Package"
+					style="background: none; border: none; cursor: pointer; padding: 2px; display: flex; color: #972395;"
+				>
+					<Package size={12} />
+				</button>
 
 				<button
 					class="icon-btn-ghost"

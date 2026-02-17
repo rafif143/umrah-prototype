@@ -6,7 +6,8 @@
 	let waveName = $state('');
 	let startDate = $state('');
 	let endDate = $state('');
-	let waveColor = $state('#3b82f6'); // Default Blue
+	let rate = $state('');
+	let currency = $state('SAR'); // Default SAR
 
 	let contractStartStr = $derived(contract?.contractPeriod?.from || contract?.start || '');
 	let contractEndStr = $derived(contract?.contractPeriod?.to || contract?.end || '');
@@ -18,12 +19,14 @@
 				waveName = initialData.name;
 				startDate = initialData.start;
 				endDate = initialData.end;
-				waveColor = initialData.color?.bg || '#3b82f6';
+				rate = initialData.rate || '';
+				currency = initialData.currency || 'SAR';
 			} else {
 				waveName = `Gelombang ${(contract.waves?.length || 0) + 1}`;
 				startDate = '';
 				endDate = '';
-				waveColor = '#3b82f6';
+				rate = '';
+				currency = 'SAR';
 			}
 		}
 	});
@@ -55,7 +58,8 @@
 			name: waveName,
 			start: startDate,
 			end: endDate,
-			color: { bg: waveColor, text: '#ffffff' } // Simple color obj
+			rate: rate ? parseFloat(rate) : 0,
+			currency: currency
 		});
 		isOpen = false;
 	}
@@ -106,10 +110,23 @@
 				</div>
 
 				<div class="form-group">
-					<label for="wave-color">Warna Gelombang</label>
-					<div class="color-picker-wrapper">
-						<input id="wave-color" type="color" bind:value={waveColor} class="color-input" />
-						<span class="color-value">{waveColor}</span>
+					<label for="wave-rate">Rate (Harga per Kamar per Malam)</label>
+					<div class="rate-input-wrapper">
+						<input
+							id="wave-rate"
+							type="number"
+							bind:value={rate}
+							placeholder="0"
+							min="0"
+							step="0.01"
+							class="rate-input"
+						/>
+						<select bind:value={currency} class="currency-select">
+							<option value="USD">USD</option>
+							<option value="SAR">SAR</option>
+							<option value="MYR">MYR</option>
+							<option value="IDR">IDR</option>
+						</select>
 					</div>
 				</div>
 
@@ -226,6 +243,40 @@
 		font-size: 13px;
 		color: #64748b;
 		padding-right: 8px;
+	}
+	.rate-input-wrapper {
+		display: flex;
+		gap: 8px;
+		align-items: stretch;
+	}
+	.rate-input {
+		flex: 1;
+		padding: 8px 12px;
+		border: 1px solid #e2e8f0;
+		border-radius: 6px;
+		font-size: 13px;
+		color: #1e293b;
+	}
+	.rate-input:focus {
+		border-color: #3b82f6;
+		outline: none;
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
+	}
+	.currency-select {
+		padding: 8px 12px;
+		border: 1px solid #e2e8f0;
+		border-radius: 6px;
+		font-size: 13px;
+		color: #1e293b;
+		background: white;
+		cursor: pointer;
+		min-width: 80px;
+		font-weight: 600;
+	}
+	.currency-select:focus {
+		border-color: #3b82f6;
+		outline: none;
+		box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.1);
 	}
 	.modal-info {
 		padding: 10px;

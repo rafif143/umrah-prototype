@@ -30,6 +30,7 @@
 	let showAddContractModal = $state(false);
 	let viewMode = $state('grid');
 	let selectedHotelForContract = $state(null);
+	let editingContract = $state(null);
 
 	let hotels = $derived(
 		hotelStorageStore.hotels.filter((h) => {
@@ -77,6 +78,22 @@
 		{ key: 'unused', label: 'Unused' },
 		{ key: 'used', label: 'Used' }
 	];
+
+	function handleEditContract(contract) {
+		// Find the hotel that contains this contract
+		const hotel = hotels.find(h => h.contracts.some(c => c.id === contract.id));
+		if (hotel) {
+			selectedHotelForContract = hotel;
+		}
+		editingContract = contract;
+		showAddContractModal = true;
+	}
+
+	function handleCloseContractModal() {
+		showAddContractModal = false;
+		editingContract = null;
+		selectedHotelForContract = null;
+	}
 </script>
 
 <div class="flex min-h-screen bg-gray-50 font-sans">
@@ -216,6 +233,7 @@
 											index={idx + 1}
 											isExpanded={expandedContractId === contract.id}
 											onToggle={toggleContract}
+											onEdit={handleEditContract}
 										/>
 
 										{#if expandedContractId === contract.id}
@@ -298,8 +316,6 @@
 	show={showAddContractModal}
 	hotelId={selectedHotelForContract?.hotelId}
 	hotelName={selectedHotelForContract?.hotelName}
-	onClose={() => {
-		showAddContractModal = false;
-		selectedHotelForContract = null;
-	}}
+	editingContract={editingContract}
+	onClose={handleCloseContractModal}
 />

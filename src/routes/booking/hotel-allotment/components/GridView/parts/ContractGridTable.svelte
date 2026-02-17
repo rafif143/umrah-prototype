@@ -16,6 +16,7 @@
 		dragSourceWaveId,
 		dropTargetRoom,
 		isDraggingRoom,
+		isRoomSold,
 		onRoomDragStart,
 		onRoomDragEnd,
 		onRoomDragOver,
@@ -99,10 +100,12 @@
 					{@const tc = localTypeConfig[effectiveType] || { bg: '#eceff1', color: '#607d8b' }}
 					{@const isManipulated = isRoomManipulatedInWave(room, selectedWave)}
 					{@const isDragOver = dropTargetRoom === room.id}
+					{@const isSold = isRoomSold(room.id)}
 					<th
 						class="room-number-header"
 						class:room-selected={true}
 						class:room-manipulated={isManipulated}
+						class:room-sold={isSold}
 						class:drag-over={isDragOver}
 						style="background: {tc.headerBg}; color: #fff;"
 						oncontextmenu={(e) => onOpenRoomTypeMenu(e, room.id)}
@@ -114,6 +117,9 @@
 					>
 						<div class="room-header-content">
 							<span class="room-num">{room.id.replace('R0', '').replace('R', '')}</span>
+							{#if isSold}
+								<span class="sold-badge" title="Kamar dijual">💰</span>
+							{/if}
 							{#if isManipulated}
 								{@const originalType = room.originalType || room.type}
 								<span class="manip-badge" title="Tipe diubah: {originalType.toUpperCase()} → {effectiveType.toUpperCase()} (Wave: {selectedWave?.name || 'N/A'})">
@@ -155,6 +161,7 @@
 						{@const rightTypeColor = rightWaveType ? localTypeConfig[rightWaveType]?.headerBg || '#607d8b' : null}
 						{@const rightColor = extractColor(rightRoomColor) || rightTypeColor}
 						{@const isColHover = hoverRoomId === room.id}
+						{@const isSold = isRoomSold(room.id)}
 						{@const isDragSrc =
 							dragSourceRoomId === room.id &&
 							(dragSourceWaveId
@@ -181,6 +188,7 @@
 						<td
 							class="grid-cell"
 							class:col-highlight={isColHover}
+							class:cell-sold={isSold}
 							class:drag-source={isDragSrc}
 							class:wave-drag-source={isWaveDragSrc}
 							class:wave-drop-target={isWaveDropTarget && draggedWaveInfo}
@@ -384,6 +392,31 @@
 		border-width: 0 10px 10px 0;
 		border-color: transparent #fbbf24 transparent transparent;
 	}
+	.room-number-header.room-sold {
+		box-shadow: inset 0 0 0 3px #16a34a !important;
+		position: relative;
+		background: repeating-linear-gradient(
+			45deg,
+			rgba(22, 163, 74, 0.1),
+			rgba(22, 163, 74, 0.1) 10px,
+			rgba(22, 163, 74, 0.2) 10px,
+			rgba(22, 163, 74, 0.2) 20px
+		) !important;
+	}
+	.room-number-header.room-sold::before {
+		content: '💰 DIJUAL';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%) rotate(-15deg);
+		font-size: 9px;
+		font-weight: 900;
+		color: #16a34a;
+		opacity: 0.3;
+		letter-spacing: 1px;
+		white-space: nowrap;
+		pointer-events: none;
+	}
 	.room-number-header.drag-over {
 		outline: 2px dashed #fbbf24 !important;
 		outline-offset: -2px;
@@ -405,6 +438,22 @@
 		font-size: 10px;
 		font-weight: 800;
 		font-variant-numeric: tabular-nums;
+	}
+
+	.sold-badge {
+		font-size: 12px;
+		animation: pulse-sold 2s ease-in-out infinite;
+	}
+
+	@keyframes pulse-sold {
+		0%, 100% {
+			opacity: 1;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 0.7;
+			transform: scale(1.1);
+		}
 	}
 
 	.manip-badge {
@@ -503,6 +552,33 @@
 	}
 	.grid-cell.col-highlight {
 		background: rgba(99, 102, 241, 0.04);
+	}
+	.grid-cell.cell-sold {
+		background: repeating-linear-gradient(
+			45deg,
+			rgba(22, 163, 74, 0.08),
+			rgba(22, 163, 74, 0.08) 8px,
+			rgba(22, 163, 74, 0.15) 8px,
+			rgba(22, 163, 74, 0.15) 16px
+		) !important;
+		border-right: 2px solid #16a34a !important;
+		border-bottom: 2px solid #16a34a !important;
+		position: relative;
+	}
+	.grid-cell.cell-sold::before {
+		content: '💰';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		font-size: 14px;
+		opacity: 0.25;
+		pointer-events: none;
+		z-index: 1;
+	}
+	.grid-cell.cell-sold .cell-split {
+		position: relative;
+		z-index: 2;
 	}
 	.cell-split {
 		display: flex;

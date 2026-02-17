@@ -28,6 +28,7 @@
 
 	import RoomDetailModal from '../Modals/RoomDetailModal.svelte';
 	import AddWaveModal from '../Modals/AddWaveModal.svelte';
+	import ImportPackageModal from '../Modals/ImportPackageModal.svelte';
 
 	import AllocationAlertModal from '../Modals/AllocationAlertModal.svelte';
 	import SwapRoomModal from '../Modals/SwapRoomModal.svelte';
@@ -48,6 +49,9 @@
 
 	let showAddWaveModal = $state(false);
 	let editingWave = $state(null);
+	let showImportPackageModal = $state(false);
+	let importingWave = $state(null);
+	let importingWaveIndex = $state(null);
 
 	// === Drawer/Modal State (from Card View) ===
 
@@ -183,6 +187,42 @@
 		showAddWaveModal = true;
 	}
 
+	function handleImportPackage(wave, waveIndex) {
+		importingWave = wave;
+		importingWaveIndex = waveIndex;
+		showImportPackageModal = true;
+	}
+
+	function handlePackageImport(importData) {
+		if (!importingWave) return;
+
+		pushHistory(); // Save state before import
+
+		// Merge imported jamaah with existing jamaah
+		const existingJamaah = importingWave.jamaah || [];
+		const newJamaah = [...existingJamaah, ...importData.jamaah];
+
+		// Update wave with new jamaah and package info
+		updateWave(importingWave.id, {
+			jamaah: newJamaah,
+			tripName: importData.packageName, // Update trip name with package name
+			packageId: importData.packageId,
+			tripDateId: importData.tripDateId
+		});
+
+		// Show success message
+		alertState = {
+			show: true,
+			title: 'Import Berhasil',
+			message: `${importData.jamaah.length} jamaah dari ${importData.bookings.length} booking berhasil diimport ke ${importingWave.name}`,
+			type: 'info',
+			onConfirm: () => closeAlert()
+		};
+
+		importingWave = null;
+		importingWaveIndex = null;
+	}
+
 	// Drag & Drop Jamaah
 	function onDragStart(e, jamaah, waveIndex) {
 		draggedJamaah = { ...jamaah, waveIndex };
@@ -208,6 +248,18 @@
 	function processJamaahDrop(room, jamaahData, waveIndex) {
 		const targetWave = (contract.waves || [])[waveIndex];
 		if (!targetWave) return;
+
+		// Check if room is sold
+		if (isRoomSold(room.id)) {
+			alertState = {
+				show: true,
+				title: 'Kamar Dijual',
+				message: `Kamar ${room.id} sudah ditandai sebagai dijual. Lepas status "Dijual" terlebih dahulu untuk mengalokasikan jamaah.`,
+				type: 'error',
+				onConfirm: () => closeAlert()
+			};
+			return;
+		}
 
 		const roomType = getRoomTypeForWave(room, targetWave);
 		const capacity = roomCapacity[roomType] || 2;
@@ -284,6 +336,18 @@
 		const { waveIndex, jamaahIds, requestedType, count } = bookingData;
 		const targetWave = (contract.waves || [])[waveIndex];
 		if (!targetWave) return;
+
+		// Check if room is sold
+		if (isRoomSold(room.id)) {
+			alertState = {
+				show: true,
+				title: 'Kamar Dijual',
+				message: `Kamar ${room.id} sudah ditandai sebagai dijual. Lepas status "Dijual" terlebih dahulu untuk mengalokasikan booking.`,
+				type: 'error',
+				onConfirm: () => closeAlert()
+			};
+			return;
+		}
 
 		const roomType = getRoomTypeForWave(room, targetWave);
 		const capacity = roomCapacity[roomType] || 2;
@@ -392,6 +456,45 @@
 			roomIds: newRoomIds,
 			roomsUsed: newRoomIds.length
 		});
+	}
+
+	// Mark room as sold
+	function toggleRoomSoldStatus(roomId) {
+		if (!selectedWave) return;
+
+		pushHistory(); // Save state before update
+
+		const currentSoldRooms = selectedWave.soldRooms || [];
+		const isSold = currentSoldRooms.includes(roomId);
+
+		let newSoldRooms;
+		if (isSold) {
+			// Remove from sold list
+			newSoldRooms = currentSoldRooms.filter((id) => id !== roomId);
+		} else {
+			// Check if room has jamaah - must be empty to mark as sold
+			const jamaahInRoom = getJamaahInRoom(contract, selectedWaveIndex, roomId);
+			if (jamaahInRoom.length > 0) {
+				alertState = {
+					show: true,
+					title: 'Kamar Tidak Kosong',
+					message: `Kamar ${roomId} masih berisi ${jamaahInRoom.length} jamaah. Kosongkan kamar terlebih dahulu sebelum menandai sebagai dijual.`,
+					type: 'error',
+					onConfirm: () => closeAlert()
+				};
+				return;
+			}
+
+			// Add to sold list
+			newSoldRooms = [...currentSoldRooms, roomId];
+		}
+
+		updateWave(selectedWave.id, { soldRooms: newSoldRooms });
+	}
+
+	function isRoomSold(roomId) {
+		if (!selectedWave) return false;
+		return (selectedWave.soldRooms || []).includes(roomId);
 	}
 
 	// Room type manipulation (per-wave)
@@ -583,6 +686,18 @@
 
 	function checkMoveConfirm(sourceRoom, targetRoom, waveId = dragSourceWaveId || selectedWave?.id) {
 		const waveindex = (contract.waves || []).findIndex((w) => w.id === waveId);
+
+		// Check if target room is sold
+		if (isRoomSold(targetRoom.id)) {
+			alertState = {
+				show: true,
+				title: 'Kamar Dijual',
+				message: `Kamar ${targetRoom.id} sudah ditandai sebagai dijual. Lepas status "Dijual" terlebih dahulu untuk memindahkan alokasi.`,
+				type: 'error',
+				onConfirm: () => closeAlert()
+			};
+			return;
+		}
 
 		// Use SwapRoomModal for detailed move confirmation too
 		swapState = {
@@ -830,6 +945,19 @@
 			return;
 		} // same room, no-op
 
+		// Check if target room is sold
+		if (isRoomSold(targetRoom.id)) {
+			alertState = {
+				show: true,
+				title: 'Kamar Dijual',
+				message: `Kamar ${targetRoom.id} sudah ditandai sebagai dijual. Lepas status "Dijual" terlebih dahulu untuk memindahkan alokasi.`,
+				type: 'error',
+				onConfirm: () => closeAlert()
+			};
+			draggedWaveInfo = null;
+			return;
+		}
+
 		const wave = (contract.waves || []).find((w) => w.id === waveId);
 		if (!wave) {
 			draggedWaveInfo = null;
@@ -982,6 +1110,7 @@
 				{isFullyAllocated}
 				onAddWave={handleAddWave}
 				onEditWave={openEditWave}
+				onImportPackage={handleImportPackage}
 				{onDragStart}
 			/>
 		{/if}
@@ -1000,6 +1129,7 @@
 			{dragSourceWaveId}
 			{dropTargetRoom}
 			{isDraggingRoom}
+			{isRoomSold}
 			onRoomDragStart={handleRoomDragStart}
 			onRoomDragEnd={handleRoomDragEnd}
 			onRoomDragOver={(e, id) => onDragOver(e, id)}
@@ -1070,6 +1200,21 @@
 				}}>🔍 Detail Kamar</button
 			>
 			{#if selectedWave}
+				{@const isSold = isRoomSold(roomTypeMenu.roomId)}
+				<button
+					class="context-menu-item"
+					class:sold={isSold}
+					onclick={() => {
+						toggleRoomSoldStatus(roomTypeMenu.roomId);
+						closeRoomTypeMenu();
+					}}
+				>
+					{#if isSold}
+						✓ Tandai Sebagai Dijual
+					{:else}
+						💰 Tandai Sebagai Dijual
+					{/if}
+				</button>
 				{@const jamaahInRoom = getJamaahInRoom(contract, selectedWaveIndex, roomTypeMenu.roomId)}
 				{#if jamaahInRoom.length > 0}
 					<button
@@ -1123,6 +1268,12 @@
 	{contract}
 	initialData={editingWave}
 	onSave={handleCreateWave}
+/>
+
+<ImportPackageModal
+	bind:isOpen={showImportPackageModal}
+	wave={importingWave}
+	onImport={handlePackageImport}
 />
 
 <!-- Undo Toast -->
@@ -1344,6 +1495,10 @@
 	}
 	.context-menu-item.reset {
 		color: #ef4444;
+	}
+	.context-menu-item.sold {
+		color: #16a34a;
+		font-weight: 600;
 	}
 	.context-menu-item.danger {
 		color: #dc2626;
