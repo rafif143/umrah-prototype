@@ -1,11 +1,11 @@
 <script>
 	import { hotelStorageStore } from '$lib/stores/hotelStorageStore.svelte.js';
 	import { Palette, NotebookPen, Briefcase, Calendar } from 'lucide-svelte';
-	import WaveDetailDrawer from './WaveDetailDrawer.svelte';
-	import RoomDetailModal from './RoomDetailModal.svelte';
-	import BookingAllocationDrawer from './BookingAllocationDrawer.svelte';
-	import AllocationAlertModal from './AllocationAlertModal.svelte';
-	import SwapRoomModal from './SwapRoomModal.svelte';
+	import WaveDetailDrawer from '../Drawers/WaveDetailDrawer.svelte';
+	import RoomDetailModal from '../Modals/RoomDetailModal.svelte';
+	import BookingAllocationDrawer from '../Drawers/BookingAllocationDrawer.svelte';
+	import AllocationAlertModal from '../Modals/AllocationAlertModal.svelte';
+	import SwapRoomModal from '../Modals/SwapRoomModal.svelte';
 	import { sidebarState } from '$lib/runes/sidebarState.svelte.js';
 	import { gregorianToHijri, hijriMonths } from '$lib/utils/hijri.js';
 
@@ -176,15 +176,23 @@
 	});
 
 	function getBookingForRoom(room) {
-		// Try to find real allocation
+		// First check allocations (legacy/booking data)
 		const booking = activeWave.allocations?.[room.id];
 		if (booking) return booking;
 
-		// Fallback: Generate Mock Data for existing occupied rooms without data
-		const cap = typeColors[room.type]?.cap || 2;
+		// Then check jamaah array (real data)
+		const jamaahInRoom = (activeWave?.jamaah || []).filter((j) => j.roomId === room.id);
+		if (jamaahInRoom.length > 0) {
+			return {
+				applicantName: `${jamaahInRoom.length} Jamaah di ${room.id}`,
+				pilgrims: jamaahInRoom.map((j) => ({ name: j.name, gender: j.gender }))
+			};
+		}
+
+		// Fallback: empty room
 		return {
-			applicantName: `Jamaah ${room.type.charAt(0).toUpperCase() + room.type.slice(1)}`,
-			pilgrims: Array.from({ length: cap }, (_, i) => ({ name: `Jamaah ${i + 1} (${room.id})` }))
+			applicantName: 'Kamar Kosong',
+			pilgrims: []
 		};
 	}
 
@@ -194,12 +202,17 @@
 		const currentAllocations = { ...(activeWave.allocations || {}) };
 
 		// Swap allocations
-		// Note: We used mock data for display, but we should persist it now if it was missing
-		// to ensures consistency for future swaps.
 		currentAllocations[sourceRoom.id] = targetBooking;
 		currentAllocations[targetRoom.id] = sourceBooking;
 
-		updateWave(activeWave.id, { allocations: currentAllocations });
+		// Swap jamaah roomIds as well
+		const updatedJamaah = (activeWave.jamaah || []).map((j) => {
+			if (j.roomId === sourceRoom.id) return { ...j, roomId: targetRoom.id };
+			if (j.roomId === targetRoom.id) return { ...j, roomId: sourceRoom.id };
+			return j;
+		});
+
+		updateWave(activeWave.id, { allocations: currentAllocations, jamaah: updatedJamaah });
 		swapState.show = false;
 	}
 

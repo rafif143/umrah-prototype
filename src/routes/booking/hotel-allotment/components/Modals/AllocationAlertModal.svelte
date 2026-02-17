@@ -21,6 +21,10 @@
 							<div class="rounded-full bg-amber-100 p-3 text-amber-600">
 								<AlertTriangle class="h-6 w-6" />
 							</div>
+						{:else if type === 'error'}
+							<div class="rounded-full bg-red-100 p-3 text-red-600">
+								<AlertTriangle class="h-6 w-6" />
+							</div>
 						{:else}
 							<div class="rounded-full bg-blue-100 p-3 text-blue-600">
 								<Info class="h-6 w-6" />
@@ -45,7 +49,9 @@
 					class="focus:ring-opacity-50 rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors focus:ring-4 {type ===
 					'warning'
 						? 'bg-amber-600 hover:bg-amber-700 focus:ring-amber-200'
-						: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-200'}"
+						: type === 'error'
+							? 'bg-red-600 hover:bg-red-700 focus:ring-red-200'
+							: 'bg-blue-600 hover:bg-blue-700 focus:ring-blue-200'}"
 					onclick={onConfirm}
 				>
 					Lanjutkan

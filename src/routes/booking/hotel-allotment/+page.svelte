@@ -1,13 +1,22 @@
 <script>
-	import { Building2, Plus, Search, Filter, Star, ChevronDown, LayoutGrid, List } from 'lucide-svelte';
+	import {
+		Building2,
+		Plus,
+		Search,
+		Filter,
+		Star,
+		ChevronDown,
+		LayoutGrid,
+		List
+	} from 'lucide-svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { hotelStorageStore } from '$lib/stores/hotelStorageStore.svelte.js';
-	import ContractCard from './ContractCard.svelte';
-	import ContractDetail from './ContractDetail.svelte';
-	import ContractGridView from './ContractGridView.svelte';
-	import WaveTimeline from './WaveTimeline.svelte';
-	import AddHotelModal from './AddHotelModal.svelte';
-	import AddContractModal from './AddContractModal.svelte';
+	import ContractCard from './components/CardView/ContractCard.svelte';
+	import ContractDetail from './components/CardView/ContractDetail.svelte';
+	import ContractGridView from './components/GridView/ContractGridView.svelte';
+	import WaveTimeline from './components/CardView/WaveTimeline.svelte';
+	import AddHotelModal from './components/Modals/AddHotelModal.svelte';
+	import AddContractModal from './components/Modals/AddContractModal.svelte';
 	import { slide } from 'svelte/transition';
 
 	import { sidebarState } from '$lib/runes/sidebarState.svelte.js';
@@ -210,13 +219,13 @@
 										/>
 
 										{#if expandedContractId === contract.id}
-											<div
-												class="border-t border-gray-100"
-												transition:slide={{ duration: 200 }}
-											>
+											<div class="border-t border-gray-100" transition:slide={{ duration: 200 }}>
 												<!-- View Mode Toggle -->
 												<div class="flex items-center justify-end gap-1 px-5 pt-3 pb-1">
-													<span class="mr-2 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">Tampilan</span>
+													<span
+														class="mr-2 text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
+														>Tampilan</span
+													>
 													<button
 														class="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors
 															{viewMode === 'grid' ? 'bg-[#972395] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}"
