@@ -32,7 +32,16 @@
 			checkIn = wave.checkIn || '';
 			checkOut = wave.checkOut || '';
 			if (checkOut) hijriOut = gregorianToHijri(checkOut);
-			color = wave.color || '#972395';
+
+			// Handle both string and object color formats
+			if (typeof wave.color === 'string') {
+				color = wave.color;
+			} else if (wave.color?.bg) {
+				color = wave.color.bg;
+			} else {
+				color = '#972395';
+			}
+
 			flatRate = wave.flatRate || '';
 		}
 	});
@@ -70,7 +79,7 @@
 				name: waveName,
 				checkIn,
 				checkOut,
-				color,
+				color: { bg: color, text: '#fff' },
 				flatRate: parseFloat(flatRate) || 0
 			});
 		}

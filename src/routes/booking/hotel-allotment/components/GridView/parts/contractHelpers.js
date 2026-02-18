@@ -13,18 +13,20 @@ export function getAllDates(contract) {
     return days;
 }
 
-export function getRoomsByType(contract) {
+import { getRoomTypeForWave } from './roomTypeHelpers.js';
+
+export function getRoomsByType(contract, wave = null) {
     if (!contract?.rooms) return [];
     const groups = {};
     const typeOrder = ['quint', 'quad', 'triple', 'double'];
-    
-    // Group by originalType (not current type) so manipulated rooms stay in their original column
+
+    // Group by effective type in the context of the wave
     for (const room of contract.rooms) {
-        const groupType = room.originalType || room.type; // Fallback to type if originalType missing
+        const groupType = wave ? getRoomTypeForWave(room, wave) : (room.originalType || room.type);
         if (!groups[groupType]) groups[groupType] = [];
         groups[groupType].push(room);
     }
-    
+
     const ordered = [];
     for (const t of typeOrder) {
         if (groups[t]) ordered.push({ type: t, rooms: groups[t] });
@@ -35,9 +37,9 @@ export function getRoomsByType(contract) {
     return ordered;
 }
 
-export function getOrderedRooms(contract) {
+export function getOrderedRooms(contract, wave = null) {
     const result = [];
-    for (const group of getRoomsByType(contract)) {
+    for (const group of getRoomsByType(contract, wave)) {
         for (const room of group.rooms) result.push(room);
     }
     return result;

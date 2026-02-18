@@ -123,7 +123,7 @@
 		const previousState = historyStack.pop();
 
 		// Update contract without pushing to history (restore waves with roomTypeOverrides)
-		hotelStorageStore.updateContract(hotelId, contract.id, { 
+		hotelStorageStore.updateContract(hotelId, contract.id, {
 			waves: previousState.waves
 		});
 
@@ -306,14 +306,14 @@
 		const data = e.dataTransfer.getData('text/plain');
 		try {
 			const parsed = JSON.parse(data);
-			
+
 			// Handle Booking Drop (all jamaah in booking)
 			if (parsed.type === 'booking') {
 				const room = contract.rooms.find((r) => r.id === roomId);
 				if (room) processBookingDrop(room, parsed);
 				return;
 			}
-			
+
 			// Handle Jamaah Drop (from JSON)
 			if (parsed.type === 'jamaah' || parsed.waveIndex !== undefined) {
 				const room = contract.rooms.find((r) => r.id === roomId);
@@ -497,13 +497,52 @@
 		return (selectedWave.soldRooms || []).includes(roomId);
 	}
 
+	// Mark room as staff
+	function toggleRoomStaffStatus(roomId) {
+		if (!selectedWave) return;
+
+		pushHistory(); // Save state before update
+
+		const currentStaffRooms = selectedWave.staffRooms || [];
+		const isStaff = currentStaffRooms.includes(roomId);
+
+		let newStaffRooms;
+		if (isStaff) {
+			// Remove from staff list
+			newStaffRooms = currentStaffRooms.filter((id) => id !== roomId);
+		} else {
+			// Check if room has jamaah - must be empty to mark as staff
+			const jamaahInRoom = getJamaahInRoom(contract, selectedWaveIndex, roomId);
+			if (jamaahInRoom.length > 0) {
+				alertState = {
+					show: true,
+					title: 'Kamar Tidak Kosong',
+					message: `Kamar ${roomId} masih berisi ${jamaahInRoom.length} jamaah. Kosongkan kamar terlebih dahulu sebelum menandai sebagai untuk staff.`,
+					type: 'error',
+					onConfirm: () => closeAlert()
+				};
+				return;
+			}
+
+			// Add to staff list
+			newStaffRooms = [...currentStaffRooms, roomId];
+		}
+
+		updateWave(selectedWave.id, { staffRooms: newStaffRooms });
+	}
+
+	function isRoomStaff(roomId) {
+		if (!selectedWave) return false;
+		return (selectedWave.staffRooms || []).includes(roomId);
+	}
+
 	// Room type manipulation (per-wave)
 	function changeRoomType(roomId, newType) {
 		if (!selectedWave) {
 			console.error('No selectedWave when changing room type');
 			return;
 		}
-		
+
 		console.log('Changing room type:', {
 			roomId,
 			newType,
@@ -511,18 +550,18 @@
 			waveName: selectedWave.name,
 			currentOverrides: selectedWave.roomTypeOverrides
 		});
-		
+
 		pushHistory(); // Save state before room type change
-		
+
 		// Get current overrides for this wave
 		const currentOverrides = { ...(selectedWave.roomTypeOverrides || {}) };
-		
+
 		// Find the room's original type
 		const room = contract.rooms.find((r) => r.id === roomId);
 		const originalType = room?.originalType;
-		
+
 		console.log('Room info:', { roomId, originalType, newType });
-		
+
 		// If newType is same as original, remove the override
 		if (newType === originalType) {
 			delete currentOverrides[roomId];
@@ -532,7 +571,7 @@
 			currentOverrides[roomId] = newType;
 			console.log('Setting override:', currentOverrides);
 		}
-		
+
 		// Update wave with new overrides
 		updateWave(selectedWave.id, { roomTypeOverrides: currentOverrides });
 		roomTypeMenu = null;
@@ -577,7 +616,7 @@
 		}
 	}
 
-	function handleSaveRoom({ id, type, roomColor, force = false }) {
+	function handleSaveRoom({ id, type, force = false }) {
 		const occupants = getJamaahInRoom(contract, selectedWaveIndex, id);
 		const cap = roomCapacity[type] || 2;
 
@@ -588,23 +627,20 @@
 				message: `Kamar ini memiliki ${occupants.length} orang, tapi kapasitas ${type.toUpperCase()} hanya ${cap}.\nTetap ubah tipe kamar?`,
 				type: 'error',
 				onConfirm: () => {
-					handleSaveRoom({ id, type, roomColor, force: true });
+					handleSaveRoom({ id, type, force: true });
 					closeAlert();
 				}
 			};
 			return;
 		}
 
-		// Don't push history here - updateWave will do it
-		// pushHistory(); 
-
 		// Get current overrides for this wave
 		const currentOverrides = { ...(selectedWave.roomTypeOverrides || {}) };
-		
+
 		// Find the room's original type
 		const room = contract.rooms.find((r) => r.id === id);
 		const originalType = room?.originalType || room?.type;
-		
+
 		// If type is same as original, remove the override
 		if (type === originalType) {
 			delete currentOverrides[id];
@@ -614,28 +650,18 @@
 		}
 
 		// Prepare wave updates
-		let waveUpdates = { roomTypeOverrides: currentOverrides };
-		
-		// Update room color for this wave
-		if (roomColor) {
-			const currentRoomColors = { ...(selectedWave.roomColors || {}) };
-			currentRoomColors[id] = roomColor;
-			waveUpdates.roomColors = currentRoomColors;
-			console.log('Saving room color:', { roomId: id, color: roomColor, allColors: currentRoomColors });
-		}
-		
-		updateWave(selectedWave.id, waveUpdates);
+		updateWave(selectedWave.id, { roomTypeOverrides: currentOverrides });
 		showRoomModal = false;
 	}
 
 	// === Room Move & Swap (from Card View) ===
 	function getBookingForRoom(room, waveId = selectedWave?.id) {
 		const wave = (contract.waves || []).find((w) => w.id === waveId);
-		
+
 		// First check allocations (legacy/booking data)
 		const booking = wave?.allocations?.[room.id];
 		if (booking) return booking;
-		
+
 		// Then check jamaah array (real data)
 		const jamaahInRoom = (wave?.jamaah || []).filter((j) => j.roomId === room.id);
 		if (jamaahInRoom.length > 0) {
@@ -644,7 +670,7 @@
 				pilgrims: jamaahInRoom.map((j) => ({ name: j.name, gender: j.gender }))
 			};
 		}
-		
+
 		// Fallback: empty room
 		return {
 			applicantName: 'Kamar Kosong',
@@ -790,9 +816,8 @@
 				// Check if target room has jamaah (real occupancy check)
 				const targetJamaah = (targetWave?.jamaah || []).filter((j) => j.roomId === room.id);
 				const targetAlloc = targetWave?.allocations?.[room.id];
-				const targetOccupied = 
-					targetJamaah.length > 0 || 
-					(targetAlloc?.pilgrims && targetAlloc.pilgrims.length > 0);
+				const targetOccupied =
+					targetJamaah.length > 0 || (targetAlloc?.pilgrims && targetAlloc.pilgrims.length > 0);
 
 				if (targetOccupied) {
 					swapState = {
@@ -1008,9 +1033,8 @@
 		// Check if target room is occupied in this wave (check both allocations and jamaah)
 		const targetAlloc = wave.allocations?.[targetRoom.id];
 		const targetJamaah = (wave.jamaah || []).filter((j) => j.roomId === targetRoom.id);
-		const isTargetOccupied = 
-			(targetAlloc?.pilgrims && targetAlloc.pilgrims.length > 0) || 
-			targetJamaah.length > 0;
+		const isTargetOccupied =
+			(targetAlloc?.pilgrims && targetAlloc.pilgrims.length > 0) || targetJamaah.length > 0;
 
 		// Use SwapRoomModal for detailed confirmation
 		swapState = {
@@ -1122,7 +1146,7 @@
 			{orderedRooms}
 			{roomsByType}
 			{localTypeConfig}
-			selectedWave={selectedWave}
+			{selectedWave}
 			bind:hoverRoomId
 			bind:hoveredCell
 			{dragSourceRoomId}
@@ -1130,6 +1154,7 @@
 			{dropTargetRoom}
 			{isDraggingRoom}
 			{isRoomSold}
+			{isRoomStaff}
 			onRoomDragStart={handleRoomDragStart}
 			onRoomDragEnd={handleRoomDragEnd}
 			onRoomDragOver={(e, id) => onDragOver(e, id)}
@@ -1162,8 +1187,12 @@
 			<div class="context-menu-title">Ubah Tipe Kamar {roomTypeMenu.roomId}</div>
 			{#each ['double', 'triple', 'quad', 'quint'] as t}
 				{@const currentRoom = contract.rooms.find((r) => r.id === roomTypeMenu.roomId)}
-				{@const effectiveType = selectedWave?.roomTypeOverrides?.[roomTypeMenu.roomId] || currentRoom?.originalType || currentRoom?.type}
-				{@const isManipulated = selectedWave?.roomTypeOverrides?.[roomTypeMenu.roomId] !== undefined}
+				{@const effectiveType =
+					selectedWave?.roomTypeOverrides?.[roomTypeMenu.roomId] ||
+					currentRoom?.originalType ||
+					currentRoom?.type}
+				{@const isManipulated =
+					selectedWave?.roomTypeOverrides?.[roomTypeMenu.roomId] !== undefined}
 				<button
 					class="context-menu-item"
 					class:active={effectiveType === t}
@@ -1184,7 +1213,8 @@
 					<div class="context-menu-divider"></div>
 					<button
 						class="context-menu-item reset"
-						onclick={() => changeRoomType(roomTypeMenu.roomId, currentRoom?.originalType || currentRoom?.type)}
+						onclick={() =>
+							changeRoomType(roomTypeMenu.roomId, currentRoom?.originalType || currentRoom?.type)}
 					>
 						↩ Reset ke {(currentRoom?.originalType || currentRoom?.type)?.toUpperCase()}
 					</button>
@@ -1213,6 +1243,21 @@
 						✓ Tandai Sebagai Dijual
 					{:else}
 						💰 Tandai Sebagai Dijual
+					{/if}
+				</button>
+				{@const isStaff = isRoomStaff(roomTypeMenu.roomId)}
+				<button
+					class="context-menu-item"
+					class:staff={isStaff}
+					onclick={() => {
+						toggleRoomStaffStatus(roomTypeMenu.roomId);
+						closeRoomTypeMenu();
+					}}
+				>
+					{#if isStaff}
+						✓ Tandai Sebagai Staff
+					{:else}
+						👨‍✈️ Tandai Sebagai Staff
 					{/if}
 				</button>
 				{@const jamaahInRoom = getJamaahInRoom(contract, selectedWaveIndex, roomTypeMenu.roomId)}
@@ -1339,7 +1384,7 @@
 		border-radius: 0;
 		margin: 0;
 	}
-	
+
 	.contract-grid-wrapper.fullscreen .grid-main-area {
 		height: calc(100vh - 90px); /* toolbar + hint bar */
 	}
@@ -1498,6 +1543,10 @@
 	}
 	.context-menu-item.sold {
 		color: #16a34a;
+		font-weight: 600;
+	}
+	.context-menu-item.staff {
+		color: #4f46e5;
 		font-weight: 600;
 	}
 	.context-menu-item.danger {

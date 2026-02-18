@@ -8,6 +8,7 @@
 	let endDate = $state('');
 	let rate = $state('');
 	let currency = $state('SAR'); // Default SAR
+	let waveColor = $state('#1e3a5f'); // Default blueish
 
 	let contractStartStr = $derived(contract?.contractPeriod?.from || contract?.start || '');
 	let contractEndStr = $derived(contract?.contractPeriod?.to || contract?.end || '');
@@ -21,12 +22,17 @@
 				endDate = initialData.end;
 				rate = initialData.rate || '';
 				currency = initialData.currency || 'SAR';
+				waveColor =
+					typeof initialData.color === 'string'
+						? initialData.color
+						: initialData.color?.bg || '#1e3a5f';
 			} else {
 				waveName = `Gelombang ${(contract.waves?.length || 0) + 1}`;
 				startDate = '';
 				endDate = '';
 				rate = '';
 				currency = 'SAR';
+				waveColor = '#1e3a5f';
 			}
 		}
 	});
@@ -59,7 +65,8 @@
 			start: startDate,
 			end: endDate,
 			rate: rate ? parseFloat(rate) : 0,
-			currency: currency
+			currency: currency,
+			color: { bg: waveColor, text: '#fff' }
 		});
 		isOpen = false;
 	}
@@ -85,6 +92,14 @@
 						bind:value={waveName}
 						placeholder="Contoh: Gelombang 1"
 					/>
+				</div>
+
+				<div class="form-group">
+					<label for="wave-color">Warna Gelombang</label>
+					<div class="color-picker-wrapper">
+						<input id="wave-color" type="color" bind:value={waveColor} class="color-input" />
+						<span class="color-value">{waveColor.toUpperCase()}</span>
+					</div>
 				</div>
 
 				<div class="form-group">

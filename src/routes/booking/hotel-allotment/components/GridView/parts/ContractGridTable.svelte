@@ -1,7 +1,13 @@
 <script>
-	import { getHijriDate, getCellTooltip, getCellLookup } from './contractHelpers.js';
+	import {
+		getHijriDate,
+		getCellTooltip,
+		getCellLookup,
+		getJamaahInRoom
+	} from './contractHelpers.js';
 	import { getRoomTypeForWave, isRoomManipulatedInWave } from './roomTypeHelpers.js';
 	import { hijriMonths } from '$lib/utils/hijri.js';
+	import { Repeat } from 'lucide-svelte';
 
 	let {
 		contract,
@@ -17,6 +23,7 @@
 		dropTargetRoom,
 		isDraggingRoom,
 		isRoomSold,
+		isRoomStaff,
 		onRoomDragStart,
 		onRoomDragEnd,
 		onRoomDragOver,
@@ -32,6 +39,52 @@
 		onWaveCellDragEnd,
 		onWaveCellDrop
 	} = $props();
+
+	let waveIdAtTop = $state(null);
+	let observer = null;
+	let scrollContainer = $state();
+	let primaryCalendar = $state('gregorian'); // 'gregorian' | 'hijri'
+
+	function toggleCalendar() {
+		primaryCalendar = primaryCalendar === 'gregorian' ? 'hijri' : 'gregorian';
+	}
+
+	$effect(() => {
+		if (scrollContainer) {
+			observer = new IntersectionObserver(
+				(entries) => {
+					// We want the one that is closest to the top
+					const visible = entries
+						.filter((e) => e.isIntersecting)
+						.sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+
+					if (visible.length > 0) {
+						const dateKey = visible[0].target.getAttribute('data-date');
+						// Find any wave for this date (just pick the first one found in lookup for ANY room)
+						const firstRoom = contract.rooms[0];
+						if (firstRoom) {
+							const info = cellLookup[`${firstRoom.id}_${dateKey}`];
+							const waveId = info?.right?.wave?.id || info?.left?.wave?.id;
+							if (waveId) waveIdAtTop = waveId;
+						}
+					}
+				},
+				{
+					root: scrollContainer,
+					rootMargin: '-50px 0px -90% 0px', // Focus on a thin strip at the top
+					threshold: 0
+				}
+			);
+
+			// Observe all rows
+			const rows = scrollContainer.querySelectorAll('tr[data-date]');
+			rows.forEach((r) => observer.observe(r));
+		}
+
+		return () => {
+			if (observer) observer.disconnect();
+		};
+	});
 
 	const dayNames = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
@@ -69,17 +122,46 @@
 		if (typeof color === 'object' && color.bg) return color.bg;
 		return null;
 	}
+
+	// Helper for header context
+	function getContextWave(room) {
+		// 1. Priority: Wave being hovered (precise)
+		const hoverInfo =
+			hoveredCell && hoveredCell.roomId === room.id
+				? cellLookup[`${room.id}_${hoveredCell.dateKey}`]
+				: null;
+		const hoveredWave = hoverInfo?.right?.wave || hoverInfo?.left?.wave;
+		if (hoveredWave) return hoveredWave;
+
+		// 2. Priority: Wave at the top of the scroll
+		if (waveIdAtTop) {
+			const wave = (contract.waves || []).find((w) => w.id === waveIdAtTop);
+			if (wave) return wave;
+		}
+
+		// 3. Fallback: Selected wave from sidebar
+		return selectedWave;
+	}
 </script>
 
-<div class="grid-scroll-container">
+<div class="grid-scroll-container" bind:this={scrollContainer}>
 	<table class="allotment-grid">
 		<thead>
 			<tr class="header-type-row">
 				<th class="corner-cell sticky-col" rowspan="2">
-					<div class="corner-content">
-						<span class="corner-date">TANGGAL</span>
-						<span class="corner-hijri">HIJRIAH</span>
-					</div>
+					<button
+						class="corner-swap-btn"
+						onclick={toggleCalendar}
+						title="Klik untuk tukar format tanggal"
+					>
+						<div class="corner-content" class:hijri-active={primaryCalendar === 'hijri'}>
+							<span class="corner-date">TANGGAL</span>
+							<span class="corner-hijri">HIJRIAH</span>
+						</div>
+						<div class="swap-icon-container">
+							<Repeat size={10} />
+						</div>
+					</button>
 				</th>
 				<th class="day-header sticky-col-2" rowspan="2"><span>HARI</span></th>
 				{#each roomsByType as group}
@@ -96,16 +178,26 @@
 			</tr>
 			<tr class="header-room-row">
 				{#each orderedRooms as room}
-					{@const effectiveType = getRoomTypeForWave(room, selectedWave)}
+					{@const contextWave = getContextWave(room)}
+					{@const effectiveType = getRoomTypeForWave(room, contextWave)}
 					{@const tc = localTypeConfig[effectiveType] || { bg: '#eceff1', color: '#607d8b' }}
-					{@const isManipulated = isRoomManipulatedInWave(room, selectedWave)}
+					{@const isManipulated = isRoomManipulatedInWave(room, contextWave)}
 					{@const isDragOver = dropTargetRoom === room.id}
-					{@const isSold = isRoomSold(room.id)}
+					{@const isSold = (contextWave?.soldRooms || []).includes(room.id)}
+					{@const isStaff = (contextWave?.staffRooms || []).includes(room.id)}
+					{@const currentWaveIndex = (contract.waves || []).findIndex(
+						(w) => w.id === contextWave?.id
+					)}
+					{@const occupants = getJamaahInRoom(contract, currentWaveIndex, room.id)}
+					{@const capacity = localTypeConfig[effectiveType]?.capacity || 2}
+					{@const isFull = occupants.length === capacity}
+					{@const isOverload = occupants.length > capacity}
 					<th
 						class="room-number-header"
 						class:room-selected={true}
 						class:room-manipulated={isManipulated}
 						class:room-sold={isSold}
+						class:room-staff={isStaff}
 						class:drag-over={isDragOver}
 						style="background: {tc.headerBg}; color: #fff;"
 						oncontextmenu={(e) => onOpenRoomTypeMenu(e, room.id)}
@@ -117,12 +209,36 @@
 					>
 						<div class="room-header-content">
 							<span class="room-num">{room.id.replace('R0', '').replace('R', '')}</span>
+
+							<!-- Occupancy Indicator -->
+							<span
+								class="room-occupancy"
+								class:room-full={isFull}
+								class:room-overload={isOverload}
+							>
+								{occupants.length}/{capacity}
+								<div class="occ-tooltip">
+									{isOverload
+										? '🚨 Overload'
+										: isFull
+											? '✅ Kamar Penuh'
+											: `✨ ${capacity - occupants.length} tersedia`}
+								</div>
+							</span>
+
 							{#if isSold}
 								<span class="sold-badge" title="Kamar dijual">💰</span>
 							{/if}
+							{#if isStaff}
+								<span class="staff-badge" title="Kamar staff">👨‍✈️</span>
+							{/if}
 							{#if isManipulated}
 								{@const originalType = room.originalType || room.type}
-								<span class="manip-badge" title="Tipe diubah: {originalType.toUpperCase()} → {effectiveType.toUpperCase()} (Wave: {selectedWave?.name || 'N/A'})">
+								<span
+									class="manip-badge"
+									title="Tipe diubah: {originalType.toUpperCase()} → {effectiveType.toUpperCase()} (Wave: {contextWave?.name ||
+										'N/A'})"
+								>
 									<span class="manip-icon">⚙</span>
 									<span class="manip-label">{effectiveType.toUpperCase()}</span>
 								</span>
@@ -138,13 +254,27 @@
 				{@const hijri = getHijriDate(date)}
 				{@const dayName = dayNames[date.getDay()]}
 				{@const friday = isFriday(date)}
-				<tr class="date-row" class:friday-row={friday}>
+				{@const dateKey = date.toISOString().split('T')[0]}
+				<tr class="date-row" class:friday-row={friday} data-date={dateKey}>
 					<td class="date-cell sticky-col" class:friday-date={friday}>
-						<div class="date-inner">
-							<span class="greg-date">{formatDateShort(date)}</span>
-							{#if hijri}<span class="hijri-short"
-									>{hijri.day} {hijriMonths[hijri.month].substring(0, 3)}</span
-								>{/if}
+						<div class="date-inner" class:hijri-primary={primaryCalendar === 'hijri'}>
+							{#if primaryCalendar === 'gregorian'}
+								<span class="primary-date">{formatDateShort(date)}</span>
+								{#if hijri}
+									<span class="secondary-date">
+										{hijri.day}
+										{hijriMonths[hijri.month].substring(0, 3)}
+									</span>
+								{/if}
+							{:else}
+								{#if hijri}
+									<span class="primary-date">
+										{hijri.day}
+										{hijriMonths[hijri.month].substring(0, 3)}
+									</span>
+								{/if}
+								<span class="secondary-date">{formatDateShort(date)}</span>
+							{/if}
 						</div>
 					</td>
 					<td class="day-name-cell sticky-col-2" class:friday-day={friday}>{dayName}</td>
@@ -153,15 +283,20 @@
 						{@const parts = getCellParts(room.id, date)}
 						{@const effectiveTypeForHeader = getRoomTypeForWave(room, selectedWave)}
 						{@const leftWaveType = parts.left ? getRoomTypeForWave(room, parts.left.wave) : null}
-						{@const leftRoomColor = parts.left?.wave?.roomColors?.[room.id]}
-						{@const leftTypeColor = leftWaveType ? localTypeConfig[leftWaveType]?.headerBg || '#607d8b' : null}
-						{@const leftColor = extractColor(leftRoomColor) || leftTypeColor}
+						{@const leftWaveColor = getWaveBg(parts.left?.wave)}
+						{@const leftTypeColor = leftWaveType
+							? localTypeConfig[leftWaveType]?.headerBg || '#607d8b'
+							: null}
+						{@const leftColor = leftWaveColor || leftTypeColor}
 						{@const rightWaveType = parts.right ? getRoomTypeForWave(room, parts.right.wave) : null}
-						{@const rightRoomColor = parts.right?.wave?.roomColors?.[room.id]}
-						{@const rightTypeColor = rightWaveType ? localTypeConfig[rightWaveType]?.headerBg || '#607d8b' : null}
-						{@const rightColor = extractColor(rightRoomColor) || rightTypeColor}
+						{@const rightWaveColor = getWaveBg(parts.right?.wave)}
+						{@const rightTypeColor = rightWaveType
+							? localTypeConfig[rightWaveType]?.headerBg || '#607d8b'
+							: null}
+						{@const rightColor = rightWaveColor || rightTypeColor}
 						{@const isColHover = hoverRoomId === room.id}
 						{@const isSold = isRoomSold(room.id)}
+						{@const isStaff = isRoomStaff(room.id)}
 						{@const isDragSrc =
 							dragSourceRoomId === room.id &&
 							(dragSourceWaveId
@@ -170,7 +305,6 @@
 								: true)}
 						{@const isTransition =
 							parts.left && parts.right && parts.left.waveIndex !== parts.right.waveIndex}
-						{@const dateKey = date.toISOString().split('T')[0]}
 						{@const leftTooltip = parts.left ? getTooltip(room.id, parts.left.waveIndex) : ''}
 						{@const rightTooltip = parts.right ? getTooltip(room.id, parts.right.waveIndex) : ''}
 						{@const isInWaveDateRange =
@@ -186,12 +320,15 @@
 						{@const isWaveDropTarget =
 							draggedWaveInfo && isInWaveDateRange && draggedWaveInfo.fromRoomId !== room.id}
 						<td
-							class="grid-cell"
+							class:grid-cell={true}
 							class:col-highlight={isColHover}
 							class:cell-sold={isSold}
+							class:cell-staff={isStaff}
 							class:drag-source={isDragSrc}
 							class:wave-drag-source={isWaveDragSrc}
-							class:wave-drop-target={isWaveDropTarget && draggedWaveInfo}
+							class:wave-drop-target={isWaveDragSrc !== undefined &&
+								isWaveDropTarget &&
+								draggedWaveInfo}
 							onmouseenter={() => (hoveredCell = { roomId: room.id, dateKey })}
 							onmouseleave={() => (hoveredCell = null)}
 							oncontextmenu={(e) => onOpenRoomTypeMenu(e, room.id)}
@@ -265,6 +402,11 @@
 				</tr>
 			{/each}
 		</tbody>
+		<tfoot>
+			<tr class="scroll-spacer">
+				<td colspan={orderedRooms.length + 2}></td>
+			</tr>
+		</tfoot>
 	</table>
 </div>
 
@@ -276,7 +418,7 @@
 		flex: 1;
 		position: relative;
 	}
-	
+
 	:global(.fullscreen) .grid-scroll-container {
 		max-height: 100%;
 		height: 100%;
@@ -314,33 +456,109 @@
 		z-index: 50 !important;
 		border-right: 1px solid rgba(255, 255, 255, 0.08);
 	}
+	/* Corner Cell with Swap */
+	.corner-cell {
+		padding: 0 !important;
+	}
+	.corner-swap-btn {
+		width: 100%;
+		height: 100%;
+		background: none;
+		border: none;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		position: relative;
+		padding: 4px;
+		color: white;
+		transition: background 0.2s;
+	}
+	.corner-swap-btn:hover {
+		background: rgba(255, 255, 255, 0.05);
+	}
 	.corner-content {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 2px;
-		padding: 6px 4px;
+		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+	.corner-content.hijri-active {
+		transform: translateY(2px);
 	}
 	.corner-date {
-		font-size: 8px;
+		font-size: 11px;
 		font-weight: 800;
-		letter-spacing: 0.1em;
+		letter-spacing: 0.05em;
+		opacity: 0.9;
+		transition: all 0.2s;
 	}
 	.corner-hijri {
-		font-size: 7px;
-		color: rgba(255, 255, 255, 0.4);
-		letter-spacing: 0.06em;
+		font-size: 8px;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		opacity: 0.4;
+		transition: all 0.2s;
+	}
+	.hijri-active .corner-date {
+		font-size: 8px;
+		opacity: 0.4;
+	}
+	.hijri-active .corner-hijri {
+		font-size: 11px;
+		font-weight: 800;
+		opacity: 0.9;
+	}
+	.swap-icon-container {
+		position: absolute;
+		right: 4px;
+		top: 50%;
+		transform: translateY(-50%);
+		opacity: 0.3;
+		transition:
+			opacity 0.2s,
+			transform 0.3s;
+	}
+	.corner-swap-btn:hover .swap-icon-container {
+		opacity: 0.8;
+		transform: translateY(-50%) rotate(180deg);
+	}
+
+	.date-inner {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 1px;
+	}
+	.primary-date {
+		font-size: 13px;
+		font-weight: 800;
+		color: #1e293b;
+		line-height: 1.1;
+	}
+	.secondary-date {
+		font-size: 9px;
+		font-weight: 600;
+		color: #94a3b8;
+	}
+	.hijri-primary .primary-date {
+		color: #475569;
+	}
+	.hijri-primary .secondary-date {
+		color: #cbd5e1;
 	}
 	.day-header {
-		min-width: 34px;
-		width: 34px;
+		min-width: 45px;
+		width: 45px;
 		background: #0f172a !important;
-		color: rgba(255, 255, 255, 0.85);
+		color: rgba(255, 255, 255, 0.9);
 		z-index: 50 !important;
 		border-right: 2px solid rgba(255, 255, 255, 0.1);
-		font-size: 7px;
-		font-weight: 700;
-		letter-spacing: 0.08em;
+		font-size: 11px;
+		font-weight: 800;
+		letter-spacing: 0.05em;
 		text-align: center;
 	}
 	.type-group-header {
@@ -354,22 +572,20 @@
 		white-space: nowrap;
 	}
 
-	.header-room-row th {
-		position: sticky;
-		top: 32px;
-		z-index: 25;
-	}
 	.room-number-header {
+		position: sticky;
+		top: 29px;
+		z-index: 25;
 		min-width: 50px;
 		width: 50px;
 		padding: 4px 2px;
 		text-align: center;
+		vertical-align: top;
 		border-right: 1px solid rgba(0, 0, 0, 0.06);
 		border-bottom: 2px solid rgba(0, 0, 0, 0.08);
 		cursor: pointer;
 		transition: all 0.15s;
 		user-select: none;
-		position: relative;
 	}
 	.room-number-header:hover {
 		filter: brightness(0.9);
@@ -379,7 +595,6 @@
 	}
 	.room-number-header.room-manipulated {
 		box-shadow: inset 0 0 0 2px #fbbf24 !important;
-		position: relative;
 	}
 	.room-number-header.room-manipulated::after {
 		content: '';
@@ -393,29 +608,10 @@
 		border-color: transparent #fbbf24 transparent transparent;
 	}
 	.room-number-header.room-sold {
-		box-shadow: inset 0 0 0 3px #16a34a !important;
-		position: relative;
-		background: repeating-linear-gradient(
-			45deg,
-			rgba(22, 163, 74, 0.1),
-			rgba(22, 163, 74, 0.1) 10px,
-			rgba(22, 163, 74, 0.2) 10px,
-			rgba(22, 163, 74, 0.2) 20px
-		) !important;
+		box-shadow: inset 0 0 0 2px #16a34a !important;
 	}
-	.room-number-header.room-sold::before {
-		content: '💰 DIJUAL';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%) rotate(-15deg);
-		font-size: 9px;
-		font-weight: 900;
-		color: #16a34a;
-		opacity: 0.3;
-		letter-spacing: 1px;
-		white-space: nowrap;
-		pointer-events: none;
+	.room-number-header.room-staff {
+		box-shadow: inset 0 0 0 2px #4f46e5 !important;
 	}
 	.room-number-header.drag-over {
 		outline: 2px dashed #fbbf24 !important;
@@ -432,21 +628,91 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+		justify-content: flex-start;
 		gap: 2px;
 	}
 	.room-num {
 		font-size: 10px;
 		font-weight: 800;
 		font-variant-numeric: tabular-nums;
+		line-height: 1;
+	}
+	.room-occupancy {
+		font-size: 10px;
+		font-weight: 800;
+		font-variant-numeric: tabular-nums;
+		letter-spacing: 0.05em;
+		padding: 2px 4px;
+		background: rgba(0, 0, 0, 0.1);
+		border-radius: 4px;
+		color: white;
+		margin-top: 2px;
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.1);
+	}
+	.room-full {
+		background: rgba(0, 0, 0, 0.3);
+		color: #fff;
+		box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+	}
+	.room-overload {
+		background: #ef4444;
+		color: #fff;
+		box-shadow: 0 0 6px rgba(239, 68, 68, 0.5);
+	}
+
+	/* Custom Instant Tooltip */
+	.room-occupancy {
+		position: relative;
+	}
+	.occ-tooltip {
+		position: absolute;
+		top: 100%;
+		left: 50%;
+		transform: translateX(-50%) translateY(4px) scale(0.9);
+		background: #1e293b;
+		color: white;
+		padding: 5px 10px;
+		border-radius: 6px;
+		font-size: 10px;
+		font-weight: 700;
+		white-space: nowrap;
+		opacity: 0;
+		visibility: hidden;
+		transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+		pointer-events: none;
+		z-index: 1000;
+		box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+		border: 1px solid rgba(255, 255, 255, 0.1);
+	}
+	/* Triangle arrow pointing UP */
+	.occ-tooltip::after {
+		content: '';
+		position: absolute;
+		bottom: 100%;
+		left: 50%;
+		transform: translateX(-50%);
+		border-width: 5px;
+		border-style: solid;
+		border-color: transparent transparent #1e293b transparent;
+	}
+	.room-number-header:hover .occ-tooltip {
+		opacity: 1;
+		visibility: visible;
+		transform: translateX(-50%) translateY(10px) scale(1);
 	}
 
 	.sold-badge {
-		font-size: 12px;
-		animation: pulse-sold 2s ease-in-out infinite;
+		font-size: 10px;
+		animation: pulse-badge 2s ease-in-out infinite;
 	}
-
-	@keyframes pulse-sold {
-		0%, 100% {
+	.staff-badge {
+		font-size: 10px;
+		animation: pulse-badge 2s ease-in-out infinite;
+		animation-delay: 0.5s;
+	}
+	@keyframes pulse-badge {
+		0%,
+		100% {
 			opacity: 1;
 			transform: scale(1);
 		}
@@ -576,7 +842,31 @@
 		pointer-events: none;
 		z-index: 1;
 	}
-	.grid-cell.cell-sold .cell-split {
+	.grid-cell.cell-staff {
+		background: repeating-linear-gradient(
+			45deg,
+			rgba(79, 70, 229, 0.08),
+			rgba(79, 70, 229, 0.08) 8px,
+			rgba(79, 70, 229, 0.15) 8px,
+			rgba(79, 70, 229, 0.15) 16px
+		) !important;
+		border-right: 2px solid #4f46e5 !important;
+		border-bottom: 2px solid #4f46e5 !important;
+		position: relative;
+	}
+	.grid-cell.cell-staff::before {
+		content: '👨‍✈️';
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		font-size: 12px;
+		opacity: 0.25;
+		pointer-events: none;
+		z-index: 1;
+	}
+	.grid-cell.cell-sold .cell-split,
+	.grid-cell.cell-staff .cell-split {
 		position: relative;
 		z-index: 2;
 	}
@@ -642,5 +932,12 @@
 	}
 	.cell-half.empty {
 		cursor: default;
+	}
+
+	/* Extra scroll space at the bottom */
+	.scroll-spacer td {
+		height: 500px;
+		border: none !important;
+		background: transparent !important;
 	}
 </style>
