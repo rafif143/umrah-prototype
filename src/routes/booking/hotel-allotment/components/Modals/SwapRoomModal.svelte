@@ -289,7 +289,7 @@
 	.swap-overlay {
 		position: fixed;
 		inset: 0;
-		z-index: 60;
+		z-index: 10100;
 		display: flex;
 		align-items: center;
 		justify-content: center;

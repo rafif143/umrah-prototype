@@ -329,7 +329,7 @@
 {#if show}
 	<!-- Backdrop -->
 	<div
-		class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]"
+		class="fixed inset-0 z-[10100] flex items-center justify-center bg-black/40 p-4 backdrop-blur-[2px]"
 		transition:fade={{ duration: 200 }}
 		onclick={handleClose}
 		role="dialog"

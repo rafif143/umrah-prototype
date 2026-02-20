@@ -24,6 +24,14 @@
 		isDraggingRoom,
 		isRoomSold,
 		isRoomStaff,
+		isCellSold,
+		isCellStaff,
+		getCellSoldData,
+		getCellStaffData,
+		isCellSelected,
+		handleCellMouseDown,
+		handleCellMouseEnter,
+		handleCellMouseUp,
 		onRoomDragStart,
 		onRoomDragEnd,
 		onRoomDragOver,
@@ -222,7 +230,7 @@
 										? '🚨 Overload'
 										: isFull
 											? '✅ Kamar Penuh'
-											: `✨ ${capacity - occupants.length} tersedia`}
+											: `✨ ${capacity - occupants.length} tersisa`}
 								</div>
 							</span>
 
@@ -297,6 +305,13 @@
 						{@const isColHover = hoverRoomId === room.id}
 						{@const isSold = isRoomSold(room.id)}
 						{@const isStaff = isRoomStaff(room.id)}
+						{@const isCellSoldHere = isCellSold(room.id, dateKey)}
+						{@const isCellStaffHere = isCellStaff(room.id, dateKey)}
+						{@const cellSoldData = getCellSoldData(room.id, dateKey)}
+						{@const cellStaffData = getCellStaffData(room.id, dateKey)}
+						{@const isSoldStatusSold = cellSoldData?.status === 'sold'}
+						{@const isStaffStatusSold = cellStaffData?.status === 'sold'}
+						{@const isSelected = isCellSelected(room.id, dateKey)}
 						{@const isDragSrc =
 							dragSourceRoomId === room.id &&
 							(dragSourceWaveId
@@ -322,15 +337,23 @@
 						<td
 							class:grid-cell={true}
 							class:col-highlight={isColHover}
-							class:cell-sold={isSold}
-							class:cell-staff={isStaff}
+							class:cell-sold={isSold || isCellSoldHere}
+							class:cell-staff={isStaff || isCellStaffHere}
+							class:cell-sold-status={isSoldStatusSold}
+							class:cell-staff-status={isStaffStatusSold}
+							class:cell-selected={isSelected}
 							class:drag-source={isDragSrc}
 							class:wave-drag-source={isWaveDragSrc}
 							class:wave-drop-target={isWaveDragSrc !== undefined &&
 								isWaveDropTarget &&
 								draggedWaveInfo}
-							onmouseenter={() => (hoveredCell = { roomId: room.id, dateKey })}
+							onmousedown={(e) => handleCellMouseDown(e, room.id, dateKey)}
+							onmouseenter={() => {
+								hoveredCell = { roomId: room.id, dateKey };
+								handleCellMouseEnter(room.id, dateKey);
+							}}
 							onmouseleave={() => (hoveredCell = null)}
+							onmouseup={handleCellMouseUp}
 							oncontextmenu={(e) => onOpenRoomTypeMenu(e, room.id)}
 							ondragover={(e) => onRoomDragOver(e, room.id)}
 							ondragleave={onRoomDragLeave}
@@ -348,6 +371,10 @@
 									class:co-marker={parts.left?.type === 'checkout'}
 									class:occupied={parts.left?.type === 'occupied'}
 									class:empty={!parts.left}
+									class:sold-left={cellSoldData?.left}
+									class:staff-left={cellStaffData?.left}
+									class:sold-status-left={isSoldStatusSold && cellSoldData?.left}
+									class:staff-status-left={isStaffStatusSold && cellStaffData?.left}
 									style={parts.left ? `background: ${leftColor}; color: #fff;` : ''}
 									title={parts.left?.type === 'checkout'
 										? `CO: ${parts.left.wave.name}\n${leftTooltip}`
@@ -368,12 +395,46 @@
 										onCellClick({ roomId: room.id, date, wave: parts.left.wave })}
 								>
 									{#if parts.left?.type === 'checkout'}<span class="half-label">◀</span>{/if}
+									{#if cellSoldData?.left === 'out'}
+										<span class="half-overlay sold-overlay" class:sold-confirmed={isSoldStatusSold}>
+											◀
+											{#if isSoldStatusSold}<span class="status-dot sold-dot"></span>{/if}
+										</span>
+									{:else if cellSoldData?.left === 'in'}
+										<span class="half-overlay sold-overlay" class:sold-confirmed={isSoldStatusSold}>
+											▶
+											{#if isSoldStatusSold}<span class="status-dot sold-dot"></span>{/if}
+										</span>
+									{:else if cellSoldData?.left === 'occupied'}
+										<span class="half-overlay sold-overlay" class:sold-confirmed={isSoldStatusSold}>
+											{#if isSoldStatusSold}<span class="status-dot sold-dot"></span>{/if}
+										</span>
+									{/if}
+									{#if cellStaffData?.left === 'out'}
+										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+											◀
+											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
+										</span>
+									{:else if cellStaffData?.left === 'in'}
+										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+											▶
+											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
+										</span>
+									{:else if cellStaffData?.left === 'occupied'}
+										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
+										</span>
+									{/if}
 								</div>
 								<div
 									class="cell-half cell-right"
 									class:ci-marker={parts.right?.type === 'checkin'}
 									class:occupied={parts.right?.type === 'occupied'}
 									class:empty={!parts.right}
+									class:sold-right={cellSoldData?.right}
+									class:staff-right={cellStaffData?.right}
+									class:sold-status-right={isSoldStatusSold && cellSoldData?.right}
+									class:staff-status-right={isStaffStatusSold && cellStaffData?.right}
 									style={parts.right ? `background: ${rightColor}; color: #fff;` : ''}
 									title={parts.right?.type === 'checkin'
 										? `CI: ${parts.right.wave.name}\n${rightTooltip}`
@@ -394,6 +455,36 @@
 										onCellClick({ roomId: room.id, date, wave: parts.right.wave })}
 								>
 									{#if parts.right?.type === 'checkin'}<span class="half-label">▶</span>{/if}
+									{#if cellSoldData?.right === 'out'}
+										<span class="half-overlay sold-overlay" class:sold-confirmed={isSoldStatusSold}>
+											◀
+											{#if isSoldStatusSold}<span class="status-dot sold-dot"></span>{/if}
+										</span>
+									{:else if cellSoldData?.right === 'in'}
+										<span class="half-overlay sold-overlay" class:sold-confirmed={isSoldStatusSold}>
+											▶
+											{#if isSoldStatusSold}<span class="status-dot sold-dot"></span>{/if}
+										</span>
+									{:else if cellSoldData?.right === 'occupied'}
+										<span class="half-overlay sold-overlay" class:sold-confirmed={isSoldStatusSold}>
+											{#if isSoldStatusSold}<span class="status-dot sold-dot"></span>{/if}
+										</span>
+									{/if}
+									{#if cellStaffData?.right === 'out'}
+										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+											◀
+											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
+										</span>
+									{:else if cellStaffData?.right === 'in'}
+										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+											▶
+											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
+										</span>
+									{:else if cellStaffData?.right === 'occupied'}
+										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
+										</span>
+									{/if}
 								</div>
 							</div>
 							{#if isTransition}<div class="transition-divider"></div>{/if}
@@ -542,6 +633,12 @@
 		font-size: 9px;
 		font-weight: 600;
 		color: #94a3b8;
+	}
+	.hijri-primary .primary-date {
+		color: #475569;
+	}
+	.hijri-primary .secondary-date {
+		color: #cbd5e1;
 	}
 	.hijri-primary .primary-date {
 		color: #475569;
@@ -819,56 +916,47 @@
 	.grid-cell.col-highlight {
 		background: rgba(99, 102, 241, 0.04);
 	}
-	.grid-cell.cell-sold {
-		background: repeating-linear-gradient(
-			45deg,
-			rgba(22, 163, 74, 0.08),
-			rgba(22, 163, 74, 0.08) 8px,
-			rgba(22, 163, 74, 0.15) 8px,
-			rgba(22, 163, 74, 0.15) 16px
-		) !important;
-		border-right: 2px solid #16a34a !important;
-		border-bottom: 2px solid #16a34a !important;
-		position: relative;
+	
+	/* Sold status - different border for sold vs available */
+	.grid-cell.cell-sold-status {
+		outline: 3px solid #15803d !important;
+		outline-offset: -3px;
 	}
-	.grid-cell.cell-sold::before {
-		content: '💰';
+	
+	.grid-cell.cell-staff-status {
+		outline: 3px solid #4338ca !important;
+		outline-offset: -3px;
+	}
+	.grid-cell.cell-selected {
+		outline: 3px solid #111827 !important;
+		outline-offset: -3px;
+		background: rgba(17, 24, 39, 0.85) !important;
+		z-index: 10;
+		cursor: pointer;
+	}
+	
+	.grid-cell.cell-selected .cell-half {
+		color: white !important;
+	}
+	
+	.grid-cell.cell-selected .half-label {
+		color: white !important;
+		opacity: 1;
+	}
+	
+	.grid-cell.cell-selected::after {
+		content: 'SELECTED';
 		position: absolute;
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		font-size: 14px;
-		opacity: 0.25;
+		font-size: 8px;
+		font-weight: 900;
+		letter-spacing: 0.05em;
+		color: white;
+		opacity: 0.6;
 		pointer-events: none;
-		z-index: 1;
-	}
-	.grid-cell.cell-staff {
-		background: repeating-linear-gradient(
-			45deg,
-			rgba(79, 70, 229, 0.08),
-			rgba(79, 70, 229, 0.08) 8px,
-			rgba(79, 70, 229, 0.15) 8px,
-			rgba(79, 70, 229, 0.15) 16px
-		) !important;
-		border-right: 2px solid #4f46e5 !important;
-		border-bottom: 2px solid #4f46e5 !important;
-		position: relative;
-	}
-	.grid-cell.cell-staff::before {
-		content: '👨‍✈️';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		transform: translate(-50%, -50%);
-		font-size: 12px;
-		opacity: 0.25;
-		pointer-events: none;
-		z-index: 1;
-	}
-	.grid-cell.cell-sold .cell-split,
-	.grid-cell.cell-staff .cell-split {
-		position: relative;
-		z-index: 2;
+		z-index: 15;
 	}
 	.cell-split {
 		display: flex;
@@ -882,6 +970,7 @@
 		justify-content: center;
 		min-width: 0;
 		transition: background 0.1s;
+		position: relative;
 	}
 	.cell-half.empty {
 		background: transparent;
@@ -901,6 +990,110 @@
 		font-weight: 900;
 		line-height: 1;
 		opacity: 0.9;
+		position: relative;
+		z-index: 2;
+	}
+	
+	/* Sold/Staff overlays on cell halves */
+	.half-overlay {
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 100%;
+		height: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 8px;
+		font-weight: 900;
+		pointer-events: none;
+		z-index: 3;
+	}
+	
+	.sold-overlay {
+		background: repeating-linear-gradient(
+			45deg,
+			rgba(22, 163, 74, 0.25),
+			rgba(22, 163, 74, 0.25) 4px,
+			rgba(22, 163, 74, 0.4) 4px,
+			rgba(22, 163, 74, 0.4) 8px
+		);
+		color: #16a34a;
+		text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+		border: 2px dashed #16a34a;
+	}
+	
+	.sold-overlay.sold-confirmed {
+		background: #15803d;
+		color: white;
+		font-weight: 900;
+		border: 3px solid #166534;
+		box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+	}
+	
+	.staff-overlay {
+		background: repeating-linear-gradient(
+			45deg,
+			rgba(79, 70, 229, 0.25),
+			rgba(79, 70, 229, 0.25) 4px,
+			rgba(79, 70, 229, 0.4) 4px,
+			rgba(79, 70, 229, 0.4) 8px
+		);
+		color: #4f46e5;
+		text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
+		border: 2px dashed #4f46e5;
+	}
+	
+	.staff-overlay.staff-confirmed {
+		background: #4338ca;
+		color: white;
+		font-weight: 900;
+		border: 3px solid #3730a3;
+		box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+	}
+	
+	.status-dot {
+		position: absolute;
+		top: 2px;
+		right: 2px;
+		width: 6px;
+		height: 6px;
+		border-radius: 50%;
+		box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+		border: 1px solid white;
+	}
+	
+	.sold-dot {
+		background: #fbbf24;
+		animation: pulse-dot 1.5s ease-in-out infinite;
+	}
+	
+	.staff-dot {
+		background: #fbbf24;
+		animation: pulse-dot 1.5s ease-in-out infinite;
+	}
+	
+	@keyframes pulse-dot {
+		0%, 100% {
+			opacity: 1;
+			transform: scale(1);
+			box-shadow: 0 0 4px rgba(251, 191, 36, 0.8);
+		}
+		50% {
+			opacity: 0.8;
+			transform: scale(1.3);
+			box-shadow: 0 0 8px rgba(251, 191, 36, 1);
+		}
+	}
+	
+	.cell-half.sold-left,
+	.cell-half.sold-right {
+		border: 2px solid #16a34a;
+	}
+	
+	.cell-half.staff-left,
+	.cell-half.staff-right {
+		border: 2px solid #4f46e5;
 	}
 	.transition-divider {
 		position: absolute;

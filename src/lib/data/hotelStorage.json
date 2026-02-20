@@ -15,56 +15,40 @@
                     },
                     "flatRatePerRoomPerNight": 750,
                     "sellingPricePerRoomPerNight": 900,
-                    "totalRooms": 12,
+                    "totalRooms": 8,
                     "notes": "Kontrak test dengan 2 gelombang untuk testing scroll.",
                     "rooms": [
                         {
-                            "id": "R001",
+                            "id": "R01",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R02",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R03",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R04",
                             "originalType": "quint"
                         },
                         {
-                            "id": "R002",
+                            "id": "R05",
+                            "originalType": "double"
+                        },
+                        {
+                            "id": "R06",
+                            "originalType": "quad"
+                        },
+                        {
+                            "id": "R07",
+                            "originalType": "triple"
+                        },
+                        {
+                            "id": "R08",
                             "originalType": "quint"
-                        },
-                        {
-                            "id": "R003",
-                            "originalType": "quad"
-                        },
-                        {
-                            "id": "R004",
-                            "originalType": "quad"
-                        },
-                        {
-                            "id": "R005",
-                            "originalType": "quad"
-                        },
-                        {
-                            "id": "R006",
-                            "originalType": "triple"
-                        },
-                        {
-                            "id": "R007",
-                            "originalType": "triple"
-                        },
-                        {
-                            "id": "R008",
-                            "originalType": "triple"
-                        },
-                        {
-                            "id": "R009",
-                            "originalType": "double"
-                        },
-                        {
-                            "id": "R010",
-                            "originalType": "double"
-                        },
-                        {
-                            "id": "R011",
-                            "originalType": "double"
-                        },
-                        {
-                            "id": "R012",
-                            "originalType": "double"
                         }
                     ],
                     "waves": [
@@ -81,14 +65,12 @@
                                 "text": "#fff"
                             },
                             "roomIds": [
-                                "R001",
-                                "R002",
-                                "R003",
-                                "R004",
-                                "R009",
-                                "R011"
+                                "R01",
+                                "R02",
+                                "R05",
+                                "R06"
                             ],
-                            "roomsUsed": 6,
+                            "roomsUsed": 4,
                             "roomTypeOverrides": {},
                             "roomColors": {},
                             "jamaah": [
@@ -96,154 +78,119 @@
                                     "id": "j-101",
                                     "name": "Prabowo Subianto",
                                     "gender": "L",
-                                    "roomId": "R001",
+                                    "roomId": "R01",
                                     "bookingId": "BOOK-01"
                                 },
                                 {
                                     "id": "j-102",
                                     "name": "Gibran Rakabuming",
                                     "gender": "L",
-                                    "roomId": "R001",
+                                    "roomId": "R01",
                                     "bookingId": "BOOK-01"
                                 },
                                 {
                                     "id": "j-103",
                                     "name": "Didit Hediprasetyo",
                                     "gender": "L",
-                                    "roomId": "R001",
+                                    "roomId": "R01",
                                     "bookingId": "BOOK-01"
                                 },
                                 {
                                     "id": "j-104",
                                     "name": "Titiek Soeharto",
                                     "gender": "P",
-                                    "roomId": "R001",
-                                    "bookingId": "BOOK-01"
-                                },
-                                {
-                                    "id": "j-105",
-                                    "name": "Bobby Nasution",
-                                    "gender": "L",
-                                    "roomId": "R001",
+                                    "roomId": "R01",
                                     "bookingId": "BOOK-01"
                                 },
                                 {
                                     "id": "j-106",
                                     "name": "Anies Baswedan",
                                     "gender": "L",
-                                    "roomId": "R002",
+                                    "roomId": "R02",
                                     "bookingId": "BOOK-02"
                                 },
                                 {
                                     "id": "j-107",
                                     "name": "Muhaimin Iskandar",
                                     "gender": "L",
-                                    "roomId": "R002",
+                                    "roomId": "R02",
                                     "bookingId": "BOOK-02"
                                 },
                                 {
                                     "id": "j-108",
                                     "name": "Fery Farhati",
                                     "gender": "P",
-                                    "roomId": "R002",
-                                    "bookingId": "BOOK-02"
-                                },
-                                {
-                                    "id": "j-109",
-                                    "name": "Mutiara Baswedan",
-                                    "gender": "P",
-                                    "roomId": "R002",
-                                    "bookingId": "BOOK-02"
-                                },
-                                {
-                                    "id": "j-110",
-                                    "name": "Mikail Baswedan",
-                                    "gender": "L",
-                                    "roomId": "R002",
+                                    "roomId": "R02",
                                     "bookingId": "BOOK-02"
                                 },
                                 {
                                     "id": "j-111",
                                     "name": "Ganjar Pranowo",
                                     "gender": "L",
-                                    "roomId": "R003",
+                                    "roomId": "R05",
                                     "bookingId": "BOOK-03"
                                 },
                                 {
                                     "id": "j-112",
                                     "name": "Mahfud MD",
                                     "gender": "L",
-                                    "roomId": "R003",
-                                    "bookingId": "BOOK-03"
-                                },
-                                {
-                                    "id": "j-113",
-                                    "name": "Siti Atiqoh",
-                                    "gender": "P",
-                                    "roomId": "R003",
-                                    "bookingId": "BOOK-03"
-                                },
-                                {
-                                    "id": "j-114",
-                                    "name": "Alam Ganjar",
-                                    "gender": "L",
-                                    "roomId": "R003",
+                                    "roomId": "R05",
                                     "bookingId": "BOOK-03"
                                 },
                                 {
                                     "id": "j-115",
                                     "name": "Megawati Soekarnoputri",
                                     "gender": "P",
-                                    "roomId": "R004",
+                                    "roomId": "R06",
                                     "bookingId": "BOOK-04"
                                 },
                                 {
                                     "id": "j-116",
                                     "name": "Puan Maharani",
                                     "gender": "P",
-                                    "roomId": "R004",
+                                    "roomId": "R06",
                                     "bookingId": "BOOK-04"
                                 },
                                 {
                                     "id": "j-117",
                                     "name": "Prananda Prabowo",
                                     "gender": "L",
-                                    "roomId": "R004",
+                                    "roomId": "R06",
                                     "bookingId": "BOOK-04"
                                 },
                                 {
                                     "id": "j-118",
                                     "name": "Taufiq Kiemas",
                                     "gender": "L",
-                                    "roomId": "R004",
+                                    "roomId": "R06",
                                     "bookingId": "BOOK-04"
                                 },
                                 {
                                     "id": "j-119",
                                     "name": "SBY",
                                     "gender": "L",
-                                    "roomId": "R009",
+                                    "roomId": "R05",
                                     "bookingId": "BOOK-05"
                                 },
                                 {
                                     "id": "j-120",
                                     "name": "Ani Yudhoyono",
                                     "gender": "P",
-                                    "roomId": "R009",
+                                    "roomId": "R05",
                                     "bookingId": "BOOK-05"
                                 },
                                 {
                                     "id": "j-121",
                                     "name": "AHY",
                                     "gender": "L",
-                                    "roomId": "R011",
+                                    "roomId": "R06",
                                     "bookingId": "BOOK-06"
                                 },
                                 {
                                     "id": "j-122",
                                     "name": "Annisa Pohan",
                                     "gender": "P",
-                                    "roomId": "R011",
+                                    "roomId": "R06",
                                     "bookingId": "BOOK-06"
                                 }
                             ]
@@ -261,15 +208,13 @@
                                 "text": "#fff"
                             },
                             "roomIds": [
-                                "R001",
-                                "R005",
-                                "R007",
-                                "R010",
-                                "R012"
+                                "R04",
+                                "R07",
+                                "R08"
                             ],
-                            "roomsUsed": 5,
+                            "roomsUsed": 3,
                             "roomTypeOverrides": {
-                                "R010": "triple"
+                                "R08": "triple"
                             },
                             "roomColors": {},
                             "jamaah": [
@@ -277,120 +222,99 @@
                                     "id": "j-201",
                                     "name": "Raffi Ahmad",
                                     "gender": "L",
-                                    "roomId": "R001",
+                                    "roomId": "R04",
                                     "bookingId": "BOOK-10"
                                 },
                                 {
                                     "id": "j-202",
                                     "name": "Nagita Slavina",
                                     "gender": "P",
-                                    "roomId": "R001",
+                                    "roomId": "R04",
                                     "bookingId": "BOOK-10"
                                 },
                                 {
                                     "id": "j-203",
                                     "name": "Rafathar Malik",
                                     "gender": "L",
-                                    "roomId": "R001",
+                                    "roomId": "R04",
                                     "bookingId": "BOOK-10"
                                 },
                                 {
                                     "id": "j-204",
                                     "name": "Rayyanza Malik",
                                     "gender": "L",
-                                    "roomId": "R001",
+                                    "roomId": "R04",
                                     "bookingId": "BOOK-10"
                                 },
                                 {
                                     "id": "j-205",
                                     "name": "Sus Rini",
                                     "gender": "P",
-                                    "roomId": "R001",
+                                    "roomId": "R04",
                                     "bookingId": "BOOK-10"
                                 },
                                 {
                                     "id": "j-206",
                                     "name": "Atta Halilintar",
                                     "gender": "L",
-                                    "roomId": "R005",
+                                    "roomId": "R07",
                                     "bookingId": "BOOK-11"
                                 },
                                 {
                                     "id": "j-207",
                                     "name": "Aurel Hermansyah",
                                     "gender": "P",
-                                    "roomId": "R005",
+                                    "roomId": "R07",
                                     "bookingId": "BOOK-11"
                                 },
                                 {
                                     "id": "j-208",
                                     "name": "Ameena Hanna",
                                     "gender": "P",
-                                    "roomId": "R005",
-                                    "bookingId": "BOOK-11"
-                                },
-                                {
-                                    "id": "j-209",
-                                    "name": "Azura Humaira",
-                                    "gender": "P",
-                                    "roomId": "R005",
+                                    "roomId": "R07",
                                     "bookingId": "BOOK-11"
                                 },
                                 {
                                     "id": "j-210",
                                     "name": "Baim Wong",
                                     "gender": "L",
-                                    "roomId": "R007",
+                                    "roomId": "R08",
                                     "bookingId": "BOOK-12"
                                 },
                                 {
                                     "id": "j-211",
                                     "name": "Paula Verhoeven",
                                     "gender": "P",
-                                    "roomId": "R007",
+                                    "roomId": "R08",
                                     "bookingId": "BOOK-12"
                                 },
                                 {
                                     "id": "j-212",
                                     "name": "Kiano Tiger",
                                     "gender": "L",
-                                    "roomId": "R007",
+                                    "roomId": "R08",
                                     "bookingId": "BOOK-12"
                                 },
                                 {
                                     "id": "j-213",
                                     "name": "Irwansyah",
                                     "gender": "L",
-                                    "roomId": "R010",
+                                    "roomId": "R08",
                                     "bookingId": "BOOK-13"
                                 },
                                 {
                                     "id": "j-214",
                                     "name": "Zaskia Sungkar",
                                     "gender": "P",
-                                    "roomId": "R010",
+                                    "roomId": "R08",
                                     "bookingId": "BOOK-13"
                                 },
                                 {
                                     "id": "j-215",
                                     "name": "Ukkasya",
                                     "gender": "L",
-                                    "roomId": "R010",
+                                    "roomId": "R08",
                                     "bookingId": "BOOK-13"
-                                },
-                                {
-                                    "id": "j-216",
-                                    "name": "Teuku Wisnu",
-                                    "gender": "L",
-                                    "roomId": "R012",
-                                    "bookingId": "BOOK-14"
-                                },
-                                {
-                                    "id": "j-217",
-                                    "name": "Shireen Sungkar",
-                                    "gender": "P",
-                                    "roomId": "R012",
-                                    "bookingId": "BOOK-14"
                                 }
                             ]
                         }

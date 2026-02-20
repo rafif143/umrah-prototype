@@ -12,11 +12,10 @@
 	import Sidebar from '$lib/components/Sidebar.svelte';
 	import { hotelStorageStore } from '$lib/stores/hotelStorageStore.svelte.js';
 	import ContractCard from './components/CardView/ContractCard.svelte';
-	import ContractDetail from './components/CardView/ContractDetail.svelte';
 	import ContractGridView from './components/GridView/ContractGridView.svelte';
-	import WaveTimeline from './components/CardView/WaveTimeline.svelte';
 	import AddHotelModal from './components/Modals/AddHotelModal.svelte';
 	import AddContractModal from './components/Modals/AddContractModal.svelte';
+	import SellStaffDetailModal from './components/Modals/SellStaffDetailModal.svelte';
 	import { slide } from 'svelte/transition';
 
 	import { sidebarState } from '$lib/runes/sidebarState.svelte.js';
@@ -28,8 +27,10 @@
 	let statusFilter = $state('all');
 	let showAddHotelModal = $state(false);
 	let showAddContractModal = $state(false);
+	let showSellStaffModal = $state(false);
 	let viewMode = $state('grid');
 	let selectedHotelForContract = $state(null);
+	let selectedContractForDetail = $state(null);
 	let editingContract = $state(null);
 
 	let hotels = $derived(
@@ -93,6 +94,107 @@
 		showAddContractModal = false;
 		editingContract = null;
 		selectedHotelForContract = null;
+	}
+
+	function handleOpenSellStaffModal(contract) {
+		selectedContractForDetail = contract;
+		showSellStaffModal = true;
+	}
+
+	function handleUpdateSoldStatus(waveId, roomId, periodIndex, newStatus) {
+		// Update the sold cell status in the contract
+		const hotel = hotels.find(h => h.contracts.some(c => c.id === selectedContractForDetail.id));
+		if (!hotel) return;
+
+		const contract = hotel.contracts.find(c => c.id === selectedContractForDetail.id);
+		const wave = contract.waves.find(w => w.id === waveId);
+		
+		if (wave && wave.soldCells) {
+			// Find the cells for this room and update status
+			Object.keys(wave.soldCells).forEach(cellKey => {
+				if (cellKey.startsWith(roomId + '_')) {
+					wave.soldCells[cellKey] = {
+						...wave.soldCells[cellKey],
+						status: newStatus
+					};
+				}
+			});
+			
+			// Trigger reactivity
+			hotelStorageStore.updateContract(hotel.hotelId, contract.id, { waves: contract.waves });
+		}
+	}
+
+	function handleUpdatePrice(waveId, roomId, periodIndex, newPrice) {
+		// Update the price for sold cells
+		const hotel = hotels.find(h => h.contracts.some(c => c.id === selectedContractForDetail.id));
+		if (!hotel) return;
+
+		const contract = hotel.contracts.find(c => c.id === selectedContractForDetail.id);
+		const wave = contract.waves.find(w => w.id === waveId);
+		
+		if (wave && wave.soldCells) {
+			// Find the cells for this room and update price
+			Object.keys(wave.soldCells).forEach(cellKey => {
+				if (cellKey.startsWith(roomId + '_')) {
+					wave.soldCells[cellKey] = {
+						...wave.soldCells[cellKey],
+						price: newPrice
+					};
+				}
+			});
+			
+			// Trigger reactivity
+			hotelStorageStore.updateContract(hotel.hotelId, contract.id, { waves: contract.waves });
+		}
+	}
+
+	function handleAddStaff(waveId, roomId, staffName) {
+		const hotel = hotels.find(h => h.contracts.some(c => c.id === selectedContractForDetail.id));
+		if (!hotel) return;
+
+		const contract = hotel.contracts.find(c => c.id === selectedContractForDetail.id);
+		const wave = contract.waves.find(w => w.id === waveId);
+		
+		if (wave && wave.staffCells) {
+			// Add staff to all cells for this room
+			Object.keys(wave.staffCells).forEach(cellKey => {
+				if (cellKey.startsWith(roomId + '_')) {
+					const currentStaffList = wave.staffCells[cellKey].staffList || [];
+					wave.staffCells[cellKey] = {
+						...wave.staffCells[cellKey],
+						staffList: [...currentStaffList, staffName]
+					};
+				}
+			});
+			
+			// Trigger reactivity
+			hotelStorageStore.updateContract(hotel.hotelId, contract.id, { waves: contract.waves });
+		}
+	}
+
+	function handleRemoveStaff(waveId, roomId, staffName) {
+		const hotel = hotels.find(h => h.contracts.some(c => c.id === selectedContractForDetail.id));
+		if (!hotel) return;
+
+		const contract = hotel.contracts.find(c => c.id === selectedContractForDetail.id);
+		const wave = contract.waves.find(w => w.id === waveId);
+		
+		if (wave && wave.staffCells) {
+			// Remove staff from all cells for this room
+			Object.keys(wave.staffCells).forEach(cellKey => {
+				if (cellKey.startsWith(roomId + '_')) {
+					const currentStaffList = wave.staffCells[cellKey].staffList || [];
+					wave.staffCells[cellKey] = {
+						...wave.staffCells[cellKey],
+						staffList: currentStaffList.filter(name => name !== staffName)
+					};
+				}
+			});
+			
+			// Trigger reactivity
+			hotelStorageStore.updateContract(hotel.hotelId, contract.id, { waves: contract.waves });
+		}
 	}
 </script>
 
@@ -254,11 +356,11 @@
 													</button>
 													<button
 														class="flex items-center gap-1 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors
-															{viewMode === 'card' ? 'bg-[#972395] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}"
-														onclick={() => (viewMode = 'card')}
+															{viewMode === 'detail' ? 'bg-[#972395] text-white shadow-sm' : 'text-gray-500 hover:bg-gray-100'}"
+														onclick={() => handleOpenSellStaffModal(contract)}
 													>
 														<List size={12} />
-														Card
+														Sell and Staff Detail
 													</button>
 												</div>
 
@@ -266,21 +368,6 @@
 													<!-- Grid View (Spreadsheet Style) -->
 													<div class="px-3 py-3">
 														<ContractGridView {contract} hotelId={hotel.hotelId} />
-													</div>
-												{:else}
-													<!-- Card View (Original) -->
-													<div class="space-y-4 px-5 py-4">
-														<ContractDetail {contract} hotelId={hotel.hotelId} />
-														<WaveTimeline {contract} />
-														{#if contract.notes}
-															<div class="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
-																<span
-																	class="text-[10px] font-semibold tracking-wider text-gray-400 uppercase"
-																	>Catatan</span
-																>
-																<p class="mt-1 text-xs text-gray-600">{contract.notes}</p>
-															</div>
-														{/if}
 													</div>
 												{/if}
 											</div>
@@ -318,4 +405,17 @@
 	hotelName={selectedHotelForContract?.hotelName}
 	editingContract={editingContract}
 	onClose={handleCloseContractModal}
+/>
+
+<SellStaffDetailModal
+	show={showSellStaffModal}
+	contract={selectedContractForDetail}
+	onClose={() => {
+		showSellStaffModal = false;
+		selectedContractForDetail = null;
+	}}
+	onUpdateSoldStatus={handleUpdateSoldStatus}
+	onUpdatePrice={handleUpdatePrice}
+	onAddStaff={handleAddStaff}
+	onRemoveStaff={handleRemoveStaff}
 />

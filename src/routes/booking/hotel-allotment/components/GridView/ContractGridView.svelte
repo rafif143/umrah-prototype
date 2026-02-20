@@ -52,6 +52,17 @@
 	let showImportPackageModal = $state(false);
 	let importingWave = $state(null);
 	let importingWaveIndex = $state(null);
+	
+	// Quick detail modal for sold/staff cells
+	let showQuickDetailModal = $state(false);
+	let quickDetailData = $state(null);
+	let quickAddStaffInput = $state({});
+	let quickAddingStaff = $state(null);
+	
+	// Cell selection for sold marking
+	let selectedCells = $state(new Set());
+	let isSelecting = $state(false);
+	let selectionStart = $state(null);
 
 	// === Drawer/Modal State (from Card View) ===
 
@@ -82,8 +93,9 @@
 
 	// Date helpers
 	let allDates = $derived(getAllDates(contract));
+	let floors = $derived(getFloors(contract));
 	let roomsByType = $derived(getRoomsByType(contract));
-	let orderedRooms = $derived(getOrderedRooms(contract));
+	let orderedRooms = $derived(getOrderedRooms(contract)); // Back to original ordering
 
 	// Cell lookup: LEFT = checkout, RIGHT = checkin
 	let cellLookup = $derived(getCellLookup(contract));
@@ -139,6 +151,10 @@
 		if ((e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey) {
 			e.preventDefault();
 			handleUndo();
+		}
+		if (e.key === 'Escape') {
+			clearSelection();
+			closeRoomTypeMenu();
 		}
 	}
 
@@ -495,6 +511,462 @@
 	function isRoomSold(roomId) {
 		if (!selectedWave) return false;
 		return (selectedWave.soldRooms || []).includes(roomId);
+	}
+
+	// Cell selection functions
+	function handleCellMouseDown(e, roomId, dateKey) {
+		if (e.button !== 0) return; // Only left click
+		
+		// Check if this cell has wave data (occupied)
+		const cellKey = `${roomId}_${dateKey}`;
+		const cellData = cellLookup[cellKey];
+		
+		// Only allow selection on empty cells (no wave data)
+		if (cellData && (cellData.left || cellData.right)) {
+			return; // Cell is occupied, don't select
+		}
+		
+		// Check if this cell is sold or staff
+		const isSold = isCellSold(roomId, dateKey);
+		const isStaff = isCellStaff(roomId, dateKey);
+		
+		// If starting new selection, check type consistency
+		if (selectedCells.size > 0) {
+			// Check what type the current selection is
+			const firstSelectedKey = Array.from(selectedCells)[0];
+			const [firstRoomId, firstDateKey] = firstSelectedKey.split('_');
+			const firstIsSold = isCellSold(firstRoomId, firstDateKey);
+			const firstIsStaff = isCellStaff(firstRoomId, firstDateKey);
+			
+			// If trying to mix sold and staff, clear selection and start fresh
+			if ((isSold && firstIsStaff) || (isStaff && firstIsSold)) {
+				selectedCells = new Set();
+			}
+		}
+		
+		isSelecting = true;
+		selectionStart = { roomId, dateKey };
+		
+		// Toggle selection
+		const newSelected = new Set(selectedCells);
+		if (newSelected.has(cellKey)) {
+			newSelected.delete(cellKey);
+		} else {
+			newSelected.add(cellKey);
+		}
+		selectedCells = newSelected;
+	}
+
+	function handleCellMouseEnter(roomId, dateKey) {
+		if (!isSelecting) return;
+		
+		// Check if this cell has wave data
+		const cellKey = `${roomId}_${dateKey}`;
+		const cellData = cellLookup[cellKey];
+		
+		// Only select empty cells
+		if (cellData && (cellData.left || cellData.right)) {
+			return;
+		}
+		
+		// Check type consistency
+		if (selectedCells.size > 0) {
+			const firstSelectedKey = Array.from(selectedCells)[0];
+			const [firstRoomId, firstDateKey] = firstSelectedKey.split('_');
+			const firstIsSold = isCellSold(firstRoomId, firstDateKey);
+			const firstIsStaff = isCellStaff(firstRoomId, firstDateKey);
+			
+			const isSold = isCellSold(roomId, dateKey);
+			const isStaff = isCellStaff(roomId, dateKey);
+			
+			// Don't add if mixing types
+			if ((isSold && firstIsStaff) || (isStaff && firstIsSold)) {
+				return;
+			}
+		}
+		
+		const newSelected = new Set(selectedCells);
+		newSelected.add(cellKey);
+		selectedCells = newSelected;
+	}
+
+	function handleCellMouseUp() {
+		isSelecting = false;
+		selectionStart = null;
+	}
+
+	function clearSelection() {
+		selectedCells = new Set();
+	}
+
+	function isCellSelected(roomId, dateKey) {
+		return selectedCells.has(`${roomId}_${dateKey}`);
+	}
+
+	function toggleSelectedCellsSold() {
+		if (selectedCells.size === 0) return;
+		if (!selectedWave) return;
+
+		pushHistory();
+
+		// Get current sold cells
+		const currentSoldCells = selectedWave.soldCells || {};
+		const newSoldCells = { ...currentSoldCells };
+
+		// Group selected cells by room to find date ranges
+		const selectedArray = Array.from(selectedCells);
+		const roomGroups = {};
+		
+		selectedArray.forEach(cellKey => {
+			const [roomId, dateKey] = cellKey.split('_');
+			if (!roomGroups[roomId]) roomGroups[roomId] = [];
+			roomGroups[roomId].push(dateKey);
+		});
+
+		// For each room, sort dates and mark as sold with IN/OUT
+		Object.entries(roomGroups).forEach(([roomId, dates]) => {
+			// Check if room has jamaah
+			const jamaahInRoom = getJamaahInRoom(contract, selectedWaveIndex, roomId);
+			if (jamaahInRoom.length > 0) return; // Skip if occupied
+
+			// Sort dates
+			dates.sort();
+			
+			dates.forEach((dateKey, idx) => {
+				const cellKey = `${roomId}_${dateKey}`;
+				if (!newSoldCells[cellKey]) {
+					// Determine if this is first, last, or middle
+					if (dates.length === 1) {
+						// Single day - both IN and OUT
+						newSoldCells[cellKey] = { left: 'out', right: 'in', status: 'available', price: 0 };
+					} else if (idx === 0) {
+						// First day - only IN (right side)
+						newSoldCells[cellKey] = { left: null, right: 'in', status: 'available', price: 0 };
+					} else if (idx === dates.length - 1) {
+						// Last day - only OUT (left side)
+						newSoldCells[cellKey] = { left: 'out', right: null, status: 'available', price: 0 };
+					} else {
+						// Middle days - both sides occupied
+						newSoldCells[cellKey] = { left: 'occupied', right: 'occupied', status: 'available', price: 0 };
+					}
+				}
+			});
+		});
+
+		updateWave(selectedWave.id, { soldCells: newSoldCells });
+		clearSelection();
+	}
+
+	function removeSelectedCellsSold() {
+		if (selectedCells.size === 0) return;
+		if (!selectedWave) return;
+
+		pushHistory();
+
+		// Get current sold cells
+		const currentSoldCells = selectedWave.soldCells || {};
+		const newSoldCells = { ...currentSoldCells };
+
+		// Remove all selected from sold
+		const selectedArray = Array.from(selectedCells);
+		selectedArray.forEach(cellKey => {
+			delete newSoldCells[cellKey];
+		});
+
+		updateWave(selectedWave.id, { soldCells: newSoldCells });
+		clearSelection();
+	}
+
+	function toggleSelectedCellsStaff() {
+		if (selectedCells.size === 0) return;
+		if (!selectedWave) return;
+
+		pushHistory();
+
+		// Get current staff cells
+		const currentStaffCells = selectedWave.staffCells || {};
+		const newStaffCells = { ...currentStaffCells };
+
+		// Group selected cells by room to find date ranges
+		const selectedArray = Array.from(selectedCells);
+		const roomGroups = {};
+		
+		selectedArray.forEach(cellKey => {
+			const [roomId, dateKey] = cellKey.split('_');
+			if (!roomGroups[roomId]) roomGroups[roomId] = [];
+			roomGroups[roomId].push(dateKey);
+		});
+
+		// For each room, sort dates and mark as staff with IN/OUT
+		Object.entries(roomGroups).forEach(([roomId, dates]) => {
+			// Check if room has jamaah
+			const jamaahInRoom = getJamaahInRoom(contract, selectedWaveIndex, roomId);
+			if (jamaahInRoom.length > 0) return; // Skip if occupied
+
+			// Sort dates
+			dates.sort();
+			
+			dates.forEach((dateKey, idx) => {
+				const cellKey = `${roomId}_${dateKey}`;
+				if (!newStaffCells[cellKey]) {
+					// Determine if this is first, last, or middle
+					if (dates.length === 1) {
+						// Single day - both IN and OUT
+						newStaffCells[cellKey] = { left: 'out', right: 'in', status: 'available', price: 0 };
+					} else if (idx === 0) {
+						// First day - only IN (right side)
+						newStaffCells[cellKey] = { left: null, right: 'in', status: 'available', price: 0 };
+					} else if (idx === dates.length - 1) {
+						// Last day - only OUT (left side)
+						newStaffCells[cellKey] = { left: 'out', right: null, status: 'available', price: 0 };
+					} else {
+						// Middle days - both sides occupied
+						newStaffCells[cellKey] = { left: 'occupied', right: 'occupied', status: 'available', price: 0 };
+					}
+				}
+			});
+		});
+
+		updateWave(selectedWave.id, { staffCells: newStaffCells });
+		clearSelection();
+	}
+
+	function removeSelectedCellsStaff() {
+		if (selectedCells.size === 0) return;
+		if (!selectedWave) return;
+
+		pushHistory();
+
+		// Get current staff cells
+		const currentStaffCells = selectedWave.staffCells || {};
+		const newStaffCells = { ...currentStaffCells };
+
+		// Remove all selected from staff
+		const selectedArray = Array.from(selectedCells);
+		selectedArray.forEach(cellKey => {
+			delete newStaffCells[cellKey];
+		});
+
+		updateWave(selectedWave.id, { staffCells: newStaffCells });
+		clearSelection();
+	}
+
+	function isCellSold(roomId, dateKey) {
+		if (!selectedWave) return false;
+		const cellKey = `${roomId}_${dateKey}`;
+		return (selectedWave.soldCells || {})[cellKey] !== undefined;
+	}
+
+	function getCellSoldData(roomId, dateKey) {
+		if (!selectedWave) return null;
+		const cellKey = `${roomId}_${dateKey}`;
+		return (selectedWave.soldCells || {})[cellKey] || null;
+	}
+
+	function isCellStaff(roomId, dateKey) {
+		if (!selectedWave) return false;
+		const cellKey = `${roomId}_${dateKey}`;
+		return (selectedWave.staffCells || {})[cellKey] !== undefined;
+	}
+
+	function getCellStaffData(roomId, dateKey) {
+		if (!selectedWave) return null;
+		const cellKey = `${roomId}_${dateKey}`;
+		return (selectedWave.staffCells || {})[cellKey] || null;
+	}
+
+	function openQuickDetail() {
+		if (selectedCells.size === 0 || !selectedWave) return;
+		
+		const selectedArray = Array.from(selectedCells);
+		const soldCells = selectedWave.soldCells || {};
+		const staffCells = selectedWave.staffCells || {};
+		
+		// Group by room and type
+		const details = [];
+		const roomGroups = {};
+		
+		selectedArray.forEach(cellKey => {
+			const [roomId, dateKey] = cellKey.split('_');
+			const isSold = soldCells[cellKey] !== undefined;
+			const isStaff = staffCells[cellKey] !== undefined;
+			
+			if (!isSold && !isStaff) return;
+			
+			const type = isSold ? 'sold' : 'staff';
+			const groupKey = `${roomId}_${type}`;
+			
+			if (!roomGroups[groupKey]) {
+				roomGroups[groupKey] = {
+					roomId,
+					type,
+					dates: [],
+					cellKeys: [],
+					data: isSold ? soldCells[cellKey] : staffCells[cellKey]
+				};
+			}
+			
+			roomGroups[groupKey].dates.push(dateKey);
+			roomGroups[groupKey].cellKeys.push(cellKey);
+		});
+		
+		// Convert to array and sort dates
+		Object.values(roomGroups).forEach(group => {
+			group.dates.sort();
+			group.checkIn = group.dates[0];
+			group.checkOut = group.dates[group.dates.length - 1];
+			details.push(group);
+		});
+		
+		quickDetailData = {
+			wave: selectedWave,
+			details
+		};
+		
+		showQuickDetailModal = true;
+	}
+
+	function updateQuickDetailStatus(roomId, type, newStatus) {
+		if (!selectedWave) return;
+		
+		pushHistory();
+		
+		const cellsKey = type === 'sold' ? 'soldCells' : 'staffCells';
+		const cells = { ...(selectedWave[cellsKey] || {}) };
+		
+		// Update all cells for this room
+		Object.keys(cells).forEach(cellKey => {
+			if (cellKey.startsWith(roomId + '_')) {
+				cells[cellKey] = {
+					...cells[cellKey],
+					status: newStatus
+				};
+			}
+		});
+		
+		updateWave(selectedWave.id, { [cellsKey]: cells });
+		
+		// Update quickDetailData
+		if (quickDetailData) {
+			quickDetailData.details = quickDetailData.details.map(d => {
+				if (d.roomId === roomId && d.type === type) {
+					return { ...d, data: { ...d.data, status: newStatus } };
+				}
+				return d;
+			});
+		}
+	}
+
+	function updateQuickDetailPrice(roomId, type, newPrice) {
+		if (!selectedWave) return;
+		
+		pushHistory();
+		
+		const cellsKey = type === 'sold' ? 'soldCells' : 'staffCells';
+		const cells = { ...(selectedWave[cellsKey] || {}) };
+		
+		// Update all cells for this room
+		Object.keys(cells).forEach(cellKey => {
+			if (cellKey.startsWith(roomId + '_')) {
+				cells[cellKey] = {
+					...cells[cellKey],
+					price: parseFloat(newPrice) || 0
+				};
+			}
+		});
+		
+		updateWave(selectedWave.id, { [cellsKey]: cells });
+		
+		// Update quickDetailData
+		if (quickDetailData) {
+			quickDetailData.details = quickDetailData.details.map(d => {
+				if (d.roomId === roomId && d.type === type) {
+					return { ...d, data: { ...d.data, price: parseFloat(newPrice) || 0 } };
+				}
+				return d;
+			});
+		}
+	}
+
+	function toggleQuickAddStaff(roomId) {
+		if (quickAddingStaff === roomId) {
+			quickAddingStaff = null;
+			quickAddStaffInput[roomId] = '';
+		} else {
+			quickAddingStaff = roomId;
+			if (!quickAddStaffInput[roomId]) {
+				quickAddStaffInput[roomId] = '';
+			}
+		}
+	}
+
+	function addQuickStaff(roomId) {
+		const staffName = quickAddStaffInput[roomId]?.trim();
+		if (!staffName || !selectedWave) return;
+		
+		pushHistory();
+		
+		const cells = { ...(selectedWave.staffCells || {}) };
+		
+		// Add staff to all cells for this room
+		Object.keys(cells).forEach(cellKey => {
+			if (cellKey.startsWith(roomId + '_')) {
+				const currentStaffList = cells[cellKey].staffList || [];
+				cells[cellKey] = {
+					...cells[cellKey],
+					staffList: [...currentStaffList, staffName]
+				};
+			}
+		});
+		
+		updateWave(selectedWave.id, { staffCells: cells });
+		
+		// Update quickDetailData
+		if (quickDetailData) {
+			quickDetailData.details = quickDetailData.details.map(d => {
+				if (d.roomId === roomId && d.type === 'staff') {
+					const newStaffList = [...(d.data.staffList || []), staffName];
+					return { ...d, data: { ...d.data, staffList: newStaffList } };
+				}
+				return d;
+			});
+		}
+		
+		// Reset input
+		quickAddStaffInput[roomId] = '';
+		quickAddingStaff = null;
+	}
+
+	function removeQuickStaff(roomId, staffName) {
+		if (!selectedWave) return;
+		
+		pushHistory();
+		
+		const cells = { ...(selectedWave.staffCells || {}) };
+		
+		// Remove staff from all cells for this room
+		Object.keys(cells).forEach(cellKey => {
+			if (cellKey.startsWith(roomId + '_')) {
+				const currentStaffList = cells[cellKey].staffList || [];
+				cells[cellKey] = {
+					...cells[cellKey],
+					staffList: currentStaffList.filter(name => name !== staffName)
+				};
+			}
+		});
+		
+		updateWave(selectedWave.id, { staffCells: cells });
+		
+		// Update quickDetailData
+		if (quickDetailData) {
+			quickDetailData.details = quickDetailData.details.map(d => {
+				if (d.roomId === roomId && d.type === 'staff') {
+					const newStaffList = (d.data.staffList || []).filter(name => name !== staffName);
+					return { ...d, data: { ...d.data, staffList: newStaffList } };
+				}
+				return d;
+			});
+		}
 	}
 
 	// Mark room as staff
@@ -1081,7 +1553,7 @@
 	}
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window onkeydown={handleKeydown} onmouseup={handleCellMouseUp} />
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div class="contract-grid-wrapper" class:fullscreen={isFullscreen} onclick={closeRoomTypeMenu}>
@@ -1125,9 +1597,11 @@
 		>
 	</div>
 
+
+
 	<!-- Main content area -->
 	<div class="grid-main-area">
-		{#if showJamaahPanel && !isFullscreen}
+		{#if showJamaahPanel}
 			<ContractGridSidebar
 				{contract}
 				{localTypeConfig}
@@ -1155,6 +1629,14 @@
 			{isDraggingRoom}
 			{isRoomSold}
 			{isRoomStaff}
+			{isCellSold}
+			{isCellStaff}
+			{getCellSoldData}
+			{getCellStaffData}
+			{isCellSelected}
+			{handleCellMouseDown}
+			{handleCellMouseEnter}
+			{handleCellMouseUp}
 			onRoomDragStart={handleRoomDragStart}
 			onRoomDragEnd={handleRoomDragEnd}
 			onRoomDragOver={(e, id) => onDragOver(e, id)}
@@ -1220,46 +1702,149 @@
 					</button>
 				{/if}
 			{/if}
-			<div class="context-menu-divider"></div>
-			<button
-				class="context-menu-item"
-				onclick={() => {
-					const room = contract.rooms.find((r) => r.id === roomTypeMenu.roomId);
-					if (room) openRoomModal(room, occupiedRoomIds().has(room.id));
-					closeRoomTypeMenu();
-				}}>🔍 Detail Kamar</button
-			>
 			{#if selectedWave}
-				{@const isSold = isRoomSold(roomTypeMenu.roomId)}
-				<button
-					class="context-menu-item"
-					class:sold={isSold}
-					onclick={() => {
-						toggleRoomSoldStatus(roomTypeMenu.roomId);
-						closeRoomTypeMenu();
-					}}
-				>
-					{#if isSold}
-						✓ Tandai Sebagai Dijual
-					{:else}
-						💰 Tandai Sebagai Dijual
+				{#if selectedCells.size > 0}
+					{@const selectedArray = Array.from(selectedCells)}
+					{@const someSold = selectedArray.some(cellKey => {
+						const soldCells = selectedWave.soldCells || {};
+						return soldCells[cellKey] !== undefined;
+					})}
+					{@const someStaff = selectedArray.some(cellKey => {
+						const staffCells = selectedWave.staffCells || {};
+						return staffCells[cellKey] !== undefined;
+					})}
+					{@const allEmpty = selectedArray.every(cellKey => {
+						const soldCells = selectedWave.soldCells || {};
+						const staffCells = selectedWave.staffCells || {};
+						return soldCells[cellKey] === undefined && staffCells[cellKey] === undefined;
+					})}
+					
+					<!-- Only show mark options if all selected cells are empty -->
+					{#if allEmpty}
+						<div class="context-menu-divider"></div>
+						<button
+							class="context-menu-item"
+							onclick={() => {
+								const room = contract.rooms.find((r) => r.id === roomTypeMenu.roomId);
+								if (room) openRoomModal(room, occupiedRoomIds().has(room.id));
+								closeRoomTypeMenu();
+							}}>🔍 Detail Kamar</button
+						>
+						<button
+							class="context-menu-item"
+							onclick={() => {
+								toggleSelectedCellsSold();
+								closeRoomTypeMenu();
+							}}
+						>
+							💰 Tandai Sebagai Dijual ({selectedCells.size} cell)
+						</button>
+						<button
+							class="context-menu-item"
+							onclick={() => {
+								toggleSelectedCellsStaff();
+								closeRoomTypeMenu();
+							}}
+						>
+							👨‍✈️ Tandai Sebagai Staff ({selectedCells.size} cell)
+						</button>
 					{/if}
-				</button>
-				{@const isStaff = isRoomStaff(roomTypeMenu.roomId)}
-				<button
-					class="context-menu-item"
-					class:staff={isStaff}
-					onclick={() => {
-						toggleRoomStaffStatus(roomTypeMenu.roomId);
-						closeRoomTypeMenu();
-					}}
-				>
-					{#if isStaff}
-						✓ Tandai Sebagai Staff
-					{:else}
-						👨‍✈️ Tandai Sebagai Staff
+					
+					<!-- Only show remove options if some selected cells have sold/staff -->
+					{#if someSold}
+						<div class="context-menu-divider"></div>
+						<button
+							class="context-menu-item"
+							onclick={() => {
+								openQuickDetail();
+								closeRoomTypeMenu();
+							}}
+						>
+							👁️ Lihat Detail Dijual
+						</button>
+						<button
+							class="context-menu-item danger"
+							onclick={() => {
+								removeSelectedCellsSold();
+								closeRoomTypeMenu();
+							}}
+						>
+							✕ Hapus Status Dijual ({selectedArray.filter(k => (selectedWave.soldCells || {})[k]).length} cell)
+						</button>
 					{/if}
-				</button>
+					{#if someStaff}
+						<div class="context-menu-divider"></div>
+						<button
+							class="context-menu-item"
+							onclick={() => {
+								openQuickDetail();
+								closeRoomTypeMenu();
+							}}
+						>
+							👁️ Lihat Detail Staff
+						</button>
+						<button
+							class="context-menu-item danger"
+							onclick={() => {
+								removeSelectedCellsStaff();
+								closeRoomTypeMenu();
+							}}
+						>
+							✕ Hapus Status Staff ({selectedArray.filter(k => (selectedWave.staffCells || {})[k]).length} cell)
+						</button>
+					{/if}
+					
+					<div class="context-menu-divider"></div>
+					<button
+						class="context-menu-item"
+						onclick={() => {
+							clearSelection();
+							closeRoomTypeMenu();
+						}}
+					>
+						✕ Clear Selection
+					</button>
+				{:else}
+					<!-- Show option to remove sold/staff from entire room if no selection -->
+					{@const roomSoldCells = Object.keys(selectedWave.soldCells || {}).filter(key => 
+						key.startsWith(roomTypeMenu.roomId + '_')
+					)}
+					{@const roomStaffCells = Object.keys(selectedWave.staffCells || {}).filter(key => 
+						key.startsWith(roomTypeMenu.roomId + '_')
+					)}
+					
+					{#if roomSoldCells.length > 0}
+						<button
+							class="context-menu-item danger"
+							onclick={() => {
+								// Select all sold cells for this room then remove
+								const newSelected = new Set();
+								roomSoldCells.forEach(cellKey => newSelected.add(cellKey));
+								selectedCells = newSelected;
+								removeSelectedCellsSold();
+								closeRoomTypeMenu();
+							}}
+						>
+							✕ Hapus Semua Status Dijual di Kamar Ini
+						</button>
+					{/if}
+					
+					{#if roomStaffCells.length > 0}
+						<button
+							class="context-menu-item danger"
+							onclick={() => {
+								// Select all staff cells for this room then remove
+								const newSelected = new Set();
+								roomStaffCells.forEach(cellKey => newSelected.add(cellKey));
+								selectedCells = newSelected;
+								removeSelectedCellsStaff();
+								closeRoomTypeMenu();
+							}}
+						>
+							✕ Hapus Semua Status Staff di Kamar Ini
+						</button>
+					{/if}
+				{/if}
 				{@const jamaahInRoom = getJamaahInRoom(contract, selectedWaveIndex, roomTypeMenu.roomId)}
 				{#if jamaahInRoom.length > 0}
 					<button
@@ -1326,6 +1911,139 @@
 	<div class="toast-undo">
 		<span>↩️</span>
 		Undo berhasil
+	</div>
+{/if}
+
+<!-- Quick Detail Modal -->
+{#if showQuickDetailModal && quickDetailData}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div class="quick-modal-overlay" onclick={() => (showQuickDetailModal = false)}>
+		<!-- svelte-ignore a11y_no_static_element_interactions -->
+		<div class="quick-modal" onclick={(e) => e.stopPropagation()}>
+			<div class="quick-modal-header">
+				<h3 class="quick-modal-title">
+					{quickDetailData.details[0]?.type === 'sold' ? '💰 Detail Dijual' : '👨‍✈️ Detail Staff'}
+				</h3>
+				<button class="quick-close-btn" onclick={() => (showQuickDetailModal = false)}>✕</button>
+			</div>
+			<div class="quick-modal-body">
+				<div class="quick-wave-info">
+					<span class="quick-wave-label">Gelombang:</span>
+					<span class="quick-wave-name">{quickDetailData.wave.name}</span>
+				</div>
+				
+				<div class="quick-details-list">
+					{#each quickDetailData.details as detail}
+						<div class="quick-detail-card {detail.type === 'sold' ? 'sold-card' : 'staff-card'}">
+							<div class="quick-detail-header">
+								<span class="quick-room-badge">Kamar {detail.roomId}</span>
+								<span class="quick-type-badge {detail.type === 'sold' ? 'sold-badge' : 'staff-badge'}">
+									{detail.type === 'sold' ? '💰 Dijual' : '👨‍✈️ Staff'}
+								</span>
+							</div>
+							
+							<div class="quick-detail-info">
+								<div class="quick-info-row">
+									<span class="quick-label">Check-In:</span>
+									<span class="quick-value">{new Date(detail.checkIn).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+								</div>
+								<div class="quick-info-row">
+									<span class="quick-label">Check-Out:</span>
+									<span class="quick-value">{new Date(detail.checkOut).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+								</div>
+								<div class="quick-info-row">
+									<span class="quick-label">Durasi:</span>
+									<span class="quick-value">{detail.dates.length} malam</span>
+								</div>
+								
+								{#if detail.type === 'sold'}
+									<div class="quick-info-row">
+										<span class="quick-label">Status:</span>
+										<select
+											class="quick-status-select"
+											value={detail.data.status || 'available'}
+											onchange={(e) => updateQuickDetailStatus(detail.roomId, detail.type, e.target.value)}
+										>
+											<option value="available">○ Available</option>
+											<option value="sold">✓ Sold</option>
+										</select>
+									</div>
+									<div class="quick-info-row">
+										<span class="quick-label">Harga:</span>
+										<input
+											type="number"
+											class="quick-price-input"
+											value={detail.data.price || 0}
+											placeholder="0"
+											oninput={(e) => updateQuickDetailPrice(detail.roomId, detail.type, e.target.value)}
+										/>
+									</div>
+								{:else}
+									<div class="quick-info-row">
+										<span class="quick-label">Staff:</span>
+										<div class="quick-staff-container">
+											{#if detail.data.staffList && detail.data.staffList.length > 0}
+												<div class="quick-staff-list-inline">
+													{#each detail.data.staffList as staff}
+														<div class="quick-staff-item-inline">
+															<span class="staff-name-inline">{staff}</span>
+															<button
+																class="remove-staff-inline"
+																onclick={() => removeQuickStaff(detail.roomId, staff)}
+																title="Hapus"
+															>
+																×
+															</button>
+														</div>
+													{/each}
+												</div>
+											{:else}
+												<span class="quick-value empty">Belum ada staff</span>
+											{/if}
+											
+											{#if quickAddingStaff === detail.roomId}
+												<div class="quick-add-staff-form">
+													<input
+														type="text"
+														class="quick-staff-input"
+														bind:value={quickAddStaffInput[detail.roomId]}
+														placeholder="Nama staff..."
+														onkeydown={(e) => e.key === 'Enter' && addQuickStaff(detail.roomId)}
+													/>
+													<button
+														class="quick-staff-btn add"
+														onclick={() => addQuickStaff(detail.roomId)}
+														disabled={!quickAddStaffInput[detail.roomId]?.trim()}
+													>
+														✓
+													</button>
+													<button
+														class="quick-staff-btn cancel"
+														onclick={() => toggleQuickAddStaff(detail.roomId)}
+													>
+														×
+													</button>
+												</div>
+											{:else}
+												<button
+													class="quick-add-staff-btn"
+													onclick={() => toggleQuickAddStaff(detail.roomId)}
+												>
+													+ Add Staff
+												</button>
+											{/if}
+										</div>
+									</div>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			</div>
+			<div class="quick-modal-footer">
+				<button class="quick-btn-close" onclick={() => (showQuickDetailModal = false)}>Tutup</button>
+			</div>
+		</div>
 	</div>
 {/if}
 
@@ -1496,7 +2214,7 @@
 		left: 0;
 		width: 100vw;
 		height: 100vh;
-		z-index: 50;
+		z-index: 10000;
 	}
 	.context-menu {
 		position: fixed;
@@ -1505,7 +2223,7 @@
 		border-radius: 8px;
 		box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
 		padding: 5px;
-		z-index: 60;
+		z-index: 10001;
 		min-width: 180px;
 	}
 	.context-menu-title {
@@ -1564,5 +2282,407 @@
 		height: 1px;
 		background: #f1f5f9;
 		margin: 3px 0;
+	}
+	
+	/* Quick Detail Modal */
+	.quick-modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		width: 100vw;
+		height: 100vh;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 10100;
+		backdrop-filter: blur(2px);
+	}
+	
+	.quick-modal {
+		background: white;
+		border-radius: 16px;
+		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+		width: 90%;
+		max-width: 500px;
+		max-height: 80vh;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+	}
+	
+	.quick-modal-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 16px 20px;
+		border-bottom: 1px solid #e5e7eb;
+		background: linear-gradient(135deg, #f9fafb, #ffffff);
+	}
+	
+	.quick-modal-title {
+		font-size: 16px;
+		font-weight: 700;
+		color: #111827;
+		margin: 0;
+	}
+	
+	.quick-close-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		border-radius: 6px;
+		border: none;
+		background: #f3f4f6;
+		color: #6b7280;
+		font-size: 16px;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	
+	.quick-close-btn:hover {
+		background: #e5e7eb;
+		color: #111827;
+	}
+	
+	.quick-modal-body {
+		flex: 1;
+		overflow-y: auto;
+		padding: 16px 20px;
+	}
+	
+	.quick-wave-info {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 12px;
+		background: #f9fafb;
+		border: 1px solid #e5e7eb;
+		border-radius: 8px;
+		margin-bottom: 16px;
+	}
+	
+	.quick-wave-label {
+		font-size: 12px;
+		font-weight: 600;
+		color: #6b7280;
+	}
+	
+	.quick-wave-name {
+		font-size: 13px;
+		font-weight: 700;
+		color: #111827;
+	}
+	
+	.quick-details-list {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+	
+	.quick-detail-card {
+		border: 1px solid #e5e7eb;
+		border-radius: 10px;
+		padding: 12px;
+		background: white;
+	}
+	
+	.quick-detail-card.sold-card {
+		background: linear-gradient(135deg, #f0fdf4, #ffffff);
+		border-color: #bbf7d0;
+	}
+	
+	.quick-detail-card.staff-card {
+		background: linear-gradient(135deg, #eff6ff, #ffffff);
+		border-color: #bfdbfe;
+	}
+	
+	.quick-detail-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 12px;
+		padding-bottom: 10px;
+		border-bottom: 1px solid #e5e7eb;
+	}
+	
+	.quick-room-badge {
+		font-size: 13px;
+		font-weight: 700;
+		color: #111827;
+	}
+	
+	.quick-type-badge {
+		font-size: 11px;
+		font-weight: 600;
+		padding: 3px 8px;
+		border-radius: 6px;
+	}
+	
+	.quick-type-badge.sold-badge {
+		background: #dcfce7;
+		color: #15803d;
+	}
+	
+	.quick-type-badge.staff-badge {
+		background: #dbeafe;
+		color: #1e40af;
+	}
+	
+	.quick-detail-info {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+	}
+	
+	.quick-info-row {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 12px;
+	}
+	
+	.quick-label {
+		font-size: 12px;
+		font-weight: 600;
+		color: #6b7280;
+		min-width: 80px;
+	}
+	
+	.quick-value {
+		font-size: 12px;
+		font-weight: 600;
+		color: #111827;
+		text-align: right;
+	}
+	
+	.quick-value.status-sold {
+		color: #15803d;
+	}
+	
+	.quick-value.status-available {
+		color: #9ca3af;
+	}
+	
+	.quick-value.price {
+		color: #16a34a;
+		font-weight: 700;
+	}
+	
+	.quick-value.empty {
+		color: #9ca3af;
+		font-style: italic;
+	}
+	
+	.quick-staff-list {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		align-items: flex-end;
+	}
+	
+	.quick-staff-container {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		flex: 1;
+		align-items: flex-end;
+	}
+	
+	.quick-staff-list-inline {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+		justify-content: flex-end;
+	}
+	
+	.quick-staff-item-inline {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		background: #dbeafe;
+		padding: 4px 8px;
+		border-radius: 6px;
+		border: 1px solid #bfdbfe;
+	}
+	
+	.staff-name-inline {
+		font-size: 12px;
+		font-weight: 600;
+		color: #1e40af;
+	}
+	
+	.remove-staff-inline {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 16px;
+		height: 16px;
+		background: #ef4444;
+		color: white;
+		border: none;
+		border-radius: 50%;
+		font-size: 12px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 0.15s;
+		line-height: 1;
+	}
+	
+	.remove-staff-inline:hover {
+		background: #dc2626;
+		transform: scale(1.1);
+	}
+	
+	.quick-add-staff-btn {
+		font-size: 11px;
+		font-weight: 600;
+		padding: 4px 10px;
+		background: #4f46e5;
+		color: white;
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	
+	.quick-add-staff-btn:hover {
+		background: #4338ca;
+		transform: translateY(-1px);
+	}
+	
+	.quick-add-staff-form {
+		display: flex;
+		gap: 4px;
+		align-items: center;
+	}
+	
+	.quick-staff-input {
+		font-size: 11px;
+		padding: 5px 8px;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		width: 140px;
+		transition: all 0.15s;
+	}
+	
+	.quick-staff-input:focus {
+		outline: none;
+		border-color: #4f46e5;
+		box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+	}
+	
+	.quick-staff-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 24px;
+		height: 24px;
+		border: none;
+		border-radius: 6px;
+		font-size: 14px;
+		font-weight: 700;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	
+	.quick-staff-btn.add {
+		background: #16a34a;
+		color: white;
+	}
+	
+	.quick-staff-btn.add:hover:not(:disabled) {
+		background: #15803d;
+		transform: scale(1.1);
+	}
+	
+	.quick-staff-btn.add:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+	
+	.quick-staff-btn.cancel {
+		background: #ef4444;
+		color: white;
+	}
+	
+	.quick-staff-btn.cancel:hover {
+		background: #dc2626;
+		transform: scale(1.1);
+	}
+	
+	.quick-staff-item {
+		font-size: 12px;
+		font-weight: 600;
+		color: #1e40af;
+		background: #dbeafe;
+		padding: 2px 8px;
+		border-radius: 4px;
+	}
+	
+	.quick-status-select {
+		font-size: 12px;
+		font-weight: 600;
+		padding: 6px 10px;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		background: white;
+		color: #374151;
+		cursor: pointer;
+		transition: all 0.15s;
+		min-width: 120px;
+	}
+	
+	.quick-status-select:focus {
+		outline: none;
+		border-color: #16a34a;
+		box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+	}
+	
+	.quick-price-input {
+		font-size: 12px;
+		font-weight: 600;
+		padding: 6px 10px;
+		border: 1px solid #d1d5db;
+		border-radius: 6px;
+		background: white;
+		color: #374151;
+		width: 140px;
+		text-align: right;
+		transition: all 0.15s;
+	}
+	
+	.quick-price-input:focus {
+		outline: none;
+		border-color: #16a34a;
+		box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
+	}
+	
+	.quick-modal-footer {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		padding: 12px 20px;
+		border-top: 1px solid #e5e7eb;
+		background: #f9fafb;
+	}
+	
+	.quick-btn-close {
+		padding: 8px 16px;
+		border: 1px solid #d1d5db;
+		border-radius: 8px;
+		background: white;
+		color: #374151;
+		font-size: 13px;
+		font-weight: 600;
+		cursor: pointer;
+		transition: all 0.15s;
+	}
+	
+	.quick-btn-close:hover {
+		background: #f3f4f6;
+		border-color: #9ca3af;
 	}
 </style>

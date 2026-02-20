@@ -15,6 +15,39 @@ export function getAllDates(contract) {
 
 import { getRoomTypeForWave } from './roomTypeHelpers.js';
 
+// Get unique floors from contract rooms
+export function getFloors(contract) {
+    console.log('getFloors called:', { contract: contract?.id, rooms: contract?.rooms?.length });
+    if (!contract?.rooms) {
+        console.log('No rooms found');
+        return [];
+    }
+    const floors = new Set();
+    contract.rooms.forEach(room => {
+        const floor = room.floor ?? Math.floor(parseInt(room.id.replace(/\D/g, '')) / 100);
+        console.log('Room:', room.id, 'Floor:', floor);
+        floors.add(floor);
+    });
+    const result = Array.from(floors).sort((a, b) => a - b);
+    console.log('getFloors result:', result);
+    return result;
+}
+
+// Get rooms for a specific floor, sorted by room number
+export function getRoomsByFloor(contract, floor) {
+    if (!contract?.rooms) return [];
+    return contract.rooms
+        .filter(room => {
+            const roomFloor = room.floor ?? Math.floor(parseInt(room.id.replace(/\D/g, '')) / 100);
+            return roomFloor === floor;
+        })
+        .sort((a, b) => {
+            const numA = parseInt(a.id.replace(/\D/g, ''));
+            const numB = parseInt(b.id.replace(/\D/g, ''));
+            return numA - numB;
+        });
+}
+
 export function getRoomsByType(contract, wave = null) {
     if (!contract?.rooms) return [];
     const groups = {};
