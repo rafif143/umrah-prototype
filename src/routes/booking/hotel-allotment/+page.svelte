@@ -196,6 +196,28 @@
 			hotelStorageStore.updateContract(hotel.hotelId, contract.id, { waves: contract.waves });
 		}
 	}
+
+	function handleDeleteContract(contract) {
+		// Find the hotel that contains this contract
+		const hotel = hotels.find(h => h.contracts.some(c => c.id === contract.id));
+		if (!hotel) {
+			alert('Error: Hotel not found for this contract');
+			return;
+		}
+
+		// Delete the contract
+		hotelStorageStore.deleteContract(hotel.hotelId, contract.id);
+		
+		// Close expanded states if this contract was expanded
+		if (expandedContractId === contract.id) {
+			expandedContractId = null;
+		}
+		
+		// Close modal if this contract was being edited
+		if (editingContract?.id === contract.id) {
+			handleCloseContractModal();
+		}
+	}
 </script>
 
 <div class="flex min-h-screen bg-gray-50 font-sans">
@@ -336,6 +358,7 @@
 											isExpanded={expandedContractId === contract.id}
 											onToggle={toggleContract}
 											onEdit={handleEditContract}
+											onDelete={handleDeleteContract}
 										/>
 
 										{#if expandedContractId === contract.id}

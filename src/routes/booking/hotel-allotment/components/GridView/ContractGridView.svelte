@@ -168,24 +168,78 @@
 	function handleCreateWave(waveData) {
 		pushHistory(); // Save state before create/update
 		let updatedWaves;
-		if (waveData.id) {
-			// Update existing
+		
+		if (waveData.id && !waveData.id.startsWith('wave-')) {
+			// Normal update with valid ID
 			updatedWaves = (contract.waves || []).map((w) =>
 				w.id === waveData.id ? { ...w, ...waveData } : w
 			);
+		} else if (waveData._editIndex !== undefined) {
+			// Update by index (for cases where ID was corrupted or pseudo)
+			updatedWaves = (contract.waves || []).map((w, index) => {
+				if (index === waveData._editIndex) {
+					// Preserve the original ID if it exists, otherwise use the provided one
+					const originalId = w.id || waveData.id;
+					const { _editIndex, ...cleanWaveData } = waveData;
+					return { ...w, ...cleanWaveData, id: originalId };
+				}
+				return w;
+			});
+		} else if (waveData.id) {
+			// Try to find by ID first, then by properties
+			const existingIndex = (contract.waves || []).findIndex(w => w.id === waveData.id);
+			if (existingIndex !== -1) {
+				// Update existing wave
+				updatedWaves = (contract.waves || []).map((w, index) =>
+					index === existingIndex ? { ...w, ...waveData } : w
+				);
+			} else {
+				// Try to find by properties (fallback for corrupted ID)
+				const propertyIndex = (contract.waves || []).findIndex(w => 
+					w.name === waveData.name && 
+					w.start === waveData.start && 
+					w.end === waveData.end
+				);
+				
+				if (propertyIndex !== -1) {
+					updatedWaves = (contract.waves || []).map((w, index) =>
+						index === propertyIndex ? { ...w, ...waveData, id: w.id || waveData.id } : w
+					);
+				} else {
+					// Create new wave
+					const newWave = {
+						id: crypto.randomUUID(),
+						...waveData,
+						tripName: waveData.tripName || '',
+						rooms: [],
+						roomIds: [],
+						jamaah: [],
+						roomsUsed: 0
+					};
+					delete newWave._editIndex; // Remove helper property
+					updatedWaves = [...(contract.waves || []), newWave];
+				}
+			}
 		} else {
-			// Create new
+			// Create new wave
 			const newWave = {
 				id: crypto.randomUUID(),
 				...waveData,
-				tripName: '',
+				tripName: waveData.tripName || '',
 				rooms: [],
 				roomIds: [],
 				jamaah: [],
 				roomsUsed: 0
 			};
+			delete newWave._editIndex; // Remove helper property
 			updatedWaves = [...(contract.waves || []), newWave];
 		}
+
+		// Clean up any helper properties from all waves
+		updatedWaves = updatedWaves.map(w => {
+			const { _editIndex, ...cleanWave } = w;
+			return cleanWave;
+		});
 
 		hotelStorageStore.updateContract(hotelId, contract.id, { waves: updatedWaves });
 		if (contract) contract.waves = updatedWaves;
@@ -197,10 +251,120 @@
 		showAddWaveModal = true;
 	}
 
-	function openEditWave(e, wave) {
+	function openEditWaveByIndex(e, index) {
 		e.stopPropagation();
-		editingWave = wave;
+		
+		// Debug: Log the current state
+		console.log('=== WAVE EDIT DEBUG ===');
+		console.log('Index:', index);
+		console.log('Contract waves:', $state.snapshot(contract.waves));
+		console.log('Specific wave at index:', $state.snapshot((contract.waves || [])[index]));
+		
+		// Get the wave from multiple sources to ensure we have the most complete data
+		const reactiveWave = (contract.waves || [])[index];
+		
+		if (!reactiveWave) {
+			console.error('No wave found at index:', index);
+			alert('Error: Cannot edit wave - wave not found');
+			return;
+		}
+		
+		// Try to get the original wave data from the store to ensure we have the ID
+		let originalWave = null;
+		let originalContract = null;
+		try {
+			const hotel = hotelStorageStore.hotels.find(h => h.hotelId === hotelId);
+			originalContract = hotel?.contracts?.find(c => c.id === contract.id);
+			originalWave = originalContract?.waves?.[index];
+			console.log('Original wave from store:', originalWave);
+		} catch (error) {
+			console.warn('Could not access original wave data:', error);
+		}
+		
+		// Determine the best source for the wave ID
+		let waveId = reactiveWave.id || originalWave?.id;
+		
+		if (!waveId) {
+			console.warn('Wave at index', index, 'has no ID in either reactive or original data');
+			
+			// Try to find by matching properties in the original data
+			if (originalContract?.waves) {
+				const foundWave = originalContract.waves.find(w => 
+					w.name === reactiveWave.name && 
+					w.start === reactiveWave.start && 
+					w.end === reactiveWave.end
+				);
+				if (foundWave?.id) {
+					waveId = foundWave.id;
+					console.log('Found wave ID by property matching:', waveId);
+				}
+			}
+			
+			// Last resort: use a combination of properties as a pseudo-ID
+			if (!waveId) {
+				waveId = `wave-${index}-${reactiveWave.name?.replace(/\s+/g, '-') || 'unnamed'}`;
+				console.warn('Using pseudo-ID for wave:', waveId);
+			}
+		}
+		
+		// Create a clean wave object with all necessary properties
+		const cleanWave = {
+			id: waveId,
+			name: reactiveWave.name || originalWave?.name || 'Unnamed Wave',
+			start: reactiveWave.start || originalWave?.start,
+			end: reactiveWave.end || originalWave?.end,
+			rate: reactiveWave.rate || originalWave?.rate || 0,
+			currency: reactiveWave.currency || originalWave?.currency || 'SAR',
+			color: reactiveWave.color || originalWave?.color || { bg: '#1e3a5f', text: '#fff' },
+			tripName: reactiveWave.tripName || originalWave?.tripName || '',
+			// Store the index for fallback identification
+			_editIndex: index
+		};
+		
+		console.log('Final clean wave for editing:', cleanWave);
+		console.log('=== END DEBUG ===');
+		
+		editingWave = cleanWave;
 		showAddWaveModal = true;
+	}
+
+	function handleDeleteWaveByIndex(e, index) {
+		e.stopPropagation();
+		
+		const wave = (contract.waves || [])[index];
+		
+		if (!wave) {
+			console.error('No wave found at index:', index);
+			alert('Error: Cannot delete wave - wave not found');
+			return;
+		}
+
+		// Check if wave has jamaah
+		const jamaahCount = (wave.jamaah || []).length;
+		const roomCount = (wave.roomIds || []).length;
+		
+		let confirmMessage = `Hapus gelombang "${wave.name}"?`;
+		if (jamaahCount > 0 || roomCount > 0) {
+			confirmMessage += `\n\nGelombang ini memiliki:\n- ${jamaahCount} jamaah\n- ${roomCount} kamar\n\nSemua data akan dihapus!`;
+		}
+
+		if (confirm(confirmMessage)) {
+			pushHistory(); // Save state before delete
+			
+			// Remove wave by index
+			const updatedWaves = (contract.waves || []).filter((_, i) => i !== index);
+			hotelStorageStore.updateContract(hotelId, contract.id, { waves: updatedWaves });
+			if (contract) contract.waves = updatedWaves;
+			
+			// Show success message
+			alertState = {
+				show: true,
+				title: 'Gelombang Dihapus',
+				message: `Gelombang "${wave.name}" berhasil dihapus.`,
+				type: 'info',
+				onConfirm: () => closeAlert()
+			};
+		}
 	}
 
 	function handleImportPackage(wave, waveIndex) {
@@ -1607,7 +1771,8 @@
 				{localTypeConfig}
 				{isFullyAllocated}
 				onAddWave={handleAddWave}
-				onEditWave={openEditWave}
+				onEditWave={openEditWaveByIndex}
+				onDeleteWave={handleDeleteWaveByIndex}
 				onImportPackage={handleImportPackage}
 				{onDragStart}
 			/>

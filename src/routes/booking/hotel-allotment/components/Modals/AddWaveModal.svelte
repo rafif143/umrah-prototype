@@ -9,6 +9,7 @@
 	let rate = $state('');
 	let currency = $state('SAR'); // Default SAR
 	let waveColor = $state('#1e3a5f'); // Default blueish
+	let currentWaveId = $state(null); // Track the current wave ID explicitly
 
 	let contractStartStr = $derived(contract?.contractPeriod?.from || contract?.start || '');
 	let contractEndStr = $derived(contract?.contractPeriod?.to || contract?.end || '');
@@ -17,6 +18,38 @@
 	$effect(() => {
 		if (isOpen) {
 			if (initialData) {
+				// Store the ID explicitly, with multiple fallback strategies
+				currentWaveId = initialData.id;
+				
+				// If no ID, try to find the wave in contract by matching properties
+				if (!currentWaveId && contract?.waves) {
+					// First try: exact match by name, start, and end
+					let foundWave = contract.waves.find(w => 
+						w.name === initialData.name && 
+						w.start === initialData.start && 
+						w.end === initialData.end
+					);
+					
+					// Second try: match by name and start date only (in case end date differs)
+					if (!foundWave) {
+						foundWave = contract.waves.find(w => 
+							w.name === initialData.name && 
+							w.start === initialData.start
+						);
+					}
+					
+					// Third try: match by name only (last resort)
+					if (!foundWave) {
+						foundWave = contract.waves.find(w => w.name === initialData.name);
+					}
+					
+					if (foundWave?.id) {
+						currentWaveId = foundWave.id;
+					} else {
+						console.warn('Could not find wave ID for initialData:', $state.snapshot(initialData));
+					}
+				}
+				
 				waveName = initialData.name;
 				startDate = initialData.start;
 				endDate = initialData.end;
@@ -27,6 +60,7 @@
 						? initialData.color
 						: initialData.color?.bg || '#1e3a5f';
 			} else {
+				currentWaveId = null; // Reset for new wave
 				waveName = `Gelombang ${(contract.waves?.length || 0) + 1}`;
 				startDate = '';
 				endDate = '';
@@ -59,15 +93,68 @@
 			return;
 		}
 
-		onSave({
-			id: initialData?.id,
+		// Use currentWaveId instead of initialData?.id for more reliability
+		const waveId = currentWaveId || initialData?.id;
+		
+		// For edit mode, we should always have an ID
+		if (initialData && !waveId) {
+			console.error('Edit mode but no ID found. initialData:', $state.snapshot(initialData), 'currentWaveId:', currentWaveId);
+			
+			// Try one more time to find the wave by properties during submit
+			if (contract?.waves) {
+				// Try multiple matching strategies
+				let foundWave = contract.waves.find(w => 
+					w.name === waveName && 
+					w.start === startDate && 
+					w.end === endDate
+				);
+				
+				// Fallback: match by original name and dates from initialData
+				if (!foundWave && initialData.name && initialData.start && initialData.end) {
+					foundWave = contract.waves.find(w => 
+						w.name === initialData.name && 
+						w.start === initialData.start && 
+						w.end === initialData.end
+					);
+				}
+				
+				// Last resort: match by name only
+				if (!foundWave) {
+					foundWave = contract.waves.find(w => w.name === waveName);
+				}
+				
+				if (foundWave?.id) {
+					// Use the found wave ID
+					const waveDataToSave = {
+						id: foundWave.id,
+						name: waveName,
+						start: startDate,
+						end: endDate,
+						rate: rate ? parseFloat(rate) : 0,
+						currency: currency,
+						color: { bg: waveColor, text: '#fff' }
+					};
+					onSave(waveDataToSave);
+					isOpen = false;
+					return;
+				}
+			}
+			
+			alert('Error: Cannot update wave - missing ID. Please refresh the page and try again.');
+			return;
+		}
+
+		const waveDataToSave = {
+			id: waveId,
 			name: waveName,
 			start: startDate,
 			end: endDate,
 			rate: rate ? parseFloat(rate) : 0,
 			currency: currency,
 			color: { bg: waveColor, text: '#fff' }
-		});
+		};
+		
+		onSave(waveDataToSave);
 		isOpen = false;
 	}
 </script>

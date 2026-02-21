@@ -1,7 +1,7 @@
 <script>
-	import { CalendarDays, ChevronDown, Pencil } from 'lucide-svelte';
+	import { CalendarDays, ChevronDown, Pencil, Trash2 } from 'lucide-svelte';
 
-	let { contract, index = 1, isExpanded = false, onToggle, onEdit } = $props();
+	let { contract, index = 1, isExpanded = false, onToggle, onEdit, onDelete } = $props();
 
 	function formatDate(d) {
 		return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
@@ -16,6 +16,22 @@
 	let occupancyPct = $derived(
 		contract.totalRooms > 0 ? Math.round((occupiedCount() / contract.totalRooms) * 100) : 0
 	);
+
+	function handleDelete(e) {
+		e.stopPropagation();
+		
+		const waveCount = contract.waves?.length || 0;
+		const jamaahCount = (contract.waves || []).reduce((total, wave) => total + (wave.jamaah?.length || 0), 0);
+		
+		let confirmMessage = `Hapus kontrak "${contract.name}"?`;
+		if (waveCount > 0 || jamaahCount > 0) {
+			confirmMessage += `\n\nKontrak ini memiliki:\n- ${waveCount} gelombang\n- ${jamaahCount} jamaah\n\nSemua data akan dihapus!`;
+		}
+
+		if (confirm(confirmMessage)) {
+			onDelete?.(contract);
+		}
+	}
 </script>
 
 <div
@@ -37,6 +53,8 @@
 				>
 					{contract.name}
 				</button>
+				
+				<!-- Simple Edit Button -->
 				<button
 					class="rounded p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-[#972395]"
 					onclick={(e) => {
@@ -47,6 +65,19 @@
 				>
 					<Pencil size={12} />
 				</button>
+				
+				<!-- Simple Delete Button -->
+				<button
+					class="rounded p-1 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+					onclick={(e) => {
+						e.stopPropagation();
+						handleDelete(e);
+					}}
+					title="Hapus Kontrak"
+				>
+					<Trash2 size={12} />
+				</button>
+				
 				{#if contract.isOverflow}
 					<span
 						class="rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-medium text-orange-600 ring-1 ring-orange-500/20 ring-inset"
