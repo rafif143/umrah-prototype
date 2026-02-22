@@ -48,6 +48,12 @@
 		onWaveCellDrop
 	} = $props();
 
+	// Convert function props to reactive values
+	let roomsByTypeValue = $derived(typeof roomsByType === 'function' ? roomsByType() : roomsByType);
+	let orderedRoomsValue = $derived(
+		typeof orderedRooms === 'function' ? orderedRooms() : orderedRooms
+	);
+
 	let waveIdAtTop = $state(null);
 	let observer = null;
 	let scrollContainer = $state();
@@ -172,7 +178,7 @@
 					</button>
 				</th>
 				<th class="day-header sticky-col-2" rowspan="2"><span>HARI</span></th>
-				{#each roomsByType as group}
+				{#each roomsByTypeValue as group}
 					{@const tc = localTypeConfig[group.type] || {
 						label: group.type.toUpperCase(),
 						headerBg: '#607d8b'
@@ -185,11 +191,18 @@
 				{/each}
 			</tr>
 			<tr class="header-room-row">
-				{#each orderedRooms as room}
+				{#each orderedRoomsValue as room}
 					{@const contextWave = getContextWave(room)}
+					{@const baseType = room.originalType || room.type || 'unset'}
+					<!-- Use originalType/type for logical grouping history if we want, but actually tc is baseType -->
 					{@const effectiveType = getRoomTypeForWave(room, contextWave)}
-					{@const tc = localTypeConfig[effectiveType] || { bg: '#eceff1', color: '#607d8b' }}
-					{@const isManipulated = isRoomManipulatedInWave(room, contextWave)}
+					{@const tc = localTypeConfig[baseType] || { bg: '#eceff1', headerBg: '#607d8b' }}
+					{@const effectiveTc = localTypeConfig[effectiveType] || {
+						bg: '#eceff1',
+						headerBg: '#607d8b'
+					}}
+					<!-- NEW: Use effective type for cell BG -->
+					{@const isManipulated = isRoomManipulatedInWave(room, selectedWave)}
 					{@const isDragOver = dropTargetRoom === room.id}
 					{@const isSold = (contextWave?.soldRooms || []).includes(room.id)}
 					{@const isStaff = (contextWave?.staffRooms || []).includes(room.id)}
@@ -197,9 +210,11 @@
 						(w) => w.id === contextWave?.id
 					)}
 					{@const occupants = getJamaahInRoom(contract, currentWaveIndex, room.id)}
-					{@const capacity = localTypeConfig[effectiveType]?.capacity || 2}
-					{@const isFull = occupants.length === capacity}
-					{@const isOverload = occupants.length > capacity}
+					{@const capacity =
+						effectiveType === 'unset' ? '-' : localTypeConfig[effectiveType]?.capacity || 2}
+					<!-- Use effective type for capacity -->
+					{@const isFull = effectiveType !== 'unset' && occupants.length === capacity}
+					{@const isOverload = effectiveType !== 'unset' && occupants.length > capacity}
 					<th
 						class="room-number-header"
 						class:room-selected={true}
@@ -207,8 +222,8 @@
 						class:room-sold={isSold}
 						class:room-staff={isStaff}
 						class:drag-over={isDragOver}
-						style="background: {tc.headerBg}; color: #fff;"
-						oncontextmenu={(e) => onOpenRoomTypeMenu(e, room.id)}
+						style="background: {effectiveTc.headerBg}; color: #fff;"
+						oncontextmenu={(e) => onOpenRoomTypeMenu(e, room.id, contextWave?.id)}
 						ondragover={(e) => onRoomDragOver(e, room.id)}
 						ondragleave={onRoomDragLeave}
 						ondrop={(e) => onRoomDrop(e, room)}
@@ -216,7 +231,7 @@
 						onmouseleave={() => (hoverRoomId = null)}
 					>
 						<div class="room-header-content">
-							<span class="room-num">{room.id.replace('R0', '').replace('R', '')}</span>
+							<span class="room-num">{room.id.substring(1)}</span>
 
 							<!-- Occupancy Indicator -->
 							<span
@@ -226,11 +241,13 @@
 							>
 								{occupants.length}/{capacity}
 								<div class="occ-tooltip">
-									{isOverload
-										? '🚨 Overload'
-										: isFull
-											? '✅ Kamar Penuh'
-											: `✨ ${capacity - occupants.length} tersisa`}
+									{effectiveType === 'unset'
+										? '⚙️ Belum diatur - klik kanan untuk set tipe'
+										: isOverload
+											? '🚨 Overload'
+											: isFull
+												? '✅ Kamar Penuh'
+												: `✨ ${capacity - occupants.length} tersisa`}
 								</div>
 							</span>
 
@@ -287,7 +304,7 @@
 					</td>
 					<td class="day-name-cell sticky-col-2" class:friday-day={friday}>{dayName}</td>
 
-					{#each orderedRooms as room}
+					{#each orderedRoomsValue as room}
 						{@const parts = getCellParts(room.id, date)}
 						{@const effectiveTypeForHeader = getRoomTypeForWave(room, selectedWave)}
 						{@const leftWaveType = parts.left ? getRoomTypeForWave(room, parts.left.wave) : null}
@@ -354,7 +371,10 @@
 							}}
 							onmouseleave={() => (hoveredCell = null)}
 							onmouseup={handleCellMouseUp}
-							oncontextmenu={(e) => onOpenRoomTypeMenu(e, room.id)}
+							oncontextmenu={(e) => {
+								const waveId = parts.right?.wave?.id || parts.left?.wave?.id || contextWave?.id;
+								onOpenRoomTypeMenu(e, room.id, waveId);
+							}}
 							ondragover={(e) => onRoomDragOver(e, room.id)}
 							ondragleave={onRoomDragLeave}
 							ondrop={(e) => {
@@ -411,17 +431,26 @@
 										</span>
 									{/if}
 									{#if cellStaffData?.left === 'out'}
-										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+										<span
+											class="half-overlay staff-overlay"
+											class:staff-confirmed={isStaffStatusSold}
+										>
 											◀
 											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
 										</span>
 									{:else if cellStaffData?.left === 'in'}
-										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+										<span
+											class="half-overlay staff-overlay"
+											class:staff-confirmed={isStaffStatusSold}
+										>
 											▶
 											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
 										</span>
 									{:else if cellStaffData?.left === 'occupied'}
-										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+										<span
+											class="half-overlay staff-overlay"
+											class:staff-confirmed={isStaffStatusSold}
+										>
 											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
 										</span>
 									{/if}
@@ -471,17 +500,26 @@
 										</span>
 									{/if}
 									{#if cellStaffData?.right === 'out'}
-										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+										<span
+											class="half-overlay staff-overlay"
+											class:staff-confirmed={isStaffStatusSold}
+										>
 											◀
 											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
 										</span>
 									{:else if cellStaffData?.right === 'in'}
-										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+										<span
+											class="half-overlay staff-overlay"
+											class:staff-confirmed={isStaffStatusSold}
+										>
 											▶
 											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
 										</span>
 									{:else if cellStaffData?.right === 'occupied'}
-										<span class="half-overlay staff-overlay" class:staff-confirmed={isStaffStatusSold}>
+										<span
+											class="half-overlay staff-overlay"
+											class:staff-confirmed={isStaffStatusSold}
+										>
 											{#if isStaffStatusSold}<span class="status-dot staff-dot"></span>{/if}
 										</span>
 									{/if}
@@ -495,7 +533,7 @@
 		</tbody>
 		<tfoot>
 			<tr class="scroll-spacer">
-				<td colspan={orderedRooms.length + 2}></td>
+				<td colspan={orderedRoomsValue.length + 2}></td>
 			</tr>
 		</tfoot>
 	</table>
@@ -663,15 +701,16 @@
 		font-size: 10px;
 		font-weight: 800;
 		letter-spacing: 0.12em;
-		padding: 7px 10px;
+		padding: 8px 10px;
 		text-align: center;
 		border-right: 2px solid rgba(255, 255, 255, 0.25);
 		white-space: nowrap;
+		height: 32px; /* Fixed height to ensure consistent spacing */
 	}
 
 	.room-number-header {
 		position: sticky;
-		top: 29px;
+		top: 33px; /* Adjusted to be right below type group header (32px + 1px border) */
 		z-index: 25;
 		min-width: 50px;
 		width: 50px;
@@ -686,6 +725,7 @@
 	}
 	.room-number-header:hover {
 		filter: brightness(0.9);
+		z-index: 60;
 	}
 	.room-number-header.room-selected {
 		box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.4);
@@ -916,13 +956,13 @@
 	.grid-cell.col-highlight {
 		background: rgba(99, 102, 241, 0.04);
 	}
-	
+
 	/* Sold status - different border for sold vs available */
 	.grid-cell.cell-sold-status {
 		outline: 3px solid #15803d !important;
 		outline-offset: -3px;
 	}
-	
+
 	.grid-cell.cell-staff-status {
 		outline: 3px solid #4338ca !important;
 		outline-offset: -3px;
@@ -934,16 +974,16 @@
 		z-index: 10;
 		cursor: pointer;
 	}
-	
+
 	.grid-cell.cell-selected .cell-half {
 		color: white !important;
 	}
-	
+
 	.grid-cell.cell-selected .half-label {
 		color: white !important;
 		opacity: 1;
 	}
-	
+
 	.grid-cell.cell-selected::after {
 		content: 'SELECTED';
 		position: absolute;
@@ -993,7 +1033,7 @@
 		position: relative;
 		z-index: 2;
 	}
-	
+
 	/* Sold/Staff overlays on cell halves */
 	.half-overlay {
 		position: absolute;
@@ -1009,7 +1049,7 @@
 		pointer-events: none;
 		z-index: 3;
 	}
-	
+
 	.sold-overlay {
 		background: repeating-linear-gradient(
 			45deg,
@@ -1022,7 +1062,7 @@
 		text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
 		border: 2px dashed #16a34a;
 	}
-	
+
 	.sold-overlay.sold-confirmed {
 		background: #15803d;
 		color: white;
@@ -1030,7 +1070,7 @@
 		border: 3px solid #166534;
 		box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
 	}
-	
+
 	.staff-overlay {
 		background: repeating-linear-gradient(
 			45deg,
@@ -1043,7 +1083,7 @@
 		text-shadow: 0 0 2px rgba(255, 255, 255, 0.8);
 		border: 2px dashed #4f46e5;
 	}
-	
+
 	.staff-overlay.staff-confirmed {
 		background: #4338ca;
 		color: white;
@@ -1051,7 +1091,7 @@
 		border: 3px solid #3730a3;
 		box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
 	}
-	
+
 	.status-dot {
 		position: absolute;
 		top: 2px;
@@ -1062,19 +1102,20 @@
 		box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
 		border: 1px solid white;
 	}
-	
+
 	.sold-dot {
 		background: #fbbf24;
 		animation: pulse-dot 1.5s ease-in-out infinite;
 	}
-	
+
 	.staff-dot {
 		background: #fbbf24;
 		animation: pulse-dot 1.5s ease-in-out infinite;
 	}
-	
+
 	@keyframes pulse-dot {
-		0%, 100% {
+		0%,
+		100% {
 			opacity: 1;
 			transform: scale(1);
 			box-shadow: 0 0 4px rgba(251, 191, 36, 0.8);
@@ -1085,12 +1126,12 @@
 			box-shadow: 0 0 8px rgba(251, 191, 36, 1);
 		}
 	}
-	
+
 	.cell-half.sold-left,
 	.cell-half.sold-right {
 		border: 2px solid #16a34a;
 	}
-	
+
 	.cell-half.staff-left,
 	.cell-half.staff-right {
 		border: 2px solid #4f46e5;

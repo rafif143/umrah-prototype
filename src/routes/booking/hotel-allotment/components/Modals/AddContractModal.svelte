@@ -16,11 +16,10 @@
 	let hijriTo = $state({ day: 1, month: 0, year: 1446 });
 	let notes = $state('');
 
-	// --- Room Capacities ---
-	let doubleCount = $state(0);
-	let tripleCount = $state(0);
-	let quadCount = $state(0);
-	let quintCount = $state(0);
+	// --- Floor System ---
+	let floors = $state([
+		{ id: 1, name: 'Floor 1', roomCount: 0 }
+	]);
 
 	// Initialize form when editing
 	$effect(() => {
@@ -30,12 +29,14 @@
 			dateTo = editingContract.contractPeriod?.to || '';
 			notes = editingContract.notes || '';
 			
-			// Count rooms by type
-			const rooms = editingContract.rooms || [];
-			doubleCount = rooms.filter(r => r.originalType === 'double').length;
-			tripleCount = rooms.filter(r => r.originalType === 'triple').length;
-			quadCount = rooms.filter(r => r.originalType === 'quad').length;
-			quintCount = rooms.filter(r => r.originalType === 'quint').length;
+			// Convert existing rooms to floors if editing
+			if (editingContract.floors) {
+				floors = [...editingContract.floors];
+			} else {
+				// Legacy: convert from old room system
+				const totalRooms = editingContract.totalRooms || 0;
+				floors = [{ id: 1, name: 'Floor 1', roomCount: totalRooms }];
+			}
 			
 			// Update hijri dates
 			if (dateFrom) {
@@ -52,30 +53,41 @@
 		}
 	});
 
-	let totalRooms = $derived(doubleCount + tripleCount + quadCount + quintCount);
+	let totalRooms = $derived(floors.reduce((sum, floor) => sum + (floor.roomCount || 0), 0));
 
-	// --- Generate rooms array from capacity counts ---
+	function addFloor() {
+		const newFloorNumber = floors.length + 1;
+		floors = [...floors, { 
+			id: Date.now(), 
+			name: `Floor ${newFloorNumber}`, 
+			roomCount: 0 
+		}];
+	}
+
+	function removeFloor(floorId) {
+		if (floors.length <= 1) return; // Keep at least one floor
+		floors = floors.filter(f => f.id !== floorId);
+	}
+
+	// --- Generate rooms array from floors ---
 	function generateRooms() {
 		const rooms = [];
-		let idx = 1;
-		const pad = (n) => String(n).padStart(3, '0');
-
-		for (let i = 0; i < quadCount; i++) {
-			rooms.push({ id: `R${pad(idx)}`, type: 'quad', originalType: 'quad' });
-			idx++;
-		}
-		for (let i = 0; i < tripleCount; i++) {
-			rooms.push({ id: `R${pad(idx)}`, type: 'triple', originalType: 'triple' });
-			idx++;
-		}
-		for (let i = 0; i < doubleCount; i++) {
-			rooms.push({ id: `R${pad(idx)}`, type: 'double', originalType: 'double' });
-			idx++;
-		}
-		for (let i = 0; i < quintCount; i++) {
-			rooms.push({ id: `R${pad(idx)}`, type: 'quint', originalType: 'quint' });
-			idx++;
-		}
+		
+		floors.forEach((floor, floorIdx) => {
+			const floorNumber = floorIdx + 1; // Floor 1, Floor 2, etc.
+			for (let i = 0; i < floor.roomCount; i++) {
+				const roomNumber = String(i + 1).padStart(2, '0'); // 01, 02, 03, etc.
+				const roomId = `R${floorNumber}${roomNumber}`; // R101, R102, R201, etc.
+				rooms.push({ 
+					id: roomId, 
+					floor: floor.name,
+					floorId: floor.id,
+					type: 'unset', // Default type, will be changed later in grid header
+					originalType: 'unset' // Track original type for manipulation detection
+				});
+			}
+		});
+		
 		return rooms;
 	}
 
@@ -91,6 +103,7 @@
 				name: contractName,
 				contractPeriod: { from: dateFrom, to: dateTo },
 				totalRooms,
+				floors: [...floors],
 				rooms,
 				notes
 			};
@@ -101,6 +114,7 @@
 				name: contractName,
 				contractPeriod: { from: dateFrom, to: dateTo },
 				totalRooms,
+				floors: [...floors],
 				rooms,
 				waves: [], // Empty waves array - will be added later via "Tambah Gelombang" button
 				isOverflow: false,
@@ -117,10 +131,7 @@
 		dateFrom = '';
 		dateTo = '';
 		notes = '';
-		doubleCount = 0;
-		tripleCount = 0;
-		quadCount = 0;
-		quintCount = 0;
+		floors = [{ id: 1, name: 'Floor 1', roomCount: 0 }];
 	}
 
 	function resetAndClose() {
@@ -286,67 +297,55 @@
 
 				<!-- Pricing moved to Wave -->
 
-				<!-- Room Capacity -->
+				<!-- Floor Management -->
 				<div>
-					<div class="mb-2 flex items-center justify-between">
-						<span class="text-xs font-medium text-gray-600">Kapasitas Kamar</span>
-						<span class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700"
-							>Total: {totalRooms} kamar</span
-						>
+					<div class="mb-3 flex items-center justify-between">
+						<span class="text-xs font-medium text-gray-600">Floors & Rooms</span>
+						<div class="flex items-center gap-2">
+							<span class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700"
+								>Total: {totalRooms} kamar</span>
+							<button
+								class="flex items-center gap-1 rounded-md bg-[#972395] px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#7a1c78]"
+								onclick={addFloor}
+							>
+								<Plus size={12} />
+								Add Floor
+							</button>
+						</div>
 					</div>
-					<div class="grid grid-cols-4 gap-2">
-						<div
-							class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center transition-shadow focus-within:border-[#972395] focus-within:ring-1 focus-within:ring-[#972395]"
-						>
-							<div class="mb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-								Double
+					
+					<div class="space-y-2">
+						{#each floors as floor, index (floor.id)}
+							<div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+								<div class="flex-1">
+									<input
+										type="text"
+										placeholder="Floor name"
+										class="w-full bg-transparent text-sm font-medium text-gray-900 outline-none placeholder:text-gray-400"
+										bind:value={floor.name}
+									/>
+								</div>
+								<div class="flex items-center gap-2">
+									<input
+										type="number"
+										min="0"
+										placeholder="0"
+										class="w-16 bg-white rounded border border-gray-200 px-2 py-1 text-center text-sm font-semibold text-gray-900 outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
+										bind:value={floor.roomCount}
+									/>
+									<span class="text-xs text-gray-500">rooms</span>
+								</div>
+								{#if floors.length > 1}
+									<button
+										class="rounded p-1 text-red-400 transition-colors hover:bg-red-50 hover:text-red-600"
+										onclick={() => removeFloor(floor.id)}
+										title="Remove Floor"
+									>
+										<Trash2 size={14} />
+									</button>
+								{/if}
 							</div>
-							<input
-								type="number"
-								min="0"
-								class="w-full bg-transparent text-center text-lg font-bold text-gray-900 outline-none"
-								bind:value={doubleCount}
-							/>
-						</div>
-						<div
-							class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center transition-shadow focus-within:border-[#972395] focus-within:ring-1 focus-within:ring-[#972395]"
-						>
-							<div class="mb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-								Triple
-							</div>
-							<input
-								type="number"
-								min="0"
-								class="w-full bg-transparent text-center text-lg font-bold text-gray-900 outline-none"
-								bind:value={tripleCount}
-							/>
-						</div>
-						<div
-							class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center transition-shadow focus-within:border-[#972395] focus-within:ring-1 focus-within:ring-[#972395]"
-						>
-							<div class="mb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-								Quad
-							</div>
-							<input
-								type="number"
-								min="0"
-								class="w-full bg-transparent text-center text-lg font-bold text-gray-900 outline-none"
-								bind:value={quadCount}
-							/>
-						</div>
-						<div
-							class="rounded-lg border border-gray-200 bg-gray-50 p-3 text-center transition-shadow focus-within:border-[#972395] focus-within:ring-1 focus-within:ring-[#972395]"
-						>
-							<div class="mb-1 text-[10px] font-semibold tracking-wider text-gray-400 uppercase">
-								Quint
-							</div>
-							<input
-								type="number"
-								min="0"
-								class="w-full bg-transparent text-center text-lg font-bold text-gray-900 outline-none"
-								bind:value={quintCount}
-							/>
-						</div>
+						{/each}
 					</div>
 				</div>
 

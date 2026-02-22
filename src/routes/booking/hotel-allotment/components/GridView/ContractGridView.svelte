@@ -20,7 +20,9 @@
 		getJamaahInRoom,
 		checkWaveOverlap,
 		isContractFullyAllocated,
-		canWaveMoveToRoom
+		canWaveMoveToRoom,
+		getFloors,
+		getRoomsByFloor
 	} from './parts/contractHelpers.js';
 	import { getRoomTypeForWave } from './parts/roomTypeHelpers.js';
 
@@ -44,6 +46,72 @@
 	let hoveredCell = $state(null);
 	let hoverRoomId = $state(null);
 
+	// === Floor Selection ===
+	let selectedFloor = $state(null);
+
+	// === Room Type Management ===
+	let hasUnsavedChanges = $derived.by(() => {
+		if (!selectedWave || !contract?.rooms) return false;
+
+		// Check if any room has a different type in the current wave vs base contract
+		return contract.rooms.some((room) => {
+			const baseType = room.type || 'unset';
+			const currentType = getRoomTypeForWave(room, selectedWave);
+			return baseType !== currentType;
+		});
+	});
+
+	function saveRoomTypes() {
+		if (!selectedWave || !contract?.rooms) return;
+
+		pushHistory(); // Save state before changes
+
+		// Update base room types to match current wave overrides
+		// Keep originalType for historical tracking
+		const updatedRooms = contract.rooms.map((room) => {
+			const currentType = getRoomTypeForWave(room, selectedWave);
+
+			// Capture the physical base type properly on first save
+			let physicalType = room.originalType;
+			if (!physicalType || physicalType === 'unset') {
+				physicalType = room.type;
+			}
+			if (!physicalType || physicalType === 'unset') {
+				physicalType = currentType;
+			}
+
+			return {
+				...room,
+				type: currentType,
+				originalType: physicalType // First actual type becomes the permanent group header
+			};
+		});
+
+		// Clear wave-specific overrides since they're now the base types
+		const updatedWaves = contract.waves.map((wave) => {
+			if (wave.id === selectedWave.id) {
+				const { roomTypeOverrides, ...cleanWave } = wave;
+				return cleanWave;
+			}
+			return wave;
+		});
+
+		// Update contract
+		hotelStorageStore.updateContract(hotelId, contract.id, {
+			rooms: updatedRooms,
+			waves: updatedWaves
+		});
+
+		// Show success message
+		alertState = {
+			show: true,
+			title: 'Room Types Saved',
+			message: 'Tipe kamar berhasil disimpan sebagai base configuration.',
+			type: 'info',
+			onConfirm: () => closeAlert()
+		};
+	}
+
 	// === Configuration State ===
 	let localTypeConfig = $state({ ...defaultTypeConfig });
 
@@ -52,13 +120,13 @@
 	let showImportPackageModal = $state(false);
 	let importingWave = $state(null);
 	let importingWaveIndex = $state(null);
-	
+
 	// Quick detail modal for sold/staff cells
 	let showQuickDetailModal = $state(false);
 	let quickDetailData = $state(null);
 	let quickAddStaffInput = $state({});
 	let quickAddingStaff = $state(null);
-	
+
 	// Cell selection for sold marking
 	let selectedCells = $state(new Set());
 	let isSelecting = $state(false);
@@ -93,9 +161,50 @@
 
 	// Date helpers
 	let allDates = $derived(getAllDates(contract));
-	let floors = $derived(getFloors(contract));
-	let roomsByType = $derived(getRoomsByType(contract));
-	let orderedRooms = $derived(getOrderedRooms(contract)); // Back to original ordering
+	let availableFloors = $derived(getFloors(contract));
+	let roomsByType = $derived(() => {
+		// Always use floor-filtered rooms (no "all" option)
+		const floorRooms = currentFloorRooms();
+		if (!floorRooms || floorRooms.length === 0) {
+			return [];
+		}
+		const floorContract = { ...contract, rooms: floorRooms };
+
+		console.log('=== ROOMS BY TYPE CALCULATION ===');
+		console.log('Selected wave for headers:', selectedWave?.name || 'null');
+		console.log('Selected wave overrides:', selectedWave?.roomTypeOverrides || {});
+
+		// IMPORTANT: Always use base room types for headers, NOT effective types
+		// Headers should never change, only manipulation badges should change
+		const result = getRoomsByType(floorContract, null); // Pass null to get base types only
+
+		console.log(
+			'Room types for headers (base types only):',
+			result.map((g) => ({ roomId: g.rooms[0]?.id, type: g.type }))
+		);
+		console.log('=== END CALCULATION ===');
+
+		return result;
+	});
+
+	// Floor-based room filtering
+	let currentFloorRooms = $derived(() => {
+		// Always filter by selected floor (no "all" option)
+		if (!selectedFloor) return [];
+		return getRoomsByFloor(contract, selectedFloor);
+	});
+
+	let orderedRooms = $derived(() => {
+		// Always use floor-filtered rooms (no "all" option)
+		return currentFloorRooms();
+	});
+
+	// Initialize selected floor - always select first floor, no "all" option
+	$effect(() => {
+		if (availableFloors.length > 0 && !selectedFloor) {
+			selectedFloor = availableFloors[0]; // Always select first floor
+		}
+	});
 
 	// Cell lookup: LEFT = checkout, RIGHT = checkin
 	let cellLookup = $derived(getCellLookup(contract));
@@ -104,14 +213,37 @@
 
 	// Selected wave
 	let selectedWaveIndex = $state(0);
-	let selectedWave = $derived((contract.waves || [])[selectedWaveIndex]);
+	let selectedWave = $derived.by(() => {
+		// Force reactivity by accessing contract directly
+		const waves = contract?.waves || [];
+		console.log('=== SELECTED WAVE CALCULATION ===');
+		console.log(
+			'Available waves:',
+			waves.map((w) => ({ id: w.id, name: w.name }))
+		);
+		console.log('Selected wave index:', selectedWaveIndex);
+
+		if (waves.length === 0) {
+			console.log('No waves available, returning null');
+			return null;
+		}
+
+		// Ensure we have a valid index
+		const validIndex = selectedWaveIndex < waves.length ? selectedWaveIndex : 0;
+		const wave = waves[validIndex];
+		console.log('Selected wave:', wave?.name, 'ID:', wave?.id);
+		console.log('Wave overrides:', wave?.roomTypeOverrides || {});
+		console.log('=== END SELECTED WAVE CALCULATION ===');
+
+		return wave;
+	});
 
 	// Jamaah helpers
 	// (Moved to contractHelpers.js, but keeping getRoomOccupancy if needed locally)
 	function getRoomOccupancy(roomId) {
 		if (!selectedWave) return { count: 0, capacity: 0 };
 		const room = contract.rooms.find((r) => r.id === roomId);
-		const capacity = roomCapacity[room?.type] || 2;
+		const capacity = roomCapacity[room?.type] === '-' ? '-' : roomCapacity[room?.type] || 2;
 		const jamaahInRoom = getJamaahInRoom(contract, selectedWaveIndex, roomId);
 		return { count: jamaahInRoom.length, capacity };
 	}
@@ -160,15 +292,30 @@
 
 	// Update wave data
 	function updateWave(waveId, updates) {
+		console.log('=== UPDATE WAVE ===');
+		console.log('Wave ID:', waveId);
+		console.log('Updates:', updates);
+
 		pushHistory(); // Save state before update
 		const updatedWaves = contract.waves.map((w) => (w.id === waveId ? { ...w, ...updates } : w));
+
+		console.log(
+			'Updated waves:',
+			updatedWaves.map((w) => ({
+				id: w.id,
+				name: w.name,
+				roomTypeOverrides: w.roomTypeOverrides
+			}))
+		);
+
 		hotelStorageStore.updateContract(hotelId, contract.id, { waves: updatedWaves });
+		console.log('=== END UPDATE WAVE ===');
 	}
 
 	function handleCreateWave(waveData) {
 		pushHistory(); // Save state before create/update
 		let updatedWaves;
-		
+
 		if (waveData.id && !waveData.id.startsWith('wave-')) {
 			// Normal update with valid ID
 			updatedWaves = (contract.waves || []).map((w) =>
@@ -187,7 +334,7 @@
 			});
 		} else if (waveData.id) {
 			// Try to find by ID first, then by properties
-			const existingIndex = (contract.waves || []).findIndex(w => w.id === waveData.id);
+			const existingIndex = (contract.waves || []).findIndex((w) => w.id === waveData.id);
 			if (existingIndex !== -1) {
 				// Update existing wave
 				updatedWaves = (contract.waves || []).map((w, index) =>
@@ -195,12 +342,10 @@
 				);
 			} else {
 				// Try to find by properties (fallback for corrupted ID)
-				const propertyIndex = (contract.waves || []).findIndex(w => 
-					w.name === waveData.name && 
-					w.start === waveData.start && 
-					w.end === waveData.end
+				const propertyIndex = (contract.waves || []).findIndex(
+					(w) => w.name === waveData.name && w.start === waveData.start && w.end === waveData.end
 				);
-				
+
 				if (propertyIndex !== -1) {
 					updatedWaves = (contract.waves || []).map((w, index) =>
 						index === propertyIndex ? { ...w, ...waveData, id: w.id || waveData.id } : w
@@ -236,7 +381,7 @@
 		}
 
 		// Clean up any helper properties from all waves
-		updatedWaves = updatedWaves.map(w => {
+		updatedWaves = updatedWaves.map((w) => {
 			const { _editIndex, ...cleanWave } = w;
 			return cleanWave;
 		});
@@ -253,60 +398,61 @@
 
 	function openEditWaveByIndex(e, index) {
 		e.stopPropagation();
-		
+
 		// Debug: Log the current state
 		console.log('=== WAVE EDIT DEBUG ===');
 		console.log('Index:', index);
 		console.log('Contract waves:', $state.snapshot(contract.waves));
 		console.log('Specific wave at index:', $state.snapshot((contract.waves || [])[index]));
-		
+
 		// Get the wave from multiple sources to ensure we have the most complete data
 		const reactiveWave = (contract.waves || [])[index];
-		
+
 		if (!reactiveWave) {
 			console.error('No wave found at index:', index);
 			alert('Error: Cannot edit wave - wave not found');
 			return;
 		}
-		
+
 		// Try to get the original wave data from the store to ensure we have the ID
 		let originalWave = null;
 		let originalContract = null;
 		try {
-			const hotel = hotelStorageStore.hotels.find(h => h.hotelId === hotelId);
-			originalContract = hotel?.contracts?.find(c => c.id === contract.id);
+			const hotel = hotelStorageStore.hotels.find((h) => h.hotelId === hotelId);
+			originalContract = hotel?.contracts?.find((c) => c.id === contract.id);
 			originalWave = originalContract?.waves?.[index];
 			console.log('Original wave from store:', originalWave);
 		} catch (error) {
 			console.warn('Could not access original wave data:', error);
 		}
-		
+
 		// Determine the best source for the wave ID
 		let waveId = reactiveWave.id || originalWave?.id;
-		
+
 		if (!waveId) {
 			console.warn('Wave at index', index, 'has no ID in either reactive or original data');
-			
+
 			// Try to find by matching properties in the original data
 			if (originalContract?.waves) {
-				const foundWave = originalContract.waves.find(w => 
-					w.name === reactiveWave.name && 
-					w.start === reactiveWave.start && 
-					w.end === reactiveWave.end
+				const foundWave = originalContract.waves.find(
+					(w) =>
+						w.name === reactiveWave.name &&
+						w.start === reactiveWave.start &&
+						w.end === reactiveWave.end
 				);
 				if (foundWave?.id) {
 					waveId = foundWave.id;
 					console.log('Found wave ID by property matching:', waveId);
 				}
 			}
-			
+
 			// Last resort: use a combination of properties as a pseudo-ID
 			if (!waveId) {
 				waveId = `wave-${index}-${reactiveWave.name?.replace(/\s+/g, '-') || 'unnamed'}`;
 				console.warn('Using pseudo-ID for wave:', waveId);
 			}
 		}
-		
+
 		// Create a clean wave object with all necessary properties
 		const cleanWave = {
 			id: waveId,
@@ -320,19 +466,19 @@
 			// Store the index for fallback identification
 			_editIndex: index
 		};
-		
+
 		console.log('Final clean wave for editing:', cleanWave);
 		console.log('=== END DEBUG ===');
-		
+
 		editingWave = cleanWave;
 		showAddWaveModal = true;
 	}
 
 	function handleDeleteWaveByIndex(e, index) {
 		e.stopPropagation();
-		
+
 		const wave = (contract.waves || [])[index];
-		
+
 		if (!wave) {
 			console.error('No wave found at index:', index);
 			alert('Error: Cannot delete wave - wave not found');
@@ -342,7 +488,7 @@
 		// Check if wave has jamaah
 		const jamaahCount = (wave.jamaah || []).length;
 		const roomCount = (wave.roomIds || []).length;
-		
+
 		let confirmMessage = `Hapus gelombang "${wave.name}"?`;
 		if (jamaahCount > 0 || roomCount > 0) {
 			confirmMessage += `\n\nGelombang ini memiliki:\n- ${jamaahCount} jamaah\n- ${roomCount} kamar\n\nSemua data akan dihapus!`;
@@ -350,12 +496,12 @@
 
 		if (confirm(confirmMessage)) {
 			pushHistory(); // Save state before delete
-			
+
 			// Remove wave by index
 			const updatedWaves = (contract.waves || []).filter((_, i) => i !== index);
 			hotelStorageStore.updateContract(hotelId, contract.id, { waves: updatedWaves });
 			if (contract) contract.waves = updatedWaves;
-			
+
 			// Show success message
 			alertState = {
 				show: true,
@@ -442,7 +588,7 @@
 		}
 
 		const roomType = getRoomTypeForWave(room, targetWave);
-		const capacity = roomCapacity[roomType] || 2;
+		const capacity = roomCapacity[roomType] === '-' ? 999 : roomCapacity[roomType] || 2; // Allow unlimited for unset
 		const currentInRoom = getJamaahInRoom(contract, waveIndex, room.id);
 
 		if (currentInRoom.length >= capacity && jamaahData.roomId !== room.id) {
@@ -530,7 +676,7 @@
 		}
 
 		const roomType = getRoomTypeForWave(room, targetWave);
-		const capacity = roomCapacity[roomType] || 2;
+		const capacity = roomCapacity[roomType] === '-' ? 999 : roomCapacity[roomType] || 2; // Allow unlimited for unset
 
 		// Check capacity
 		const currentInRoom = getJamaahInRoom(contract, waveIndex, room.id);
@@ -599,10 +745,13 @@
 		}
 	}
 
-	function emptyRoom(roomId) {
-		if (!selectedWave) return;
+	function emptyRoom(roomId, waveId) {
+		const targetWaveId = waveId || selectedWave?.id;
+		if (!targetWaveId) return;
+		const waveindex = (contract.waves || []).findIndex((w) => w.id === targetWaveId);
+		if (waveindex === -1) return;
 
-		const jamaahInRoom = getJamaahInRoom(contract, selectedWaveIndex, roomId);
+		const jamaahInRoom = getJamaahInRoom(contract, waveindex, roomId);
 		if (jamaahInRoom.length === 0) return;
 
 		alertState = {
@@ -611,27 +760,29 @@
 			message: `Kosongkan kamar ${roomId}? ${jamaahInRoom.length} jamaah akan dikembalikan ke "Belum Dialokasikan".`,
 			type: 'warning',
 			onConfirm: () => {
-				executeEmptyRoom(roomId);
+				executeEmptyRoom(roomId, targetWaveId);
 				closeAlert();
 			}
 		};
 	}
 
-	function executeEmptyRoom(roomId) {
-		if (!selectedWave) return;
+	function executeEmptyRoom(roomId, waveId) {
+		const targetWaveId = waveId || selectedWave?.id;
+		const wave = (contract.waves || []).find((w) => w.id === targetWaveId);
+		if (!wave) return;
 
 		pushHistory(); // Save state before update
 
 		// Remove all jamaah from this room (set roomId to empty)
-		const updatedJamaah = selectedWave.jamaah.map((j) =>
+		const updatedJamaah = (wave.jamaah || []).map((j) =>
 			j.roomId === roomId ? { ...j, roomId: '' } : j
 		);
 
 		// Remove room from wave's roomIds
-		const newRoomIds = (selectedWave.roomIds || []).filter((id) => id !== roomId);
+		const newRoomIds = (wave.roomIds || []).filter((id) => id !== roomId);
 
 		// Update wave
-		updateWave(selectedWave.id, {
+		updateWave(wave.id, {
 			jamaah: updatedJamaah,
 			roomIds: newRoomIds,
 			roomsUsed: newRoomIds.length
@@ -680,20 +831,20 @@
 	// Cell selection functions
 	function handleCellMouseDown(e, roomId, dateKey) {
 		if (e.button !== 0) return; // Only left click
-		
+
 		// Check if this cell has wave data (occupied)
 		const cellKey = `${roomId}_${dateKey}`;
 		const cellData = cellLookup[cellKey];
-		
+
 		// Only allow selection on empty cells (no wave data)
 		if (cellData && (cellData.left || cellData.right)) {
 			return; // Cell is occupied, don't select
 		}
-		
+
 		// Check if this cell is sold or staff
 		const isSold = isCellSold(roomId, dateKey);
 		const isStaff = isCellStaff(roomId, dateKey);
-		
+
 		// If starting new selection, check type consistency
 		if (selectedCells.size > 0) {
 			// Check what type the current selection is
@@ -701,16 +852,16 @@
 			const [firstRoomId, firstDateKey] = firstSelectedKey.split('_');
 			const firstIsSold = isCellSold(firstRoomId, firstDateKey);
 			const firstIsStaff = isCellStaff(firstRoomId, firstDateKey);
-			
+
 			// If trying to mix sold and staff, clear selection and start fresh
 			if ((isSold && firstIsStaff) || (isStaff && firstIsSold)) {
 				selectedCells = new Set();
 			}
 		}
-		
+
 		isSelecting = true;
 		selectionStart = { roomId, dateKey };
-		
+
 		// Toggle selection
 		const newSelected = new Set(selectedCells);
 		if (newSelected.has(cellKey)) {
@@ -723,32 +874,32 @@
 
 	function handleCellMouseEnter(roomId, dateKey) {
 		if (!isSelecting) return;
-		
+
 		// Check if this cell has wave data
 		const cellKey = `${roomId}_${dateKey}`;
 		const cellData = cellLookup[cellKey];
-		
+
 		// Only select empty cells
 		if (cellData && (cellData.left || cellData.right)) {
 			return;
 		}
-		
+
 		// Check type consistency
 		if (selectedCells.size > 0) {
 			const firstSelectedKey = Array.from(selectedCells)[0];
 			const [firstRoomId, firstDateKey] = firstSelectedKey.split('_');
 			const firstIsSold = isCellSold(firstRoomId, firstDateKey);
 			const firstIsStaff = isCellStaff(firstRoomId, firstDateKey);
-			
+
 			const isSold = isCellSold(roomId, dateKey);
 			const isStaff = isCellStaff(roomId, dateKey);
-			
+
 			// Don't add if mixing types
 			if ((isSold && firstIsStaff) || (isStaff && firstIsSold)) {
 				return;
 			}
 		}
-		
+
 		const newSelected = new Set(selectedCells);
 		newSelected.add(cellKey);
 		selectedCells = newSelected;
@@ -780,8 +931,8 @@
 		// Group selected cells by room to find date ranges
 		const selectedArray = Array.from(selectedCells);
 		const roomGroups = {};
-		
-		selectedArray.forEach(cellKey => {
+
+		selectedArray.forEach((cellKey) => {
 			const [roomId, dateKey] = cellKey.split('_');
 			if (!roomGroups[roomId]) roomGroups[roomId] = [];
 			roomGroups[roomId].push(dateKey);
@@ -795,7 +946,7 @@
 
 			// Sort dates
 			dates.sort();
-			
+
 			dates.forEach((dateKey, idx) => {
 				const cellKey = `${roomId}_${dateKey}`;
 				if (!newSoldCells[cellKey]) {
@@ -811,7 +962,12 @@
 						newSoldCells[cellKey] = { left: 'out', right: null, status: 'available', price: 0 };
 					} else {
 						// Middle days - both sides occupied
-						newSoldCells[cellKey] = { left: 'occupied', right: 'occupied', status: 'available', price: 0 };
+						newSoldCells[cellKey] = {
+							left: 'occupied',
+							right: 'occupied',
+							status: 'available',
+							price: 0
+						};
 					}
 				}
 			});
@@ -833,7 +989,7 @@
 
 		// Remove all selected from sold
 		const selectedArray = Array.from(selectedCells);
-		selectedArray.forEach(cellKey => {
+		selectedArray.forEach((cellKey) => {
 			delete newSoldCells[cellKey];
 		});
 
@@ -854,8 +1010,8 @@
 		// Group selected cells by room to find date ranges
 		const selectedArray = Array.from(selectedCells);
 		const roomGroups = {};
-		
-		selectedArray.forEach(cellKey => {
+
+		selectedArray.forEach((cellKey) => {
 			const [roomId, dateKey] = cellKey.split('_');
 			if (!roomGroups[roomId]) roomGroups[roomId] = [];
 			roomGroups[roomId].push(dateKey);
@@ -869,7 +1025,7 @@
 
 			// Sort dates
 			dates.sort();
-			
+
 			dates.forEach((dateKey, idx) => {
 				const cellKey = `${roomId}_${dateKey}`;
 				if (!newStaffCells[cellKey]) {
@@ -885,7 +1041,12 @@
 						newStaffCells[cellKey] = { left: 'out', right: null, status: 'available', price: 0 };
 					} else {
 						// Middle days - both sides occupied
-						newStaffCells[cellKey] = { left: 'occupied', right: 'occupied', status: 'available', price: 0 };
+						newStaffCells[cellKey] = {
+							left: 'occupied',
+							right: 'occupied',
+							status: 'available',
+							price: 0
+						};
 					}
 				}
 			});
@@ -907,7 +1068,7 @@
 
 		// Remove all selected from staff
 		const selectedArray = Array.from(selectedCells);
-		selectedArray.forEach(cellKey => {
+		selectedArray.forEach((cellKey) => {
 			delete newStaffCells[cellKey];
 		});
 
@@ -941,25 +1102,25 @@
 
 	function openQuickDetail() {
 		if (selectedCells.size === 0 || !selectedWave) return;
-		
+
 		const selectedArray = Array.from(selectedCells);
 		const soldCells = selectedWave.soldCells || {};
 		const staffCells = selectedWave.staffCells || {};
-		
+
 		// Group by room and type
 		const details = [];
 		const roomGroups = {};
-		
-		selectedArray.forEach(cellKey => {
+
+		selectedArray.forEach((cellKey) => {
 			const [roomId, dateKey] = cellKey.split('_');
 			const isSold = soldCells[cellKey] !== undefined;
 			const isStaff = staffCells[cellKey] !== undefined;
-			
+
 			if (!isSold && !isStaff) return;
-			
+
 			const type = isSold ? 'sold' : 'staff';
 			const groupKey = `${roomId}_${type}`;
-			
+
 			if (!roomGroups[groupKey]) {
 				roomGroups[groupKey] = {
 					roomId,
@@ -969,37 +1130,37 @@
 					data: isSold ? soldCells[cellKey] : staffCells[cellKey]
 				};
 			}
-			
+
 			roomGroups[groupKey].dates.push(dateKey);
 			roomGroups[groupKey].cellKeys.push(cellKey);
 		});
-		
+
 		// Convert to array and sort dates
-		Object.values(roomGroups).forEach(group => {
+		Object.values(roomGroups).forEach((group) => {
 			group.dates.sort();
 			group.checkIn = group.dates[0];
 			group.checkOut = group.dates[group.dates.length - 1];
 			details.push(group);
 		});
-		
+
 		quickDetailData = {
 			wave: selectedWave,
 			details
 		};
-		
+
 		showQuickDetailModal = true;
 	}
 
 	function updateQuickDetailStatus(roomId, type, newStatus) {
 		if (!selectedWave) return;
-		
+
 		pushHistory();
-		
+
 		const cellsKey = type === 'sold' ? 'soldCells' : 'staffCells';
 		const cells = { ...(selectedWave[cellsKey] || {}) };
-		
+
 		// Update all cells for this room
-		Object.keys(cells).forEach(cellKey => {
+		Object.keys(cells).forEach((cellKey) => {
 			if (cellKey.startsWith(roomId + '_')) {
 				cells[cellKey] = {
 					...cells[cellKey],
@@ -1007,12 +1168,12 @@
 				};
 			}
 		});
-		
+
 		updateWave(selectedWave.id, { [cellsKey]: cells });
-		
+
 		// Update quickDetailData
 		if (quickDetailData) {
-			quickDetailData.details = quickDetailData.details.map(d => {
+			quickDetailData.details = quickDetailData.details.map((d) => {
 				if (d.roomId === roomId && d.type === type) {
 					return { ...d, data: { ...d.data, status: newStatus } };
 				}
@@ -1023,14 +1184,14 @@
 
 	function updateQuickDetailPrice(roomId, type, newPrice) {
 		if (!selectedWave) return;
-		
+
 		pushHistory();
-		
+
 		const cellsKey = type === 'sold' ? 'soldCells' : 'staffCells';
 		const cells = { ...(selectedWave[cellsKey] || {}) };
-		
+
 		// Update all cells for this room
-		Object.keys(cells).forEach(cellKey => {
+		Object.keys(cells).forEach((cellKey) => {
 			if (cellKey.startsWith(roomId + '_')) {
 				cells[cellKey] = {
 					...cells[cellKey],
@@ -1038,12 +1199,12 @@
 				};
 			}
 		});
-		
+
 		updateWave(selectedWave.id, { [cellsKey]: cells });
-		
+
 		// Update quickDetailData
 		if (quickDetailData) {
-			quickDetailData.details = quickDetailData.details.map(d => {
+			quickDetailData.details = quickDetailData.details.map((d) => {
 				if (d.roomId === roomId && d.type === type) {
 					return { ...d, data: { ...d.data, price: parseFloat(newPrice) || 0 } };
 				}
@@ -1067,13 +1228,13 @@
 	function addQuickStaff(roomId) {
 		const staffName = quickAddStaffInput[roomId]?.trim();
 		if (!staffName || !selectedWave) return;
-		
+
 		pushHistory();
-		
+
 		const cells = { ...(selectedWave.staffCells || {}) };
-		
+
 		// Add staff to all cells for this room
-		Object.keys(cells).forEach(cellKey => {
+		Object.keys(cells).forEach((cellKey) => {
 			if (cellKey.startsWith(roomId + '_')) {
 				const currentStaffList = cells[cellKey].staffList || [];
 				cells[cellKey] = {
@@ -1082,12 +1243,12 @@
 				};
 			}
 		});
-		
+
 		updateWave(selectedWave.id, { staffCells: cells });
-		
+
 		// Update quickDetailData
 		if (quickDetailData) {
-			quickDetailData.details = quickDetailData.details.map(d => {
+			quickDetailData.details = quickDetailData.details.map((d) => {
 				if (d.roomId === roomId && d.type === 'staff') {
 					const newStaffList = [...(d.data.staffList || []), staffName];
 					return { ...d, data: { ...d.data, staffList: newStaffList } };
@@ -1095,7 +1256,7 @@
 				return d;
 			});
 		}
-		
+
 		// Reset input
 		quickAddStaffInput[roomId] = '';
 		quickAddingStaff = null;
@@ -1103,29 +1264,29 @@
 
 	function removeQuickStaff(roomId, staffName) {
 		if (!selectedWave) return;
-		
+
 		pushHistory();
-		
+
 		const cells = { ...(selectedWave.staffCells || {}) };
-		
+
 		// Remove staff from all cells for this room
-		Object.keys(cells).forEach(cellKey => {
+		Object.keys(cells).forEach((cellKey) => {
 			if (cellKey.startsWith(roomId + '_')) {
 				const currentStaffList = cells[cellKey].staffList || [];
 				cells[cellKey] = {
 					...cells[cellKey],
-					staffList: currentStaffList.filter(name => name !== staffName)
+					staffList: currentStaffList.filter((name) => name !== staffName)
 				};
 			}
 		});
-		
+
 		updateWave(selectedWave.id, { staffCells: cells });
-		
+
 		// Update quickDetailData
 		if (quickDetailData) {
-			quickDetailData.details = quickDetailData.details.map(d => {
+			quickDetailData.details = quickDetailData.details.map((d) => {
 				if (d.roomId === roomId && d.type === 'staff') {
-					const newStaffList = (d.data.staffList || []).filter(name => name !== staffName);
+					const newStaffList = (d.data.staffList || []).filter((name) => name !== staffName);
 					return { ...d, data: { ...d.data, staffList: newStaffList } };
 				}
 				return d;
@@ -1172,51 +1333,54 @@
 		return (selectedWave.staffRooms || []).includes(roomId);
 	}
 
-	// Room type manipulation (per-wave)
-	function changeRoomType(roomId, newType) {
-		if (!selectedWave) {
-			console.error('No selectedWave when changing room type');
+	// Room type manipulation (wave-specific overrides, not direct room type change)
+	function changeRoomType(roomId, newType, waveId) {
+		const targetWaveId = waveId || selectedWave?.id;
+		const targetWave = (contract.waves || []).find((w) => w.id === targetWaveId);
+
+		console.log('Changing room type:', { roomId, newType });
+
+		if (!targetWave) {
+			console.error('No wave available!');
+			alert('Pilih gelombang terlebih dahulu');
 			return;
 		}
 
-		console.log('Changing room type:', {
-			roomId,
-			newType,
-			waveId: selectedWave.id,
-			waveName: selectedWave.name,
-			currentOverrides: selectedWave.roomTypeOverrides
-		});
+		console.log('Current targetWave:', targetWave.name, 'ID:', targetWave.id);
 
 		pushHistory(); // Save state before room type change
 
 		// Get current overrides for this wave
-		const currentOverrides = { ...(selectedWave.roomTypeOverrides || {}) };
+		const currentOverrides = { ...(targetWave.roomTypeOverrides || {}) };
+		console.log('Current overrides before change:', currentOverrides);
 
-		// Find the room's original type
+		// Find the room's base type
 		const room = contract.rooms.find((r) => r.id === roomId);
-		const originalType = room?.originalType;
+		const baseType = room?.type || 'unset';
+		console.log(`Room ${roomId}: baseType=${baseType}, newType=${newType}`);
 
-		console.log('Room info:', { roomId, originalType, newType });
-
-		// If newType is same as original, remove the override
-		if (newType === originalType) {
+		// If new type is same as base type, remove the override
+		if (newType === baseType) {
 			delete currentOverrides[roomId];
-			console.log('Removing override (back to original)');
+			console.log(`Removing override for ${roomId} (same as base type)`);
 		} else {
 			// Set the override for this wave
 			currentOverrides[roomId] = newType;
-			console.log('Setting override:', currentOverrides);
+			console.log(`Setting override for ${roomId}: ${newType}`);
 		}
 
-		// Update wave with new overrides
-		updateWave(selectedWave.id, { roomTypeOverrides: currentOverrides });
+		console.log('New overrides after change:', currentOverrides);
+
+		// Update wave with new overrides - this should trigger selectedWave reactivity
+		updateWave(targetWave.id, { roomTypeOverrides: currentOverrides });
+
 		roomTypeMenu = null;
 	}
 
-	function openRoomTypeMenu(e, roomId) {
+	function openRoomTypeMenu(e, roomId, waveId = null) {
 		e.preventDefault();
 		e.stopPropagation();
-		roomTypeMenu = { roomId, x: e.clientX, y: e.clientY };
+		roomTypeMenu = { roomId, x: e.clientX, y: e.clientY, waveId: waveId || selectedWave?.id };
 	}
 
 	function closeRoomTypeMenu() {
@@ -1254,7 +1418,7 @@
 
 	function handleSaveRoom({ id, type, force = false }) {
 		const occupants = getJamaahInRoom(contract, selectedWaveIndex, id);
-		const cap = roomCapacity[type] || 2;
+		const cap = roomCapacity[type] === '-' ? 999 : roomCapacity[type] || 2; // Allow unlimited for unset
 
 		if (occupants.length > cap && !force) {
 			alertState = {
@@ -1648,7 +1812,8 @@
 		const waveIndex = (contract.waves || []).findIndex((w) => w.id === waveId);
 		const jamaahInSourceRoom = getJamaahInRoom(contract, waveIndex, fromRoomId);
 		const targetRoomType = getRoomTypeForWave(targetRoom, wave);
-		const targetCap = roomCapacity[targetRoomType] || 2;
+		const targetCap =
+			roomCapacity[targetRoomType] === '-' ? 999 : roomCapacity[targetRoomType] || 2; // Allow unlimited for unset
 
 		let message = `Pindahkan alokasi ${wave.name} dari kamar ${fromRoomId} ke ${targetRoom.id}?`;
 		let alertType = 'info';
@@ -1749,6 +1914,61 @@
 		</div>
 	</div>
 
+	<!-- Floor Selector -->
+	{#if availableFloors.length > 1}
+		<div class="floor-selector-bar">
+			<div class="floor-tabs">
+				<span class="floor-label">Floor:</span>
+				{#each availableFloors as floor}
+					{@const floorRooms = getRoomsByFloor(contract, floor)}
+					{@const unsetCount = floorRooms.filter((r) => {
+						const effType = getRoomTypeForWave(r, selectedWave);
+						return !effType || effType === 'unset';
+					}).length}
+					{@const totalRooms = floorRooms.length}
+					{@const statusClass =
+						unsetCount === totalRooms ? 'dot-red' : unsetCount === 0 ? 'dot-green' : 'dot-yellow'}
+					{@const statusTitle =
+						unsetCount === totalRooms
+							? 'Semua kamar belum di-setting'
+							: unsetCount === 0
+								? 'Semua kamar sudah di-setting'
+								: `${unsetCount} kamar belum di-setting`}
+					<button
+						class="floor-tab"
+						class:active={selectedFloor === floor}
+						onclick={() => (selectedFloor = floor)}
+					>
+						{floor}
+						<div class="unset-dot {statusClass}" title={statusTitle}></div>
+					</button>
+				{/each}
+			</div>
+			<div class="floor-actions">
+				<button
+					class="save-room-types-btn"
+					class:has-changes={hasUnsavedChanges}
+					onclick={saveRoomTypes}
+					disabled={!hasUnsavedChanges}
+					title={hasUnsavedChanges
+						? 'Simpan perubahan tipe kamar'
+						: 'Tidak ada perubahan untuk disimpan'}
+				>
+					💾 Save Room Types
+					{#if hasUnsavedChanges}
+						<span class="changes-indicator">●</span>
+					{/if}
+				</button>
+				<div class="floor-info">
+					{currentFloorRooms().length} kamar di {selectedFloor}
+					{#if hasUnsavedChanges}
+						<span class="unsaved-indicator">• Unsaved changes</span>
+					{/if}
+				</div>
+			</div>
+		</div>
+	{/if}
+
 	<!-- Hint bar -->
 	<div class="cell-hint-bar">
 		<div class="hint-cell-demo">
@@ -1760,8 +1980,6 @@
 			<strong>Drag</strong> jamaah ke header kamar</span
 		>
 	</div>
-
-
 
 	<!-- Main content area -->
 	<div class="grid-main-area">
@@ -1831,59 +2049,37 @@
 			style="left: {roomTypeMenu.x}px; top: {roomTypeMenu.y}px;"
 			onclick={(e) => e.stopPropagation()}
 		>
-			<div class="context-menu-title">Ubah Tipe Kamar {roomTypeMenu.roomId}</div>
-			{#each ['double', 'triple', 'quad', 'quint'] as t}
+			<div class="context-menu-title">Set Tipe Kamar {roomTypeMenu.roomId}</div>
+			{#each ['unset', 'double', 'triple', 'quad', 'quint'] as t}
 				{@const currentRoom = contract.rooms.find((r) => r.id === roomTypeMenu.roomId)}
-				{@const effectiveType =
-					selectedWave?.roomTypeOverrides?.[roomTypeMenu.roomId] ||
-					currentRoom?.originalType ||
-					currentRoom?.type}
-				{@const isManipulated =
-					selectedWave?.roomTypeOverrides?.[roomTypeMenu.roomId] !== undefined}
+				{@const currentType = currentRoom?.type || 'unset'}
 				<button
 					class="context-menu-item"
-					class:active={effectiveType === t}
-					onclick={() => changeRoomType(roomTypeMenu.roomId, t)}
+					class:active={currentType === t}
+					onclick={() => changeRoomType(roomTypeMenu.roomId, t, roomTypeMenu.waveId)}
 				>
 					<span class="ctx-dot" style="background: {localTypeConfig[t].headerBg};"></span>
-					{localTypeConfig[t].label} ({roomCapacity[t]} org)
-					{#if effectiveType === t}<span class="ctx-check">✓</span>{/if}
-					{#if isManipulated && effectiveType === t}
-						<span class="ctx-manip">⚙</span>
-					{/if}
+					{localTypeConfig[t].label} ({roomCapacity[t] === '-' ? '-' : roomCapacity[t]} org)
+					{#if currentType === t}<span class="ctx-check">✓</span>{/if}
 				</button>
 			{/each}
-			{#if roomTypeMenu}
-				{@const currentRoom = contract.rooms.find((r) => r.id === roomTypeMenu.roomId)}
-				{@const hasOverride = selectedWave?.roomTypeOverrides?.[roomTypeMenu.roomId] !== undefined}
-				{#if hasOverride}
-					<div class="context-menu-divider"></div>
-					<button
-						class="context-menu-item reset"
-						onclick={() =>
-							changeRoomType(roomTypeMenu.roomId, currentRoom?.originalType || currentRoom?.type)}
-					>
-						↩ Reset ke {(currentRoom?.originalType || currentRoom?.type)?.toUpperCase()}
-					</button>
-				{/if}
-			{/if}
 			{#if selectedWave}
 				{#if selectedCells.size > 0}
 					{@const selectedArray = Array.from(selectedCells)}
-					{@const someSold = selectedArray.some(cellKey => {
+					{@const someSold = selectedArray.some((cellKey) => {
 						const soldCells = selectedWave.soldCells || {};
 						return soldCells[cellKey] !== undefined;
 					})}
-					{@const someStaff = selectedArray.some(cellKey => {
+					{@const someStaff = selectedArray.some((cellKey) => {
 						const staffCells = selectedWave.staffCells || {};
 						return staffCells[cellKey] !== undefined;
 					})}
-					{@const allEmpty = selectedArray.every(cellKey => {
+					{@const allEmpty = selectedArray.every((cellKey) => {
 						const soldCells = selectedWave.soldCells || {};
 						const staffCells = selectedWave.staffCells || {};
 						return soldCells[cellKey] === undefined && staffCells[cellKey] === undefined;
 					})}
-					
+
 					<!-- Only show mark options if all selected cells are empty -->
 					{#if allEmpty}
 						<div class="context-menu-divider"></div>
@@ -1914,7 +2110,7 @@
 							👨‍✈️ Tandai Sebagai Staff ({selectedCells.size} cell)
 						</button>
 					{/if}
-					
+
 					<!-- Only show remove options if some selected cells have sold/staff -->
 					{#if someSold}
 						<div class="context-menu-divider"></div>
@@ -1934,7 +2130,8 @@
 								closeRoomTypeMenu();
 							}}
 						>
-							✕ Hapus Status Dijual ({selectedArray.filter(k => (selectedWave.soldCells || {})[k]).length} cell)
+							✕ Hapus Status Dijual ({selectedArray.filter((k) => (selectedWave.soldCells || {})[k])
+								.length} cell)
 						</button>
 					{/if}
 					{#if someStaff}
@@ -1955,10 +2152,11 @@
 								closeRoomTypeMenu();
 							}}
 						>
-							✕ Hapus Status Staff ({selectedArray.filter(k => (selectedWave.staffCells || {})[k]).length} cell)
+							✕ Hapus Status Staff ({selectedArray.filter((k) => (selectedWave.staffCells || {})[k])
+								.length} cell)
 						</button>
 					{/if}
-					
+
 					<div class="context-menu-divider"></div>
 					<button
 						class="context-menu-item"
@@ -1971,20 +2169,20 @@
 					</button>
 				{:else}
 					<!-- Show option to remove sold/staff from entire room if no selection -->
-					{@const roomSoldCells = Object.keys(selectedWave.soldCells || {}).filter(key => 
+					{@const roomSoldCells = Object.keys(selectedWave.soldCells || {}).filter((key) =>
 						key.startsWith(roomTypeMenu.roomId + '_')
 					)}
-					{@const roomStaffCells = Object.keys(selectedWave.staffCells || {}).filter(key => 
+					{@const roomStaffCells = Object.keys(selectedWave.staffCells || {}).filter((key) =>
 						key.startsWith(roomTypeMenu.roomId + '_')
 					)}
-					
+
 					{#if roomSoldCells.length > 0}
 						<button
 							class="context-menu-item danger"
 							onclick={() => {
 								// Select all sold cells for this room then remove
 								const newSelected = new Set();
-								roomSoldCells.forEach(cellKey => newSelected.add(cellKey));
+								roomSoldCells.forEach((cellKey) => newSelected.add(cellKey));
 								selectedCells = newSelected;
 								removeSelectedCellsSold();
 								closeRoomTypeMenu();
@@ -1993,14 +2191,14 @@
 							✕ Hapus Semua Status Dijual di Kamar Ini
 						</button>
 					{/if}
-					
+
 					{#if roomStaffCells.length > 0}
 						<button
 							class="context-menu-item danger"
 							onclick={() => {
 								// Select all staff cells for this room then remove
 								const newSelected = new Set();
-								roomStaffCells.forEach(cellKey => newSelected.add(cellKey));
+								roomStaffCells.forEach((cellKey) => newSelected.add(cellKey));
 								selectedCells = newSelected;
 								removeSelectedCellsStaff();
 								closeRoomTypeMenu();
@@ -2010,12 +2208,22 @@
 						</button>
 					{/if}
 				{/if}
-				{@const jamaahInRoom = getJamaahInRoom(contract, selectedWaveIndex, roomTypeMenu.roomId)}
+			{/if}
+			{#if roomTypeMenu}
+				{@const menuWaveIndex = roomTypeMenu.waveId
+					? (contract.waves || []).findIndex((w) => w.id === roomTypeMenu.waveId)
+					: selectedWaveIndex}
+				{@const validWaveIndex = menuWaveIndex !== -1 ? menuWaveIndex : selectedWaveIndex}
+				{@const jamaahInRoom =
+					validWaveIndex !== -1
+						? getJamaahInRoom(contract, validWaveIndex, roomTypeMenu.roomId)
+						: []}
 				{#if jamaahInRoom.length > 0}
+					<div class="context-menu-divider"></div>
 					<button
 						class="context-menu-item danger"
 						onclick={() => {
-							emptyRoom(roomTypeMenu.roomId);
+							emptyRoom(roomTypeMenu.roomId, roomTypeMenu.waveId);
 							closeRoomTypeMenu();
 						}}>🗑️ Kosongkan Kamar</button
 					>
@@ -2096,38 +2304,53 @@
 					<span class="quick-wave-label">Gelombang:</span>
 					<span class="quick-wave-name">{quickDetailData.wave.name}</span>
 				</div>
-				
+
 				<div class="quick-details-list">
 					{#each quickDetailData.details as detail}
 						<div class="quick-detail-card {detail.type === 'sold' ? 'sold-card' : 'staff-card'}">
 							<div class="quick-detail-header">
 								<span class="quick-room-badge">Kamar {detail.roomId}</span>
-								<span class="quick-type-badge {detail.type === 'sold' ? 'sold-badge' : 'staff-badge'}">
+								<span
+									class="quick-type-badge {detail.type === 'sold' ? 'sold-badge' : 'staff-badge'}"
+								>
 									{detail.type === 'sold' ? '💰 Dijual' : '👨‍✈️ Staff'}
 								</span>
 							</div>
-							
+
 							<div class="quick-detail-info">
 								<div class="quick-info-row">
 									<span class="quick-label">Check-In:</span>
-									<span class="quick-value">{new Date(detail.checkIn).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+									<span class="quick-value"
+										>{new Date(detail.checkIn).toLocaleDateString('id-ID', {
+											day: 'numeric',
+											month: 'short',
+											year: 'numeric'
+										})}</span
+									>
 								</div>
 								<div class="quick-info-row">
 									<span class="quick-label">Check-Out:</span>
-									<span class="quick-value">{new Date(detail.checkOut).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+									<span class="quick-value"
+										>{new Date(detail.checkOut).toLocaleDateString('id-ID', {
+											day: 'numeric',
+											month: 'short',
+											year: 'numeric'
+										})}</span
+									>
 								</div>
 								<div class="quick-info-row">
 									<span class="quick-label">Durasi:</span>
 									<span class="quick-value">{detail.dates.length} malam</span>
 								</div>
-								
+
 								{#if detail.type === 'sold'}
 									<div class="quick-info-row">
 										<span class="quick-label">Status:</span>
 										<select
 											class="quick-status-select"
 											value={detail.data.status || 'available'}
-											onchange={(e) => updateQuickDetailStatus(detail.roomId, detail.type, e.target.value)}
+											onchange={(e) =>
+												updateQuickDetailStatus(detail.roomId, detail.type, e.target.value)}
 										>
 											<option value="available">○ Available</option>
 											<option value="sold">✓ Sold</option>
@@ -2140,7 +2363,8 @@
 											class="quick-price-input"
 											value={detail.data.price || 0}
 											placeholder="0"
-											oninput={(e) => updateQuickDetailPrice(detail.roomId, detail.type, e.target.value)}
+											oninput={(e) =>
+												updateQuickDetailPrice(detail.roomId, detail.type, e.target.value)}
 										/>
 									</div>
 								{:else}
@@ -2165,7 +2389,7 @@
 											{:else}
 												<span class="quick-value empty">Belum ada staff</span>
 											{/if}
-											
+
 											{#if quickAddingStaff === detail.roomId}
 												<div class="quick-add-staff-form">
 													<input
@@ -2206,7 +2430,8 @@
 				</div>
 			</div>
 			<div class="quick-modal-footer">
-				<button class="quick-btn-close" onclick={() => (showQuickDetailModal = false)}>Tutup</button>
+				<button class="quick-btn-close" onclick={() => (showQuickDetailModal = false)}>Tutup</button
+				>
 			</div>
 		</div>
 	</div>
@@ -2269,7 +2494,7 @@
 	}
 
 	.contract-grid-wrapper.fullscreen .grid-main-area {
-		height: calc(100vh - 90px); /* toolbar + hint bar */
+		height: calc(100vh - 130px); /* toolbar + floor selector + hint bar */
 	}
 
 	/* Toolbar */
@@ -2321,6 +2546,168 @@
 	.toolbar-btn:hover,
 	.toolbar-btn.active {
 		background: rgba(255, 255, 255, 0.2);
+	}
+
+	/* Floor Selector */
+	.floor-selector-bar {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 8px 16px;
+		background: #f8fafc;
+		border-bottom: 1px solid #e2e8f0;
+	}
+
+	.floor-tabs {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+
+	.floor-actions {
+		display: flex;
+		align-items: center;
+		gap: 12px;
+	}
+
+	.save-room-types-btn {
+		padding: 6px 12px;
+		border: 1px solid #e2e8f0;
+		background: white;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 600;
+		color: #374151;
+		cursor: pointer;
+		transition: all 0.15s;
+		display: flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.save-room-types-btn:not(:disabled):hover {
+		border-color: #16a34a;
+		color: #16a34a;
+		background: #f0fdf4;
+	}
+
+	.save-room-types-btn:not(:disabled) {
+		border-color: #16a34a;
+		color: #16a34a;
+		background: #f0fdf4;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+	}
+
+	.save-room-types-btn.has-changes {
+		border-color: #f59e0b;
+		color: #f59e0b;
+		background: #fffbeb;
+		animation: pulse-changes 2s infinite;
+	}
+
+	@keyframes pulse-changes {
+		0%,
+		100% {
+			opacity: 1;
+		}
+		50% {
+			opacity: 0.7;
+		}
+	}
+
+	.changes-indicator {
+		color: #f59e0b;
+		font-size: 8px;
+		animation: blink 1s infinite;
+	}
+
+	@keyframes blink {
+		0%,
+		50% {
+			opacity: 1;
+		}
+		51%,
+		100% {
+			opacity: 0;
+		}
+	}
+
+	.unsaved-indicator {
+		color: #f59e0b;
+		font-weight: 600;
+		margin-left: 8px;
+	}
+
+	.save-room-types-btn:disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+		background: #f9fafb;
+		color: #9ca3af;
+	}
+
+	.floor-label {
+		font-size: 12px;
+		font-weight: 600;
+		color: #64748b;
+		margin-right: 4px;
+	}
+
+	.floor-tab {
+		padding: 6px 12px;
+		border: 1px solid #e2e8f0;
+		background: white;
+		border-radius: 6px;
+		font-size: 12px;
+		font-weight: 500;
+		color: #64748b;
+		cursor: pointer;
+		transition: all 0.15s;
+		position: relative;
+	}
+
+	.unset-dot {
+		position: absolute;
+		top: -4px;
+		right: -4px;
+		width: 10px;
+		height: 10px;
+		border-radius: 50%;
+		border: 2px solid white;
+		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+		transition: background-color 0.2s ease;
+	}
+
+	.unset-dot.dot-red {
+		background: #ef4444;
+	}
+
+	.unset-dot.dot-yellow {
+		background: #fbbf24;
+	}
+
+	.unset-dot.dot-green {
+		background: #10b981;
+	}
+
+	.floor-tab.active .unset-dot {
+		border-color: #972395;
+	}
+
+	.floor-tab:hover {
+		border-color: #972395;
+		color: #972395;
+	}
+
+	.floor-tab.active {
+		background: #972395;
+		border-color: #972395;
+		color: white;
+	}
+
+	.floor-info {
+		font-size: 11px;
+		color: #64748b;
+		font-weight: 500;
 	}
 
 	/* Hint bar */
@@ -2448,7 +2835,7 @@
 		background: #f1f5f9;
 		margin: 3px 0;
 	}
-	
+
 	/* Quick Detail Modal */
 	.quick-modal-overlay {
 		position: fixed;
@@ -2463,7 +2850,7 @@
 		z-index: 10100;
 		backdrop-filter: blur(2px);
 	}
-	
+
 	.quick-modal {
 		background: white;
 		border-radius: 16px;
@@ -2475,7 +2862,7 @@
 		flex-direction: column;
 		overflow: hidden;
 	}
-	
+
 	.quick-modal-header {
 		display: flex;
 		align-items: center;
@@ -2484,14 +2871,14 @@
 		border-bottom: 1px solid #e5e7eb;
 		background: linear-gradient(135deg, #f9fafb, #ffffff);
 	}
-	
+
 	.quick-modal-title {
 		font-size: 16px;
 		font-weight: 700;
 		color: #111827;
 		margin: 0;
 	}
-	
+
 	.quick-close-btn {
 		display: flex;
 		align-items: center;
@@ -2506,18 +2893,18 @@
 		cursor: pointer;
 		transition: all 0.15s;
 	}
-	
+
 	.quick-close-btn:hover {
 		background: #e5e7eb;
 		color: #111827;
 	}
-	
+
 	.quick-modal-body {
 		flex: 1;
 		overflow-y: auto;
 		padding: 16px 20px;
 	}
-	
+
 	.quick-wave-info {
 		display: flex;
 		align-items: center;
@@ -2528,42 +2915,42 @@
 		border-radius: 8px;
 		margin-bottom: 16px;
 	}
-	
+
 	.quick-wave-label {
 		font-size: 12px;
 		font-weight: 600;
 		color: #6b7280;
 	}
-	
+
 	.quick-wave-name {
 		font-size: 13px;
 		font-weight: 700;
 		color: #111827;
 	}
-	
+
 	.quick-details-list {
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
 	}
-	
+
 	.quick-detail-card {
 		border: 1px solid #e5e7eb;
 		border-radius: 10px;
 		padding: 12px;
 		background: white;
 	}
-	
+
 	.quick-detail-card.sold-card {
 		background: linear-gradient(135deg, #f0fdf4, #ffffff);
 		border-color: #bbf7d0;
 	}
-	
+
 	.quick-detail-card.staff-card {
 		background: linear-gradient(135deg, #eff6ff, #ffffff);
 		border-color: #bfdbfe;
 	}
-	
+
 	.quick-detail-header {
 		display: flex;
 		align-items: center;
@@ -2572,82 +2959,82 @@
 		padding-bottom: 10px;
 		border-bottom: 1px solid #e5e7eb;
 	}
-	
+
 	.quick-room-badge {
 		font-size: 13px;
 		font-weight: 700;
 		color: #111827;
 	}
-	
+
 	.quick-type-badge {
 		font-size: 11px;
 		font-weight: 600;
 		padding: 3px 8px;
 		border-radius: 6px;
 	}
-	
+
 	.quick-type-badge.sold-badge {
 		background: #dcfce7;
 		color: #15803d;
 	}
-	
+
 	.quick-type-badge.staff-badge {
 		background: #dbeafe;
 		color: #1e40af;
 	}
-	
+
 	.quick-detail-info {
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
 	}
-	
+
 	.quick-info-row {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
 		gap: 12px;
 	}
-	
+
 	.quick-label {
 		font-size: 12px;
 		font-weight: 600;
 		color: #6b7280;
 		min-width: 80px;
 	}
-	
+
 	.quick-value {
 		font-size: 12px;
 		font-weight: 600;
 		color: #111827;
 		text-align: right;
 	}
-	
+
 	.quick-value.status-sold {
 		color: #15803d;
 	}
-	
+
 	.quick-value.status-available {
 		color: #9ca3af;
 	}
-	
+
 	.quick-value.price {
 		color: #16a34a;
 		font-weight: 700;
 	}
-	
+
 	.quick-value.empty {
 		color: #9ca3af;
 		font-style: italic;
 	}
-	
+
 	.quick-staff-list {
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
 		align-items: flex-end;
 	}
-	
+
 	.quick-staff-container {
 		display: flex;
 		flex-direction: column;
@@ -2655,14 +3042,14 @@
 		flex: 1;
 		align-items: flex-end;
 	}
-	
+
 	.quick-staff-list-inline {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
 		justify-content: flex-end;
 	}
-	
+
 	.quick-staff-item-inline {
 		display: flex;
 		align-items: center;
@@ -2672,13 +3059,13 @@
 		border-radius: 6px;
 		border: 1px solid #bfdbfe;
 	}
-	
+
 	.staff-name-inline {
 		font-size: 12px;
 		font-weight: 600;
 		color: #1e40af;
 	}
-	
+
 	.remove-staff-inline {
 		display: flex;
 		align-items: center;
@@ -2695,12 +3082,12 @@
 		transition: all 0.15s;
 		line-height: 1;
 	}
-	
+
 	.remove-staff-inline:hover {
 		background: #dc2626;
 		transform: scale(1.1);
 	}
-	
+
 	.quick-add-staff-btn {
 		font-size: 11px;
 		font-weight: 600;
@@ -2712,18 +3099,18 @@
 		cursor: pointer;
 		transition: all 0.15s;
 	}
-	
+
 	.quick-add-staff-btn:hover {
 		background: #4338ca;
 		transform: translateY(-1px);
 	}
-	
+
 	.quick-add-staff-form {
 		display: flex;
 		gap: 4px;
 		align-items: center;
 	}
-	
+
 	.quick-staff-input {
 		font-size: 11px;
 		padding: 5px 8px;
@@ -2732,13 +3119,13 @@
 		width: 140px;
 		transition: all 0.15s;
 	}
-	
+
 	.quick-staff-input:focus {
 		outline: none;
 		border-color: #4f46e5;
 		box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 	}
-	
+
 	.quick-staff-btn {
 		display: flex;
 		align-items: center;
@@ -2752,32 +3139,32 @@
 		cursor: pointer;
 		transition: all 0.15s;
 	}
-	
+
 	.quick-staff-btn.add {
 		background: #16a34a;
 		color: white;
 	}
-	
+
 	.quick-staff-btn.add:hover:not(:disabled) {
 		background: #15803d;
 		transform: scale(1.1);
 	}
-	
+
 	.quick-staff-btn.add:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
 	}
-	
+
 	.quick-staff-btn.cancel {
 		background: #ef4444;
 		color: white;
 	}
-	
+
 	.quick-staff-btn.cancel:hover {
 		background: #dc2626;
 		transform: scale(1.1);
 	}
-	
+
 	.quick-staff-item {
 		font-size: 12px;
 		font-weight: 600;
@@ -2786,7 +3173,7 @@
 		padding: 2px 8px;
 		border-radius: 4px;
 	}
-	
+
 	.quick-status-select {
 		font-size: 12px;
 		font-weight: 600;
@@ -2799,13 +3186,13 @@
 		transition: all 0.15s;
 		min-width: 120px;
 	}
-	
+
 	.quick-status-select:focus {
 		outline: none;
 		border-color: #16a34a;
 		box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 	}
-	
+
 	.quick-price-input {
 		font-size: 12px;
 		font-weight: 600;
@@ -2818,13 +3205,13 @@
 		text-align: right;
 		transition: all 0.15s;
 	}
-	
+
 	.quick-price-input:focus {
 		outline: none;
 		border-color: #16a34a;
 		box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 	}
-	
+
 	.quick-modal-footer {
 		display: flex;
 		align-items: center;
@@ -2833,7 +3220,7 @@
 		border-top: 1px solid #e5e7eb;
 		background: #f9fafb;
 	}
-	
+
 	.quick-btn-close {
 		padding: 8px 16px;
 		border: 1px solid #d1d5db;
@@ -2845,7 +3232,7 @@
 		cursor: pointer;
 		transition: all 0.15s;
 	}
-	
+
 	.quick-btn-close:hover {
 		background: #f3f4f6;
 		border-color: #9ca3af;

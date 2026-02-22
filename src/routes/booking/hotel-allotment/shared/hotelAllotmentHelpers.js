@@ -5,6 +5,7 @@
 
 // Room type config — used by Grid View headers (colorful)
 export const typeConfig = {
+    unset: { label: 'BELUM DIATUR', short: 'UNSET', color: '#9ca3af', bg: '#f9fafb', headerBg: '#9ca3af', capacity: 2 },
     quint: { label: 'QUINT', short: 'QNT', color: '#0d47a1', bg: '#e3f2fd', headerBg: '#1565c0', capacity: 5 },
     quad: { label: 'QUAD', short: 'QD', color: '#1b5e20', bg: '#e8f5e9', headerBg: '#2e7d32', capacity: 4 },
     triple: { label: 'TRIPLE', short: 'TPL', color: '#e65100', bg: '#fff3e0', headerBg: '#ef6c00', capacity: 3 },
@@ -13,6 +14,7 @@ export const typeConfig = {
 
 // Room type colors — used by Card View & Modals (muted grays)
 export const typeColors = {
+    unset: { hex: '#9ca3af', light: '#f9fafb', dark: '#6b7280', label: 'Belum Diatur', cap: 2 },
     quint: { hex: '#4b5563', light: '#f3f4f6', dark: '#1f2937', label: 'Quint', cap: 5 },
     quad: { hex: '#6b7280', light: '#f3f4f6', dark: '#374151', label: 'Quad', cap: 4 },
     triple: { hex: '#9ca3af', light: '#f9fafb', dark: '#4b5563', label: 'Triple', cap: 3 },
@@ -20,7 +22,7 @@ export const typeColors = {
 };
 
 // Room capacity by type
-export const roomCapacity = { double: 2, triple: 3, quad: 4, quint: 5 };
+export const roomCapacity = { unset: '-', double: 2, triple: 3, quad: 4, quint: 5 };
 
 // Wave color palette for visual distinction
 export const waveColors = [
@@ -42,7 +44,7 @@ export function getBookingForRoom(allocations, room) {
     const booking = allocations?.[room.id];
     if (booking) return booking;
 
-    const cap = roomCapacity[room.type] || 2;
+    const cap = roomCapacity[room.type] === '-' ? 2 : (roomCapacity[room.type] || 2);
     return {
         applicantName: `Jamaah ${room.type.charAt(0).toUpperCase() + room.type.slice(1)}`,
         pilgrims: Array.from({ length: cap }, (_, i) => ({ name: `Jamaah ${i + 1} (${room.id})` }))

@@ -1,14 +1,5 @@
 <script>
-	import {
-		X,
-		ChevronDown,
-		User,
-		FileText,
-		Globe,
-		Palette,
-		Briefcase,
-		AlertTriangle
-	} from 'lucide-svelte';
+	import { X, ChevronDown, User, FileText, Globe, Briefcase, AlertTriangle } from 'lucide-svelte';
 	import { fade, scale, slide } from 'svelte/transition';
 	import { getRoomTypeForWave } from '../GridView/parts/roomTypeHelpers.js';
 
@@ -21,19 +12,6 @@
 		onSave
 	} = $props();
 
-	let selectedColor = $state(''); // For Room Color in this wave
-	let customColorInput = $state('');
-	let showCustomColorPicker = $state(false);
-	
-	// Color picker state
-	let hue = $state(0);
-	let saturation = $state(100);
-	let lightness = $state(50);
-	let pickerCanvas;
-	let pickerCtx;
-	let isDraggingPicker = $state(false);
-	let isDraggingHue = $state(false);
-
 	// Get effective type for this wave (derived, not state)
 	let selectedType = $derived.by(() => {
 		if (!show || !room || !activeWave) return 'double';
@@ -44,22 +22,11 @@
 	let editedType = $state('');
 
 	const typeOptions = [
+		{ value: 'unset', label: 'Belum Diatur', cap: '-' },
 		{ value: 'quint', label: 'Quint', cap: 5 },
 		{ value: 'quad', label: 'Quad', cap: 4 },
 		{ value: 'triple', label: 'Triple', cap: 3 },
 		{ value: 'double', label: 'Double', cap: 2 }
-	];
-
-	const colorOptions = [
-		'#ef4444', // Red
-		'#f97316', // Orange
-		'#eab308', // Yellow
-		'#22c55e', // Green
-		'#06b6d4', // Cyan
-		'#3b82f6', // Blue
-		'#a855f7', // Purple
-		'#ec4899', // Pink
-		'#64748b' // Slate
 	];
 
 	let openGuestIndex = $state(0);
@@ -90,196 +57,18 @@
 			// Initialize edited type from effective type
 			editedType = getRoomTypeForWave(room, activeWave);
 			openGuestIndex = 0;
-			
-			// Get room color for this wave (from roomColors map)
-			const roomColors = activeWave.roomColors || {};
-			let defaultColor = '#3b82f6';
-			
-			// Extract color from wave.color (could be string or object)
-			if (activeWave.color) {
-				if (typeof activeWave.color === 'string') {
-					defaultColor = activeWave.color;
-				} else if (activeWave.color.bg) {
-					defaultColor = activeWave.color.bg;
-				}
-			}
-			
-			selectedColor = roomColors[room.id] || defaultColor;
-			customColorInput = selectedColor;
-			
-			// Parse color to HSL
-			const hsl = hexToHSL(selectedColor);
-			hue = hsl.h;
-			saturation = hsl.s;
-			lightness = hsl.l;
-			
-			showCustomColorPicker = false;
-			
-			// Initialize canvas
-			if (pickerCanvas) {
-				drawColorPicker();
-			}
-			
+
 			// Done initializing
 			isInitializing = false;
 		}
 	});
-	
-	function hexToHSL(hex) {
-		// Convert hex to RGB
-		const r = parseInt(hex.slice(1, 3), 16) / 255;
-		const g = parseInt(hex.slice(3, 5), 16) / 255;
-		const b = parseInt(hex.slice(5, 7), 16) / 255;
-		
-		const max = Math.max(r, g, b);
-		const min = Math.min(r, g, b);
-		let h, s, l = (max + min) / 2;
-		
-		if (max === min) {
-			h = s = 0;
-		} else {
-			const d = max - min;
-			s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-			
-			switch (max) {
-				case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
-				case g: h = ((b - r) / d + 2) / 6; break;
-				case b: h = ((r - g) / d + 4) / 6; break;
-			}
-		}
-		
-		return { h: h * 360, s: s * 100, l: l * 100 };
-	}
-	
-	function hslToHex(h, s, l) {
-		s /= 100;
-		l /= 100;
-		
-		const c = (1 - Math.abs(2 * l - 1)) * s;
-		const x = c * (1 - Math.abs((h / 60) % 2 - 1));
-		const m = l - c / 2;
-		let r = 0, g = 0, b = 0;
-		
-		if (0 <= h && h < 60) {
-			r = c; g = x; b = 0;
-		} else if (60 <= h && h < 120) {
-			r = x; g = c; b = 0;
-		} else if (120 <= h && h < 180) {
-			r = 0; g = c; b = x;
-		} else if (180 <= h && h < 240) {
-			r = 0; g = x; b = c;
-		} else if (240 <= h && h < 300) {
-			r = x; g = 0; b = c;
-		} else if (300 <= h && h < 360) {
-			r = c; g = 0; b = x;
-		}
-		
-		const toHex = (n) => {
-			const hex = Math.round((n + m) * 255).toString(16);
-			return hex.length === 1 ? '0' + hex : hex;
-		};
-		
-		return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
-	}
-	
-	function drawColorPicker() {
-		if (!pickerCanvas) return;
-		pickerCtx = pickerCanvas.getContext('2d');
-		const width = pickerCanvas.width;
-		const height = pickerCanvas.height;
-		
-		// Draw saturation-lightness gradient
-		// Base color from hue
-		pickerCtx.fillStyle = `hsl(${hue}, 100%, 50%)`;
-		pickerCtx.fillRect(0, 0, width, height);
-		
-		// White gradient (left to right)
-		const whiteGrad = pickerCtx.createLinearGradient(0, 0, width, 0);
-		whiteGrad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-		whiteGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-		pickerCtx.fillStyle = whiteGrad;
-		pickerCtx.fillRect(0, 0, width, height);
-		
-		// Black gradient (top to bottom)
-		const blackGrad = pickerCtx.createLinearGradient(0, 0, 0, height);
-		blackGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-		blackGrad.addColorStop(1, 'rgba(0, 0, 0, 1)');
-		pickerCtx.fillStyle = blackGrad;
-		pickerCtx.fillRect(0, 0, width, height);
-	}
-	
-	function handlePickerMouseDown(e) {
-		isDraggingPicker = true;
-		updatePickerColor(e);
-	}
-	
-	function handlePickerMouseMove(e) {
-		if (!isDraggingPicker) return;
-		updatePickerColor(e);
-	}
-	
-	function handlePickerMouseUp() {
-		isDraggingPicker = false;
-	}
-	
-	function updatePickerColor(e) {
-		const rect = pickerCanvas.getBoundingClientRect();
-		const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-		const y = Math.max(0, Math.min(e.clientY - rect.top, rect.height));
-		
-		// Calculate saturation and lightness from position
-		saturation = (x / rect.width) * 100;
-		lightness = 100 - (y / rect.height) * 100;
-		
-		updateColor();
-	}
-	
-	function handleHueMouseDown(e) {
-		isDraggingHue = true;
-		updateHue(e);
-	}
-	
-	function handleHueMouseMove(e) {
-		if (!isDraggingHue) return;
-		updateHue(e);
-	}
-	
-	function handleHueMouseUp() {
-		isDraggingHue = false;
-	}
-	
-	function updateHue(e) {
-		const rect = e.currentTarget.getBoundingClientRect();
-		const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
-		hue = (x / rect.width) * 360;
-		
-		drawColorPicker();
-		updateColor();
-	}
-	
-	function updateColor() {
-		selectedColor = hslToHex(hue, saturation, lightness);
-		customColorInput = selectedColor;
-		console.log('updateColor called:', { hue, saturation, lightness, selectedColor });
-	}
-	
-	$effect(() => {
-		if (showCustomColorPicker && pickerCanvas) {
-			drawColorPicker();
-		}
-	});
-
-	function applyCustomColor() {
-		if (customColorInput && /^#[0-9A-F]{6}$/i.test(customColorInput)) {
-			selectedColor = customColorInput;
-			showCustomColorPicker = false;
-		}
-	}
 
 	let capacityWarning = $derived.by(() => {
 		if (!editedType) return null;
 		const newTypeConfig = typeOptions.find((t) => t.value === editedType);
-		const newCap = newTypeConfig ? newTypeConfig.cap : 0;
+		if (!newTypeConfig || editedType === 'unset') return null;
+
+		const newCap = newTypeConfig.cap;
 		const currentCount = guests.length;
 
 		if (currentCount > newCap) {
@@ -293,30 +82,30 @@
 	});
 
 	// Bed analysis - use selectedType (effective type) for display
-	let currentCap = $derived(typeOptions.find((t) => t.value === selectedType)?.cap || 0);
-	let emptyBeds = $derived(Math.max(0, currentCap - guests.length));
-	let overflowBeds = $derived(Math.max(0, guests.length - currentCap));
+	let currentCap = $derived.by(() => {
+		const typeConfig = typeOptions.find((t) => t.value === selectedType);
+		if (!typeConfig || selectedType === 'unset') return '-';
+		return typeConfig.cap;
+	});
+	let emptyBeds = $derived.by(() => {
+		if (currentCap === '-') return '-';
+		return Math.max(0, currentCap - guests.length);
+	});
+	let overflowBeds = $derived.by(() => {
+		if (currentCap === '-') return 0;
+		return Math.max(0, guests.length - currentCap);
+	});
 
 	function handleSave() {
 		if (onSave && room) {
-			// Ensure color is a string hex, not object
-			let colorToSave = selectedColor;
-			if (typeof selectedColor === 'object' && selectedColor?.bg) {
-				colorToSave = selectedColor.bg;
-			}
-			
 			console.log('RoomDetailModal handleSave:', {
-				selectedColor,
-				colorToSave,
-				customColorInput,
 				roomId: room.id,
 				type: editedType
 			});
-			
+
 			onSave({
 				id: room.id,
-				type: editedType,
-				roomColor: colorToSave
+				type: editedType
 			});
 		}
 	}
@@ -500,134 +289,6 @@
 
 				<!-- Room Configuration -->
 				<div class="border-t border-gray-100 bg-gray-50/50 p-5 pt-4">
-					<!-- Room Color Settings -->
-					<div class="mb-5">
-						<div
-							class="mb-2 flex items-center gap-1.5 text-xs font-semibold tracking-wider text-gray-500 uppercase"
-						>
-							<Palette size={12} />
-							Room Color Setting
-						</div>
-						<div class="flex flex-wrap gap-2">
-							{#each colorOptions as color}
-								<button
-									class="h-8 w-8 rounded-full border-2 transition-transform hover:scale-110"
-									style="background-color: {color}; border-color: {selectedColor === color
-										? '#000'
-										: 'transparent'}"
-									onclick={() => {
-										selectedColor = color;
-										customColorInput = color;
-									}}
-									title={color}
-								></button>
-							{/each}
-							<!-- Custom Color Button -->
-							<button
-								class="h-8 w-8 rounded-full border-2 border-dashed border-gray-300 bg-white flex items-center justify-center text-gray-400 hover:border-gray-400 hover:text-gray-600 transition-all"
-								onclick={() => (showCustomColorPicker = !showCustomColorPicker)}
-								title="Custom Color"
-							>
-								<Palette size={14} />
-							</button>
-						</div>
-						
-						{#if showCustomColorPicker}
-							<div class="mt-3 rounded-lg border border-gray-200 bg-white p-4" transition:slide={{ duration: 200 }}>
-								<!-- Color Picker Canvas -->
-								<div class="mb-3">
-									<div class="relative">
-										<canvas
-											bind:this={pickerCanvas}
-											width="280"
-											height="200"
-											class="w-full rounded-lg cursor-crosshair border border-gray-200"
-											onpointerdown={handlePickerMouseDown}
-											onpointermove={handlePickerMouseMove}
-											onpointerup={handlePickerMouseUp}
-											onpointerleave={handlePickerMouseUp}
-										></canvas>
-										<!-- Picker indicator -->
-										<div
-											class="absolute w-5 h-5 border-2 border-white rounded-full pointer-events-none shadow-lg"
-											style="
-												left: {(saturation / 100) * 100}%;
-												top: {(1 - lightness / 100) * 100}%;
-												transform: translate(-50%, -50%);
-												background: {selectedColor};
-											"
-										></div>
-									</div>
-								</div>
-								
-								<!-- Hue Slider -->
-								<div class="mb-3">
-									<div
-										class="relative h-8 rounded-lg cursor-pointer"
-										style="background: linear-gradient(to right, 
-											#ff0000 0%, 
-											#ffff00 17%, 
-											#00ff00 33%, 
-											#00ffff 50%, 
-											#0000ff 67%, 
-											#ff00ff 83%, 
-											#ff0000 100%
-										);"
-										onpointerdown={handleHueMouseDown}
-										onpointermove={handleHueMouseMove}
-										onpointerup={handleHueMouseUp}
-										onpointerleave={handleHueMouseUp}
-										role="slider"
-										tabindex="0"
-										aria-label="Hue slider"
-									>
-										<!-- Hue indicator -->
-										<div
-											class="absolute top-1/2 w-4 h-4 bg-white border-2 border-gray-800 rounded-full pointer-events-none shadow-lg"
-											style="
-												left: {(hue / 360) * 100}%;
-												transform: translate(-50%, -50%);
-											"
-										></div>
-									</div>
-								</div>
-								
-								<!-- Color Preview & Hex Input -->
-								<div class="flex gap-3 items-center">
-									<div
-										class="w-16 h-16 rounded-lg border-2 border-gray-200 shadow-sm flex-shrink-0"
-										style="background: {selectedColor};"
-									></div>
-									<div class="flex-1">
-										<label class="block text-xs font-medium text-gray-700 mb-1.5">Hex Color</label>
-										<input
-											type="text"
-											bind:value={customColorInput}
-											placeholder="#3b82f6"
-											class="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#972395] focus:border-transparent font-mono"
-											maxlength="7"
-											oninput={(e) => {
-												const val = e.target.value;
-												if (/^#[0-9A-F]{6}$/i.test(val)) {
-													selectedColor = val;
-													const hsl = hexToHSL(val);
-													hue = hsl.h;
-													saturation = hsl.s;
-													lightness = hsl.l;
-													drawColorPicker();
-												}
-											}}
-										/>
-									</div>
-								</div>
-							</div>
-						{/if}
-						
-						<p class="mt-2 text-[10px] text-gray-400">
-							Warna ini hanya berlaku untuk kamar <strong>{room?.id}</strong> di <strong>{activeWave?.name || 'Wave'}</strong>.
-						</p>
-					</div>
-
 					<!-- Room Type Settings -->
 					<div class="mb-3 flex items-center justify-between">
 						<label
@@ -660,7 +321,9 @@
 									onclick={() => (editedType = option.value)}
 								>
 									<span>{option.label}</span>
-									<span class="text-[9px] font-normal opacity-80">({option.cap})</span>
+									<span class="text-[9px] font-normal opacity-80"
+										>({option.cap === '-' ? '-' : option.cap})</span
+									>
 								</button>
 							{/each}
 						</div>

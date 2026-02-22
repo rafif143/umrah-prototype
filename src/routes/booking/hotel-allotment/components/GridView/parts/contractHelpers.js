@@ -15,32 +15,34 @@ export function getAllDates(contract) {
 
 import { getRoomTypeForWave } from './roomTypeHelpers.js';
 
-// Get unique floors from contract rooms
+// Get unique floors from contract
 export function getFloors(contract) {
-    console.log('getFloors called:', { contract: contract?.id, rooms: contract?.rooms?.length });
-    if (!contract?.rooms) {
-        console.log('No rooms found');
+    if (!contract) {
         return [];
     }
-    const floors = new Set();
-    contract.rooms.forEach(room => {
-        const floor = room.floor ?? Math.floor(parseInt(room.id.replace(/\D/g, '')) / 100);
-        console.log('Room:', room.id, 'Floor:', floor);
-        floors.add(floor);
-    });
-    const result = Array.from(floors).sort((a, b) => a - b);
-    console.log('getFloors result:', result);
-    return result;
+
+    if (!contract.floors || !Array.isArray(contract.floors)) {
+        // Fallback for legacy contracts without floors
+        if (!contract.rooms || !Array.isArray(contract.rooms)) {
+            return [];
+        }
+        const floors = new Set();
+        contract.rooms.forEach(room => {
+            const floor = room.floor ?? `Floor ${Math.floor(parseInt(room.id.replace(/\D/g, '')) / 100) + 1}`;
+            floors.add(floor);
+        });
+        return Array.from(floors).sort();
+    }
+
+    // New floor system
+    return contract.floors.map(f => f.name).sort();
 }
 
 // Get rooms for a specific floor, sorted by room number
-export function getRoomsByFloor(contract, floor) {
+export function getRoomsByFloor(contract, floorName) {
     if (!contract?.rooms) return [];
     return contract.rooms
-        .filter(room => {
-            const roomFloor = room.floor ?? Math.floor(parseInt(room.id.replace(/\D/g, '')) / 100);
-            return roomFloor === floor;
-        })
+        .filter(room => room.floor === floorName)
         .sort((a, b) => {
             const numA = parseInt(a.id.replace(/\D/g, ''));
             const numB = parseInt(b.id.replace(/\D/g, ''));
@@ -49,25 +51,33 @@ export function getRoomsByFloor(contract, floor) {
 }
 
 export function getRoomsByType(contract, wave = null) {
-    if (!contract?.rooms) return [];
-    const groups = {};
-    const typeOrder = ['quint', 'quad', 'triple', 'double'];
+    if (!contract?.rooms || !Array.isArray(contract.rooms)) {
+        return [];
+    }
 
-    // Group by effective type in the context of the wave
+    // Group contiguous rooms that share the same base physical type (originalType / type)
+    // This ensures that when a room is manipulated (or even saved via "Save Room Types"),
+    // the main group header spanning the rooms remains intact.
+    const roomGroups = [];
+
     for (const room of contract.rooms) {
-        const groupType = wave ? getRoomTypeForWave(room, wave) : (room.originalType || room.type);
-        if (!groups[groupType]) groups[groupType] = [];
-        groups[groupType].push(room);
+        // Core logic: Use originalType if it exists, otherwise fallback to base type.
+        // This ensures a hotel room structurally maintains its column span context intact.
+        const baseType = room.originalType || room.type || 'unset';
+
+        if (roomGroups.length === 0) {
+            roomGroups.push({ type: baseType, rooms: [room] });
+        } else {
+            const lastGroup = roomGroups[roomGroups.length - 1];
+            if (lastGroup.type === baseType) {
+                lastGroup.rooms.push(room);
+            } else {
+                roomGroups.push({ type: baseType, rooms: [room] });
+            }
+        }
     }
 
-    const ordered = [];
-    for (const t of typeOrder) {
-        if (groups[t]) ordered.push({ type: t, rooms: groups[t] });
-    }
-    for (const t of Object.keys(groups)) {
-        if (!typeOrder.includes(t)) ordered.push({ type: t, rooms: groups[t] });
-    }
-    return ordered;
+    return roomGroups;
 }
 
 export function getOrderedRooms(contract, wave = null) {

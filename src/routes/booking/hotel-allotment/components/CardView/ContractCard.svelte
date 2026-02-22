@@ -103,8 +103,9 @@
 		</div>
 	</div>
 
+	<!-- Large clickable area for expand/collapse -->
 	<button
-		class="flex items-center gap-3"
+		class="flex items-center gap-3 px-6 py-4 -mx-4 -my-3 ml-4 rounded-r-xl transition-colors hover:bg-gray-100"
 		onclick={() => onToggle(contract.id)}
 	>
 		<div class="h-1.5 w-20 overflow-hidden rounded-full bg-gray-100">
