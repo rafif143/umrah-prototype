@@ -111,14 +111,22 @@ export function checkWaveOverlap(contract, idx) {
     const current = waves[idx];
     if (!current?.start || !current?.end) return false;
 
-    const start = new Date(current.start);
-    const end = new Date(current.end);
+    const start = new Date(current.start).getTime();
+    const end = new Date(current.end).getTime();
+    const currentRooms = current.roomIds || [];
 
     return waves.some((w, i) => {
         if (i === idx) return false;
         if (!w.start || !w.end) return false;
-        const wStart = new Date(w.start);
-        const wEnd = new Date(w.end);
+
+        const wRooms = w.roomIds || [];
+        const sharesRooms = currentRooms.some(r => wRooms.includes(r));
+        if (!sharesRooms) return false;
+
+        const wStart = new Date(w.start).getTime();
+        const wEnd = new Date(w.end).getTime();
+
+        // Same-day CI/CO is allowed, strictly strictly overlapping dates
         return start < wEnd && end > wStart;
     });
 }

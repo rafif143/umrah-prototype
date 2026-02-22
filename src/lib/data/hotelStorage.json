@@ -171,8 +171,8 @@
                     "waves": [
                         {
                             "id": "w-test-001",
-                            "name": "Gelombang Test 1",
-                            "tripName": "Test Wave Floor 1",
+                            "name": "Gelombang 1",
+                            "tripName": "Keberangkatan 20 Feb",
                             "start": "2026-02-20",
                             "end": "2026-03-05",
                             "color": {
@@ -183,71 +183,99 @@
                                 "R101",
                                 "R102",
                                 "R103",
-                                "R104",
-                                "R105"
+                                "R104"
                             ],
-                            "roomsUsed": 5,
+                            "roomsUsed": 4,
                             "roomTypeOverrides": {
                                 "R101": "double",
                                 "R102": "triple",
-                                "R103": "quad"
+                                "R103": "quad",
+                                "R104": "double"
                             },
                             "jamaah": [
                                 {
-                                    "id": "j-001",
-                                    "name": "Ahmad Sulaiman",
+                                    "id": "j-1-01",
+                                    "name": "H. Budi Santoso",
                                     "gender": "L",
                                     "roomId": "R101",
-                                    "bookingId": "BOOK-F1-01"
+                                    "bookingId": "BKG-001"
                                 },
                                 {
-                                    "id": "j-002",
-                                    "name": "Fatimah Zahra",
+                                    "id": "j-1-02",
+                                    "name": "Hj. Siti Aminah",
                                     "gender": "P",
                                     "roomId": "R101",
-                                    "bookingId": "BOOK-F1-01"
+                                    "bookingId": "BKG-001"
                                 },
                                 {
-                                    "id": "j-001-3",
-                                    "name": "Anak Ahmad",
-                                    "gender": "L",
-                                    "roomId": "R103",
-                                    "bookingId": "BOOK-F1-01"
-                                },
-                                {
-                                    "id": "j-001-4",
-                                    "name": "Saudara Ahmad",
-                                    "gender": "L",
-                                    "roomId": "R103",
-                                    "bookingId": "BOOK-F1-01"
-                                },
-                                {
-                                    "id": "j-001-5",
-                                    "name": "Ibu Ahmad",
-                                    "gender": "P",
-                                    "roomId": "R103",
-                                    "bookingId": "BOOK-F1-01"
-                                },
-                                {
-                                    "id": "j-003",
-                                    "name": "Muhammad Ali",
+                                    "id": "j-1-03",
+                                    "name": "Faisal Santoso",
                                     "gender": "L",
                                     "roomId": "R102",
-                                    "bookingId": "BOOK-F1-02"
+                                    "bookingId": "BKG-001"
                                 },
                                 {
-                                    "id": "j-004",
-                                    "name": "Khadijah Binti",
+                                    "id": "j-1-04",
+                                    "name": "Nisa Santoso",
                                     "gender": "P",
                                     "roomId": "R102",
-                                    "bookingId": "BOOK-F1-02"
+                                    "bookingId": "BKG-001"
+                                },
+                                {
+                                    "id": "j-1-05",
+                                    "name": "Hj. Maryam",
+                                    "gender": "P",
+                                    "roomId": "R102",
+                                    "bookingId": "BKG-001"
+                                },
+                                {
+                                    "id": "j-2-01",
+                                    "name": "Ustadz Ahmad Dahlan",
+                                    "gender": "L",
+                                    "roomId": "R103",
+                                    "bookingId": "BKG-002"
+                                },
+                                {
+                                    "id": "j-2-02",
+                                    "name": "Hj. Khadijah",
+                                    "gender": "P",
+                                    "roomId": "R103",
+                                    "bookingId": "BKG-002"
+                                },
+                                {
+                                    "id": "j-2-03",
+                                    "name": "Ilyas Dahlan",
+                                    "gender": "L",
+                                    "roomId": "R103",
+                                    "bookingId": "BKG-002"
+                                },
+                                {
+                                    "id": "j-2-04",
+                                    "name": "H. Abdul Somad",
+                                    "gender": "L",
+                                    "roomId": "R103",
+                                    "bookingId": "BKG-002"
+                                },
+                                {
+                                    "id": "j-2-05",
+                                    "name": "Hj. Zainab",
+                                    "gender": "P",
+                                    "roomId": "R104",
+                                    "bookingId": "BKG-002"
+                                },
+                                {
+                                    "id": "j-2-06",
+                                    "name": "Zaidan",
+                                    "gender": "L",
+                                    "roomId": "R104",
+                                    "bookingId": "BKG-002"
                                 }
                             ]
                         },
                         {
                             "id": "w-test-002",
-                            "name": "Gelombang Test 2",
-                            "tripName": "Test Wave Floor 2",
+                            "name": "Gelombang 2",
+                            "tripName": "Keberangkatan 5 Mar",
                             "start": "2026-03-05",
                             "end": "2026-03-18",
                             "color": {
@@ -255,33 +283,186 @@
                                 "text": "#fff"
                             },
                             "roomIds": [
-                                "R201",
-                                "R202",
-                                "R203",
-                                "R204"
+                                "R105",
+                                "R106"
                             ],
-                            "roomsUsed": 4,
+                            "roomsUsed": 2,
+                            "roomTypeOverrides": {
+                                "R105": "triple",
+                                "R106": "double"
+                            },
                             "jamaah": [
                                 {
-                                    "id": "j-101",
-                                    "name": "Omar Abdullah",
+                                    "id": "j-3-01",
+                                    "name": "H. Lukman Hakim",
                                     "gender": "L",
-                                    "roomId": "R201",
-                                    "bookingId": "BOOK-F2-01"
+                                    "roomId": "R105",
+                                    "bookingId": "BKG-003"
                                 },
                                 {
-                                    "id": "j-102",
-                                    "name": "Aisha Rahman",
+                                    "id": "j-3-02",
+                                    "name": "Hj. Sarah Fitriani",
+                                    "gender": "P",
+                                    "roomId": "R105",
+                                    "bookingId": "BKG-003"
+                                },
+                                {
+                                    "id": "j-3-03",
+                                    "name": "Ihsan Hakim",
+                                    "gender": "L",
+                                    "roomId": "R105",
+                                    "bookingId": "BKG-003"
+                                },
+                                {
+                                    "id": "j-3-04",
+                                    "name": "H. Zainuddin",
+                                    "gender": "L",
+                                    "roomId": "R106",
+                                    "bookingId": "BKG-003"
+                                },
+                                {
+                                    "id": "j-3-05",
+                                    "name": "Hj. Halimah",
+                                    "gender": "P",
+                                    "roomId": "R106",
+                                    "bookingId": "BKG-003"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "w-test-003",
+                            "name": "Gelombang 3",
+                            "tripName": "Keberangkatan 22 Feb",
+                            "start": "2026-02-22",
+                            "end": "2026-03-08",
+                            "color": {
+                                "bg": "#10b981",
+                                "text": "#fff"
+                            },
+                            "roomIds": [
+                                "R201",
+                                "R202",
+                                "R203"
+                            ],
+                            "roomsUsed": 3,
+                            "roomTypeOverrides": {
+                                "R201": "double",
+                                "R202": "triple",
+                                "R203": "quad"
+                            },
+                            "jamaah": [
+                                {
+                                    "id": "j-4-01",
+                                    "name": "K.H. Mustofa",
+                                    "gender": "L",
+                                    "roomId": "R201",
+                                    "bookingId": "BKG-F2-01"
+                                },
+                                {
+                                    "id": "j-4-02",
+                                    "name": "Hj. Aisyah Rahma",
                                     "gender": "P",
                                     "roomId": "R201",
-                                    "bookingId": "BOOK-F2-01"
+                                    "bookingId": "BKG-F2-01"
                                 },
                                 {
-                                    "id": "j-103",
-                                    "name": "Hassan Ibrahim",
+                                    "id": "j-4-03",
+                                    "name": "H. Taufik Hidayat",
                                     "gender": "L",
                                     "roomId": "R202",
-                                    "bookingId": "BOOK-F2-02"
+                                    "bookingId": "BKG-F2-02"
+                                },
+                                {
+                                    "id": "j-4-04",
+                                    "name": "Hj. Nuraida",
+                                    "gender": "P",
+                                    "roomId": "R202",
+                                    "bookingId": "BKG-F2-02"
+                                },
+                                {
+                                    "id": "j-4-05",
+                                    "name": "Zahra Hidayat",
+                                    "gender": "P",
+                                    "roomId": "R202",
+                                    "bookingId": "BKG-F2-02"
+                                },
+                                {
+                                    "id": "j-4-06",
+                                    "name": "H. Bambang Sugiarta",
+                                    "gender": "L",
+                                    "roomId": "R203",
+                                    "bookingId": "BKG-F2-03"
+                                },
+                                {
+                                    "id": "j-4-07",
+                                    "name": "Hj. Rina Sari",
+                                    "gender": "P",
+                                    "roomId": "R203",
+                                    "bookingId": "BKG-F2-03"
+                                },
+                                {
+                                    "id": "j-4-08",
+                                    "name": "Rizky Sugiarta",
+                                    "gender": "L",
+                                    "roomId": "R203",
+                                    "bookingId": "BKG-F2-03"
+                                },
+                                {
+                                    "id": "j-4-09",
+                                    "name": "Dinda Sugiarta",
+                                    "gender": "P",
+                                    "roomId": "R203",
+                                    "bookingId": "BKG-F2-03"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "w-test-004",
+                            "name": "Gelombang 4",
+                            "tripName": "Keberangkatan 1 Mar",
+                            "start": "2026-03-01",
+                            "end": "2026-03-12",
+                            "color": {
+                                "bg": "#f59e0b",
+                                "text": "#fff"
+                            },
+                            "roomIds": [
+                                "R204",
+                                "R205"
+                            ],
+                            "roomsUsed": 2,
+                            "roomTypeOverrides": {
+                                "R204": "double",
+                                "R205": "double"
+                            },
+                            "jamaah": [
+                                {
+                                    "id": "j-5-01",
+                                    "name": "H. Ibrahim Malik",
+                                    "gender": "L",
+                                    "roomId": "R204",
+                                    "bookingId": "BKG-F2-04"
+                                },
+                                {
+                                    "id": "j-5-02",
+                                    "name": "Hj. Sarah Malik",
+                                    "gender": "P",
+                                    "roomId": "R204",
+                                    "bookingId": "BKG-F2-04"
+                                },
+                                {
+                                    "id": "j-5-03",
+                                    "name": "H. Usman Harun",
+                                    "gender": "L",
+                                    "roomId": "R205",
+                                    "bookingId": "BKG-F2-05"
+                                },
+                                {
+                                    "id": "j-5-04",
+                                    "name": "Hj. Fatmawati",
+                                    "gender": "P",
+                                    "roomId": "R205",
+                                    "bookingId": "BKG-F2-05"
                                 }
                             ]
                         }

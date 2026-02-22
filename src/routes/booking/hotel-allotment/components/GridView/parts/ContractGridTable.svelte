@@ -54,7 +54,26 @@
 		typeof orderedRooms === 'function' ? orderedRooms() : orderedRooms
 	);
 
-	let waveIdAtTop = $state(null);
+	let dynamicRoomGroups = $derived.by(() => {
+		const groups = [];
+		for (const room of orderedRoomsValue) {
+			const waveCtx = getContextWave(room);
+			const effectiveType = getRoomTypeForWave(room, waveCtx);
+			if (groups.length === 0) {
+				groups.push({ type: effectiveType, rooms: [room] });
+			} else {
+				const lastGroup = groups[groups.length - 1];
+				if (lastGroup.type === effectiveType) {
+					lastGroup.rooms.push(room);
+				} else {
+					groups.push({ type: effectiveType, rooms: [room] });
+				}
+			}
+		}
+		return groups;
+	});
+
+	let visibleDateAtTop = $state(null);
 	let observer = null;
 	let scrollContainer = $state();
 	let primaryCalendar = $state('gregorian'); // 'gregorian' | 'hijri'
@@ -74,13 +93,7 @@
 
 					if (visible.length > 0) {
 						const dateKey = visible[0].target.getAttribute('data-date');
-						// Find any wave for this date (just pick the first one found in lookup for ANY room)
-						const firstRoom = contract.rooms[0];
-						if (firstRoom) {
-							const info = cellLookup[`${firstRoom.id}_${dateKey}`];
-							const waveId = info?.right?.wave?.id || info?.left?.wave?.id;
-							if (waveId) waveIdAtTop = waveId;
-						}
+						visibleDateAtTop = dateKey;
 					}
 				},
 				{
@@ -147,10 +160,12 @@
 		const hoveredWave = hoverInfo?.right?.wave || hoverInfo?.left?.wave;
 		if (hoveredWave) return hoveredWave;
 
-		// 2. Priority: Wave at the top of the scroll
-		if (waveIdAtTop) {
-			const wave = (contract.waves || []).find((w) => w.id === waveIdAtTop);
-			if (wave) return wave;
+		// 2. Priority: Wave at the top of the scroll for this specific room
+		if (visibleDateAtTop) {
+			const info = cellLookup[`${room.id}_${visibleDateAtTop}`];
+			// Right side (checkin/occupied) is slightly preferred for ongoing waves
+			const scrollWave = info?.right?.wave || info?.left?.wave;
+			if (scrollWave) return scrollWave;
 		}
 
 		// 3. Fallback: Selected wave from sidebar
@@ -178,7 +193,7 @@
 					</button>
 				</th>
 				<th class="day-header sticky-col-2" rowspan="2"><span>HARI</span></th>
-				{#each roomsByTypeValue as group}
+				{#each dynamicRoomGroups as group}
 					{@const tc = localTypeConfig[group.type] || {
 						label: group.type.toUpperCase(),
 						headerBg: '#607d8b'
@@ -202,7 +217,7 @@
 						headerBg: '#607d8b'
 					}}
 					<!-- NEW: Use effective type for cell BG -->
-					{@const isManipulated = isRoomManipulatedInWave(room, selectedWave)}
+					{@const isManipulated = isRoomManipulatedInWave(room, contextWave)}
 					{@const isDragOver = dropTargetRoom === room.id}
 					{@const isSold = (contextWave?.soldRooms || []).includes(room.id)}
 					{@const isStaff = (contextWave?.staffRooms || []).includes(room.id)}
@@ -306,7 +321,6 @@
 
 					{#each orderedRoomsValue as room}
 						{@const parts = getCellParts(room.id, date)}
-						{@const effectiveTypeForHeader = getRoomTypeForWave(room, selectedWave)}
 						{@const leftWaveType = parts.left ? getRoomTypeForWave(room, parts.left.wave) : null}
 						{@const leftWaveColor = getWaveBg(parts.left?.wave)}
 						{@const leftTypeColor = leftWaveType

@@ -212,13 +212,36 @@
 			<div class="assigned-section">
 				<!-- Render each booking as a parent -->
 				{#each Object.values(assignedData.bookings) as bookingGroup}
+					{@const bookingTopKey = `${i}-booking-${bookingGroup.bookingId}`}
+					{@const isBookingExpanded = !expandedRoomKeys.has(bookingTopKey + '-collapsed')}
 					<div class="booking-unassigned-group">
-						<div class="booking-top-label" style="border-left-color: #cbd5e1;">
+						<!-- svelte-ignore a11y_click_events_have_key_events -->
+						<div
+							class="booking-top-label booking-top-toggle"
+							style="border-left-color: #cbd5e1;"
+							onclick={() => {
+								const collapseKey = bookingTopKey + '-collapsed';
+								const newSet = new Set(expandedRoomKeys);
+								if (newSet.has(collapseKey)) newSet.delete(collapseKey);
+								else newSet.add(collapseKey);
+								expandedRoomKeys = newSet;
+							}}
+							role="button"
+							tabindex="0"
+						>
 							<span class="booking-top-name">{bookingGroup.bookingName}</span>
-							<span class="booking-top-pax">{bookingGroup.pax} pax</span>
+							<div style="display:flex; align-items:center; gap:6px;">
+								<span class="booking-top-pax">{bookingGroup.pax} pax</span>
+								<ChevronDown
+									size={12}
+									style="color:#94a3b8; transition: transform 0.2s; transform: {isBookingExpanded
+										? 'rotate(0deg)'
+										: 'rotate(-90deg)'}"
+								/>
+							</div>
 						</div>
 
-						<div class="booking-chunks-wrapper">
+						{#if isBookingExpanded}
 							{#each Object.entries(bookingGroup.rooms).sort((a, b) => (assignedData.orderMap[a[0]] || 0) - (assignedData.orderMap[b[0]] || 0)) as [roomId, jamaahInRoom]}
 								{@const roomObj = contract.rooms.find((r) => r.id === roomId) || {
 									id: roomId,
@@ -273,7 +296,7 @@
 									{/if}
 								</div>
 							{/each}
-						</div>
+						{/if}
 					</div>
 				{/each}
 
@@ -378,10 +401,20 @@
 				<div class="unassigned-section">
 					<div class="unassigned-header">Belum Dialokasikan</div>
 					{#each Object.values(unassignedBookings) as bookingGroup}
+						{@const bookingTopKey = `${i}-unassigned-booking-${bookingGroup.bookingId}`}
+						{@const isBookingExpanded = !expandedRoomKeys.has(bookingTopKey + '-collapsed')}
 						<div class="booking-unassigned-group">
+							<!-- svelte-ignore a11y_click_events_have_key_events -->
 							<div
-								class="booking-top-label booking-top-draggable"
+								class="booking-top-label booking-top-draggable booking-top-toggle"
 								draggable="true"
+								onclick={() => {
+									const collapseKey = bookingTopKey + '-collapsed';
+									const newSet = new Set(expandedRoomKeys);
+									if (newSet.has(collapseKey)) newSet.delete(collapseKey);
+									else newSet.add(collapseKey);
+									expandedRoomKeys = newSet;
+								}}
 								ondragstart={(e) => {
 									e.dataTransfer.effectAllowed = 'move';
 									e.dataTransfer.setData(
@@ -459,71 +492,81 @@
 									/>
 									{bookingGroup.bookingName}
 								</span>
-								<span class="booking-top-pax">{bookingGroup.pax} pax</span>
+								<div style="display:flex; align-items:center; gap:6px;">
+									<span class="booking-top-pax">{bookingGroup.pax} pax</span>
+									<ChevronDown
+										size={12}
+										style="color:#94a3b8; transition: transform 0.2s; transform: {isBookingExpanded
+											? 'rotate(0deg)'
+											: 'rotate(-90deg)'}"
+									/>
+								</div>
 							</div>
 
-							<div class="booking-chunks-wrapper">
-								{#each bookingGroup.chunks as chunk}
-									{@const bookingKey = `${i}-unassigned-${bookingGroup.bookingId}-${chunk.requestedType}-${chunk.chunkIndex}`}
-									{@const isExpanded = expandedRoomKeys.has(bookingKey)}
-									<div class="jamaah-room-group">
-										<!-- svelte-ignore a11y_click_events_have_key_events -->
-										<div
-											class="jamaah-room-header unassigned clickable"
-											draggable="true"
-											ondragstart={(e) => {
-												e.dataTransfer.effectAllowed = 'move';
-												e.dataTransfer.setData(
-													'text/plain',
-													JSON.stringify({
-														type: 'booking',
-														bookingId: bookingGroup.bookingId,
-														waveIndex: i,
-														jamaahIds: chunk.jamaah.map((j) => j.id),
-														requestedRoomType: chunk.requestedType,
-														count: chunk.jamaah.length
-													})
-												);
-											}}
-											onclick={() => toggleRoomGroupExpanded(bookingKey)}
-											role="button"
-											tabindex="0"
-										>
-											<span class="room-label">
-												<span class="booking-grip"><GripVertical size={10} /></span>
-												✗ {chunk.requestedType.toUpperCase()}
-												{chunk.chunkIndex > 0 ? `(#${chunk.chunkIndex + 1})` : ''}
-											</span>
-											<div style="display: flex; align-items: center; gap: 6px;">
-												<span class="room-occ">{chunk.jamaah.length} pax</span>
-												<ChevronDown
-													size={12}
-													style="transition: transform 0.2s; transform: {isExpanded
-														? 'rotate(0deg)'
-														: 'rotate(-90deg)'}"
-												/>
-											</div>
-										</div>
-										{#if isExpanded}
-											{#each chunk.jamaah as j}
-												<div
-													class="jamaah-card unassigned"
-													draggable="true"
-													ondragstart={(e) => onDragStart(e, j, i)}
-												>
-													<span class="jamaah-grip"><GripVertical size={10} /></span>
-													<span class="jamaah-name">{j.name}</span>
-													<span
-														class="jamaah-gender"
-														class:male={j.gender === 'L'}
-														class:female={j.gender === 'P'}>{j.gender}</span
-													>
+							{#if isBookingExpanded}
+								<div class="booking-chunks-wrapper">
+									{#each bookingGroup.chunks as chunk}
+										{@const bookingKey = `${i}-unassigned-${bookingGroup.bookingId}-${chunk.requestedType}-${chunk.chunkIndex}`}
+										{@const isExpanded = expandedRoomKeys.has(bookingKey)}
+										<div class="jamaah-room-group">
+											<!-- svelte-ignore a11y_click_events_have_key_events -->
+											<div
+												class="jamaah-room-header unassigned clickable"
+												draggable="true"
+												ondragstart={(e) => {
+													e.dataTransfer.effectAllowed = 'move';
+													e.dataTransfer.setData(
+														'text/plain',
+														JSON.stringify({
+															type: 'booking',
+															bookingId: bookingGroup.bookingId,
+															waveIndex: i,
+															jamaahIds: chunk.jamaah.map((j) => j.id),
+															requestedRoomType: chunk.requestedType,
+															count: chunk.jamaah.length
+														})
+													);
+												}}
+												onclick={() => toggleRoomGroupExpanded(bookingKey)}
+												role="button"
+												tabindex="0"
+											>
+												<span class="room-label">
+													<span class="booking-grip"><GripVertical size={10} /></span>
+													✗ {chunk.requestedType.toUpperCase()}
+													{chunk.chunkIndex > 0 ? `(#${chunk.chunkIndex + 1})` : ''}
+												</span>
+												<div style="display: flex; align-items: center; gap: 6px;">
+													<span class="room-occ">{chunk.jamaah.length} pax</span>
+													<ChevronDown
+														size={12}
+														style="transition: transform 0.2s; transform: {isExpanded
+															? 'rotate(0deg)'
+															: 'rotate(-90deg)'}"
+													/>
 												</div>
-											{/each}
-										{/if}
-									</div>
-								{/each}
-							</div>
+											</div>
+											{#if isExpanded}
+												{#each chunk.jamaah as j}
+													<div
+														class="jamaah-card unassigned"
+														draggable="true"
+														ondragstart={(e) => onDragStart(e, j, i)}
+													>
+														<span class="jamaah-grip"><GripVertical size={10} /></span>
+														<span class="jamaah-name">{j.name}</span>
+														<span
+															class="jamaah-gender"
+															class:male={j.gender === 'L'}
+															class:female={j.gender === 'P'}>{j.gender}</span
+														>
+													</div>
+												{/each}
+											{/if}
+										</div>
+									{/each}
+								</div>
+							{/if}
 						</div>
 					{/each}
 				</div>
@@ -718,9 +761,16 @@
 		border-left: 3px solid #cbd5e1;
 	}
 
+	.booking-top-draggable,
+	.booking-top-toggle {
+		cursor: pointer;
+		transition: all 0.15s;
+	}
 	.booking-top-draggable {
 		cursor: grab;
-		transition: background 0.15s;
+	}
+	.booking-top-toggle:hover {
+		background: #f1f5f9;
 	}
 	.booking-top-draggable:hover {
 		background: #eff6ff;

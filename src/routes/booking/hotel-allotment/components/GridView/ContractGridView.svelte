@@ -2165,13 +2165,13 @@
 
 <!-- Add Wave Modal -->
 <AddWaveModal
-	show={showAddWaveModal}
-	bind:wave={editingWave}
-	onClose={() => {
-		showAddWaveModal = false;
+	bind:isOpen={showAddWaveModal}
+	{contract}
+	initialData={editingWave}
+	onSave={(waveData) => {
+		handleCreateWave(waveData);
 		editingWave = null;
 	}}
-	onSave={handleCreateWave}
 />
 
 <!-- Import Package Modal -->

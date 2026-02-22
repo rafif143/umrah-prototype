@@ -18,7 +18,9 @@
 		Sparkles,
 		Menu,
 		ArrowRightToLine,
-		ArrowLeftToLine
+		ArrowLeftToLine,
+		ShoppingBag,
+		Lock
 	} from 'lucide-svelte';
 	import { slide } from 'svelte/transition';
 	import { sidebarState, toggleMenu, toggleSidebar } from '$lib/runes/sidebarState.svelte.js';
@@ -54,6 +56,18 @@
 			label: 'Transfer Passenger',
 			icon: Truck,
 			href: '/booking/transfer-passenger'
+		},
+		{
+			id: 'purchase-order',
+			label: 'Purchase Order',
+			icon: ShoppingBag,
+			href: '/booking/purchase-order'
+		},
+		{
+			id: 'block-booking',
+			label: 'Block Booking',
+			icon: Lock,
+			href: '/booking/block-booking'
 		}
 	];
 
