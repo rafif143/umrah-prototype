@@ -10,6 +10,7 @@
 	} from '../../shared/hotelAllotmentHelpers.js';
 
 	// Parts
+	import ContractGridToolbar from './parts/ContractGridToolbar.svelte';
 	import ContractGridSidebar from './parts/ContractGridSidebar.svelte';
 	import ContractGridTable from './parts/ContractGridTable.svelte';
 	import {
@@ -34,6 +35,10 @@
 
 	import AllocationAlertModal from '../Modals/AllocationAlertModal.svelte';
 	import SwapRoomModal from '../Modals/SwapRoomModal.svelte';
+
+	import ContractContextMenu from '../Modals/ContractContextMenu.svelte';
+	import QuickDetailModal from '../Modals/QuickDetailModal.svelte';
+	import UndoToast from '../Modals/UndoToast.svelte';
 
 	let { contract, hotelId } = $props();
 
@@ -633,6 +638,12 @@
 		try {
 			const parsed = JSON.parse(data);
 
+			// Handle Booking GROUP Drop (auto-allocate all chunks)
+			if (parsed.type === 'booking-group') {
+				processBookingGroupDrop(parsed);
+				return;
+			}
+
 			// Handle Booking Drop (all jamaah in booking)
 			if (parsed.type === 'booking') {
 				const room = contract.rooms.find((r) => r.id === roomId);
@@ -658,8 +669,128 @@
 		draggedJamaah = null;
 	}
 
+	function processBookingGroupDrop(groupData) {
+		const { waveIndex, chunks, bookingId, bookingName } = groupData;
+		const targetWave = (contract.waves || [])[waveIndex];
+		if (!targetWave) return;
+
+		// Build a usage map of current occupancy per room
+		const tentativeOccupancy = {};
+		contract.rooms.forEach((r) => {
+			tentativeOccupancy[r.id] = getJamaahInRoom(contract, waveIndex, r.id).length;
+		});
+
+		const usedRoomIds = new Set(targetWave.roomIds || []);
+		const allocated = []; // { jamaahIds, roomId, roomType }
+		const failed = []; // { requestedType, needed, reason }
+
+		// Helper: find room for N pax — exact type first, then any type fallback
+		function findRoom(requestedType, count) {
+			// Pass 1: exact effective-type match
+			for (const room of contract.rooms || []) {
+				if (isRoomSold(room.id) || isRoomStaff(room.id)) continue;
+				const effType = getRoomTypeForWave(room, targetWave);
+				const cap = roomCapacity[effType] === '-' ? 999 : roomCapacity[effType] || 2;
+				const avail = cap - (tentativeOccupancy[room.id] ?? 0);
+				if (effType === requestedType && avail >= count) return { room, cap };
+			}
+			// Pass 2: any room with enough space (fallback when types unknown/unset)
+			for (const room of contract.rooms || []) {
+				if (isRoomSold(room.id) || isRoomStaff(room.id)) continue;
+				const effType = getRoomTypeForWave(room, targetWave);
+				if (effType === 'unset') continue; // skip unset rooms
+				const cap = roomCapacity[effType] === '-' ? 999 : roomCapacity[effType] || 2;
+				const avail = cap - (tentativeOccupancy[room.id] ?? 0);
+				if (avail >= count) return { room, cap };
+			}
+			// Pass 3: any room with ANY space (partial fit)
+			for (const room of contract.rooms || []) {
+				if (isRoomSold(room.id) || isRoomStaff(room.id)) continue;
+				const effType = getRoomTypeForWave(room, targetWave);
+				if (effType === 'unset') continue;
+				const cap = roomCapacity[effType] === '-' ? 999 : roomCapacity[effType] || 2;
+				const avail = cap - (tentativeOccupancy[room.id] ?? 0);
+				if (avail > 0) return { room, cap, partial: true };
+			}
+			return null;
+		}
+
+		for (const chunk of chunks) {
+			const { requestedType, jamaahIds, count } = chunk;
+			let remaining = [...jamaahIds]; // IDs still to place
+
+			while (remaining.length > 0) {
+				const match = findRoom(requestedType, 1); // find any room with at least 1 slot
+				if (!match) {
+					failed.push({ requestedType, needed: remaining.length, reason: 'no room available' });
+					break;
+				}
+				const { room } = match;
+				const effType = getRoomTypeForWave(room, targetWave);
+				const cap = roomCapacity[effType] === '-' ? 999 : roomCapacity[effType] || 2;
+				const avail = cap - (tentativeOccupancy[room.id] ?? 0);
+				const placing = remaining.splice(0, avail); // fill this room as much as possible
+
+				tentativeOccupancy[room.id] = (tentativeOccupancy[room.id] ?? 0) + placing.length;
+				usedRoomIds.add(room.id);
+				allocated.push({ jamaahIds: placing, roomId: room.id, roomType: effType });
+			}
+		}
+
+		if (allocated.length === 0) {
+			alertState = {
+				show: true,
+				title: 'Tidak Ada Kamar yang Tersedia',
+				message: `Tidak ditemukan kamar yang bisa menampung jamaah dari booking "${bookingName}". Pastikan kontrak memiliki kamar dengan kapasitas tersedia.`,
+				type: 'error',
+				onConfirm: () => closeAlert()
+			};
+			return;
+		}
+
+		// Build confirmation summary
+		let confirmMsg = `Auto-alokasi booking "${bookingName}":\n`;
+		allocated.forEach((a) => {
+			confirmMsg += `\u2022 ${a.jamaahIds.length} pax \u2192 Kamar ${a.roomId} (${a.roomType.toUpperCase()})\n`;
+		});
+
+		if (failed.length > 0) {
+			const totalFailed = failed.reduce((sum, f) => sum + f.needed, 0);
+			confirmMsg += `\n\u26a0\ufe0f ${totalFailed} jamaah tidak bisa dialokasikan: tidak ada kamar tersisa.\n`;
+			confirmMsg += `\nHanya yang sesuai akan dialokasikan.`;
+		}
+
+		alertState = {
+			show: true,
+			title: failed.length > 0 ? 'Alokasi Sebagian' : 'Konfirmasi Auto-Alokasi',
+			message: confirmMsg,
+			type: failed.length > 0 ? 'warning' : 'info',
+			onConfirm: () => {
+				executeBookingGroupDrop(targetWave, waveIndex, allocated, usedRoomIds);
+				closeAlert();
+			}
+		};
+	}
+
+	function executeBookingGroupDrop(targetWave, waveIndex, allocated, usedRoomIds) {
+		pushHistory();
+
+		let updatedJamaah = [...(targetWave.jamaah || [])];
+
+		// Assign each planned jamaah to their room
+		for (const { jamaahIds, roomId } of allocated) {
+			updatedJamaah = updatedJamaah.map((j) => (jamaahIds.includes(j.id) ? { ...j, roomId } : j));
+		}
+
+		updateWave(targetWave.id, {
+			jamaah: updatedJamaah,
+			roomIds: [...usedRoomIds],
+			roomsUsed: usedRoomIds.size
+		});
+	}
+
 	function processBookingDrop(room, bookingData) {
-		const { waveIndex, jamaahIds, requestedType, count } = bookingData;
+		const { waveIndex, jamaahIds, requestedRoomType, count } = bookingData;
 		const targetWave = (contract.waves || [])[waveIndex];
 		if (!targetWave) return;
 
@@ -1638,6 +1769,12 @@
 				return;
 			}
 
+			// Handle booking GROUP drop from sidebar (auto-allocate all chunks to correct rooms)
+			if (parsed.type === 'booking-group') {
+				processBookingGroupDrop(parsed);
+				return;
+			}
+
 			// Handle booking drop from sidebar (new format)
 			if (parsed.type === 'booking' && parsed.jamaahIds) {
 				processBookingDrop(room, parsed);
@@ -1885,89 +2022,18 @@
 <svelte:window onkeydown={handleKeydown} onmouseup={handleCellMouseUp} />
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="contract-grid-wrapper" class:fullscreen={isFullscreen} onclick={closeRoomTypeMenu}>
-	<!-- Toolbar -->
-	<div class="grid-toolbar">
-		<div class="toolbar-left">
-			<span class="toolbar-title">📊 Room Allotment Grid</span>
-			<span class="toolbar-subtitle"
-				>{contract.name} · {contract.rooms.length} kamar · {(contract.waves || []).length} gelombang</span
-			>
-		</div>
-		<div class="toolbar-right">
-			<button
-				class="toolbar-btn"
-				class:active={showJamaahPanel}
-				onclick={() => (showJamaahPanel = !showJamaahPanel)}
-				title="Panel Jamaah Kiri"
-			>
-				<Users size={14} />
-			</button>
-
-			<button
-				class="toolbar-btn"
-				onclick={() => (isFullscreen = !isFullscreen)}
-				title={isFullscreen ? 'Keluar Fullscreen' : 'Fullscreen'}
-			>
-				{#if isFullscreen}<Minimize2 size={14} />{:else}<Maximize2 size={14} />{/if}
-			</button>
-		</div>
-	</div>
-
-	<!-- Floor Selector -->
-	{#if availableFloors.length > 1}
-		<div class="floor-selector-bar">
-			<div class="floor-tabs">
-				<span class="floor-label">Floor:</span>
-				{#each availableFloors as floor}
-					{@const floorRooms = getRoomsByFloor(contract, floor)}
-					{@const unsetCount = floorRooms.filter((r) => {
-						const effType = getRoomTypeForWave(r, selectedWave);
-						return !effType || effType === 'unset';
-					}).length}
-					{@const totalRooms = floorRooms.length}
-					{@const statusClass =
-						unsetCount === totalRooms ? 'dot-red' : unsetCount === 0 ? 'dot-green' : 'dot-yellow'}
-					{@const statusTitle =
-						unsetCount === totalRooms
-							? 'Semua kamar belum di-setting'
-							: unsetCount === 0
-								? 'Semua kamar sudah di-setting'
-								: `${unsetCount} kamar belum di-setting`}
-					<button
-						class="floor-tab"
-						class:active={selectedFloor === floor}
-						onclick={() => (selectedFloor = floor)}
-					>
-						{floor}
-						<div class="unset-dot {statusClass}" title={statusTitle}></div>
-					</button>
-				{/each}
-			</div>
-			<div class="floor-actions">
-				<button
-					class="save-room-types-btn"
-					class:has-changes={hasUnsavedChanges}
-					onclick={saveRoomTypes}
-					disabled={!hasUnsavedChanges}
-					title={hasUnsavedChanges
-						? 'Simpan perubahan tipe kamar'
-						: 'Tidak ada perubahan untuk disimpan'}
-				>
-					💾 Save Room Types
-					{#if hasUnsavedChanges}
-						<span class="changes-indicator">●</span>
-					{/if}
-				</button>
-				<div class="floor-info">
-					{currentFloorRooms().length} kamar di {selectedFloor}
-					{#if hasUnsavedChanges}
-						<span class="unsaved-indicator">• Unsaved changes</span>
-					{/if}
-				</div>
-			</div>
-		</div>
-	{/if}
+<div class="contract-grid-wrapper" class:fullscreen={isFullscreen}>
+	<ContractGridToolbar
+		{contract}
+		{isFullscreen}
+		{availableFloors}
+		bind:selectedFloor
+		{showJamaahPanel}
+		onToggleJamaahPanel={() => (showJamaahPanel = !showJamaahPanel)}
+		{hasUnsavedChanges}
+		toggleFullscreen={() => (isFullscreen = !isFullscreen)}
+		{saveRoomTypes}
+	/>
 
 	<!-- Hint bar -->
 	<div class="cell-hint-bar">
@@ -2040,198 +2106,26 @@
 </div>
 
 <!-- Room Type Context Menu -->
-{#if roomTypeMenu}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="context-menu-overlay" onclick={closeRoomTypeMenu}>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div
-			class="context-menu"
-			style="left: {roomTypeMenu.x}px; top: {roomTypeMenu.y}px;"
-			onclick={(e) => e.stopPropagation()}
-		>
-			<div class="context-menu-title">Set Tipe Kamar {roomTypeMenu.roomId}</div>
-			{#each ['unset', 'double', 'triple', 'quad', 'quint'] as t}
-				{@const currentRoom = contract.rooms.find((r) => r.id === roomTypeMenu.roomId)}
-				{@const currentType = currentRoom?.type || 'unset'}
-				<button
-					class="context-menu-item"
-					class:active={currentType === t}
-					onclick={() => changeRoomType(roomTypeMenu.roomId, t, roomTypeMenu.waveId)}
-				>
-					<span class="ctx-dot" style="background: {localTypeConfig[t].headerBg};"></span>
-					{localTypeConfig[t].label} ({roomCapacity[t] === '-' ? '-' : roomCapacity[t]} org)
-					{#if currentType === t}<span class="ctx-check">✓</span>{/if}
-				</button>
-			{/each}
-			{#if selectedWave}
-				{#if selectedCells.size > 0}
-					{@const selectedArray = Array.from(selectedCells)}
-					{@const someSold = selectedArray.some((cellKey) => {
-						const soldCells = selectedWave.soldCells || {};
-						return soldCells[cellKey] !== undefined;
-					})}
-					{@const someStaff = selectedArray.some((cellKey) => {
-						const staffCells = selectedWave.staffCells || {};
-						return staffCells[cellKey] !== undefined;
-					})}
-					{@const allEmpty = selectedArray.every((cellKey) => {
-						const soldCells = selectedWave.soldCells || {};
-						const staffCells = selectedWave.staffCells || {};
-						return soldCells[cellKey] === undefined && staffCells[cellKey] === undefined;
-					})}
-
-					<!-- Only show mark options if all selected cells are empty -->
-					{#if allEmpty}
-						<div class="context-menu-divider"></div>
-						<button
-							class="context-menu-item"
-							onclick={() => {
-								const room = contract.rooms.find((r) => r.id === roomTypeMenu.roomId);
-								if (room) openRoomModal(room, occupiedRoomIds().has(room.id));
-								closeRoomTypeMenu();
-							}}>🔍 Detail Kamar</button
-						>
-						<button
-							class="context-menu-item"
-							onclick={() => {
-								toggleSelectedCellsSold();
-								closeRoomTypeMenu();
-							}}
-						>
-							💰 Tandai Sebagai Dijual ({selectedCells.size} cell)
-						</button>
-						<button
-							class="context-menu-item"
-							onclick={() => {
-								toggleSelectedCellsStaff();
-								closeRoomTypeMenu();
-							}}
-						>
-							👨‍✈️ Tandai Sebagai Staff ({selectedCells.size} cell)
-						</button>
-					{/if}
-
-					<!-- Only show remove options if some selected cells have sold/staff -->
-					{#if someSold}
-						<div class="context-menu-divider"></div>
-						<button
-							class="context-menu-item"
-							onclick={() => {
-								openQuickDetail();
-								closeRoomTypeMenu();
-							}}
-						>
-							👁️ Lihat Detail Dijual
-						</button>
-						<button
-							class="context-menu-item danger"
-							onclick={() => {
-								removeSelectedCellsSold();
-								closeRoomTypeMenu();
-							}}
-						>
-							✕ Hapus Status Dijual ({selectedArray.filter((k) => (selectedWave.soldCells || {})[k])
-								.length} cell)
-						</button>
-					{/if}
-					{#if someStaff}
-						<div class="context-menu-divider"></div>
-						<button
-							class="context-menu-item"
-							onclick={() => {
-								openQuickDetail();
-								closeRoomTypeMenu();
-							}}
-						>
-							👁️ Lihat Detail Staff
-						</button>
-						<button
-							class="context-menu-item danger"
-							onclick={() => {
-								removeSelectedCellsStaff();
-								closeRoomTypeMenu();
-							}}
-						>
-							✕ Hapus Status Staff ({selectedArray.filter((k) => (selectedWave.staffCells || {})[k])
-								.length} cell)
-						</button>
-					{/if}
-
-					<div class="context-menu-divider"></div>
-					<button
-						class="context-menu-item"
-						onclick={() => {
-							clearSelection();
-							closeRoomTypeMenu();
-						}}
-					>
-						✕ Clear Selection
-					</button>
-				{:else}
-					<!-- Show option to remove sold/staff from entire room if no selection -->
-					{@const roomSoldCells = Object.keys(selectedWave.soldCells || {}).filter((key) =>
-						key.startsWith(roomTypeMenu.roomId + '_')
-					)}
-					{@const roomStaffCells = Object.keys(selectedWave.staffCells || {}).filter((key) =>
-						key.startsWith(roomTypeMenu.roomId + '_')
-					)}
-
-					{#if roomSoldCells.length > 0}
-						<button
-							class="context-menu-item danger"
-							onclick={() => {
-								// Select all sold cells for this room then remove
-								const newSelected = new Set();
-								roomSoldCells.forEach((cellKey) => newSelected.add(cellKey));
-								selectedCells = newSelected;
-								removeSelectedCellsSold();
-								closeRoomTypeMenu();
-							}}
-						>
-							✕ Hapus Semua Status Dijual di Kamar Ini
-						</button>
-					{/if}
-
-					{#if roomStaffCells.length > 0}
-						<button
-							class="context-menu-item danger"
-							onclick={() => {
-								// Select all staff cells for this room then remove
-								const newSelected = new Set();
-								roomStaffCells.forEach((cellKey) => newSelected.add(cellKey));
-								selectedCells = newSelected;
-								removeSelectedCellsStaff();
-								closeRoomTypeMenu();
-							}}
-						>
-							✕ Hapus Semua Status Staff di Kamar Ini
-						</button>
-					{/if}
-				{/if}
-			{/if}
-			{#if roomTypeMenu}
-				{@const menuWaveIndex = roomTypeMenu.waveId
-					? (contract.waves || []).findIndex((w) => w.id === roomTypeMenu.waveId)
-					: selectedWaveIndex}
-				{@const validWaveIndex = menuWaveIndex !== -1 ? menuWaveIndex : selectedWaveIndex}
-				{@const jamaahInRoom =
-					validWaveIndex !== -1
-						? getJamaahInRoom(contract, validWaveIndex, roomTypeMenu.roomId)
-						: []}
-				{#if jamaahInRoom.length > 0}
-					<div class="context-menu-divider"></div>
-					<button
-						class="context-menu-item danger"
-						onclick={() => {
-							emptyRoom(roomTypeMenu.roomId, roomTypeMenu.waveId);
-							closeRoomTypeMenu();
-						}}>🗑️ Kosongkan Kamar</button
-					>
-				{/if}
-			{/if}
-		</div>
-	</div>
-{/if}
+<ContractContextMenu
+	{roomTypeMenu}
+	{contract}
+	{localTypeConfig}
+	{roomCapacity}
+	{selectedWave}
+	{selectedCells}
+	{selectedWaveIndex}
+	occupiedRoomIds={occupiedRoomIds()}
+	onClose={closeRoomTypeMenu}
+	onChangeRoomType={changeRoomType}
+	onOpenRoomModal={openRoomModal}
+	onToggleSold={toggleSelectedCellsSold}
+	onToggleStaff={toggleSelectedCellsStaff}
+	onRemoveSold={removeSelectedCellsSold}
+	onRemoveStaff={removeSelectedCellsStaff}
+	onClearSelection={clearSelection}
+	onOpenQuickDetail={openQuickDetail}
+	onEmptyRoom={emptyRoom}
+/>
 
 <RoomDetailModal
 	show={showRoomModal}
@@ -2262,17 +2156,25 @@
 	waveId={swapState.waveId}
 	activeWave={selectedWave}
 	{contract}
+	{selectedWaveIndex}
+	onClose={() => {
+		swapState.show = false;
+	}}
 	onConfirm={handleSwapConfirm}
-	onCancel={() => (swapState.show = false)}
 />
 
+<!-- Add Wave Modal -->
 <AddWaveModal
-	bind:isOpen={showAddWaveModal}
-	{contract}
-	initialData={editingWave}
+	show={showAddWaveModal}
+	bind:wave={editingWave}
+	onClose={() => {
+		showAddWaveModal = false;
+		editingWave = null;
+	}}
 	onSave={handleCreateWave}
 />
 
+<!-- Import Package Modal -->
 <ImportPackageModal
 	bind:isOpen={showImportPackageModal}
 	wave={importingWave}
@@ -2280,195 +2182,22 @@
 />
 
 <!-- Undo Toast -->
-{#if showUndoToast}
-	<div class="toast-undo">
-		<span>↩️</span>
-		Undo berhasil
-	</div>
-{/if}
+<UndoToast show={showUndoToast} />
 
 <!-- Quick Detail Modal -->
-{#if showQuickDetailModal && quickDetailData}
-	<!-- svelte-ignore a11y_no_static_element_interactions -->
-	<div class="quick-modal-overlay" onclick={() => (showQuickDetailModal = false)}>
-		<!-- svelte-ignore a11y_no_static_element_interactions -->
-		<div class="quick-modal" onclick={(e) => e.stopPropagation()}>
-			<div class="quick-modal-header">
-				<h3 class="quick-modal-title">
-					{quickDetailData.details[0]?.type === 'sold' ? '💰 Detail Dijual' : '👨‍✈️ Detail Staff'}
-				</h3>
-				<button class="quick-close-btn" onclick={() => (showQuickDetailModal = false)}>✕</button>
-			</div>
-			<div class="quick-modal-body">
-				<div class="quick-wave-info">
-					<span class="quick-wave-label">Gelombang:</span>
-					<span class="quick-wave-name">{quickDetailData.wave.name}</span>
-				</div>
-
-				<div class="quick-details-list">
-					{#each quickDetailData.details as detail}
-						<div class="quick-detail-card {detail.type === 'sold' ? 'sold-card' : 'staff-card'}">
-							<div class="quick-detail-header">
-								<span class="quick-room-badge">Kamar {detail.roomId}</span>
-								<span
-									class="quick-type-badge {detail.type === 'sold' ? 'sold-badge' : 'staff-badge'}"
-								>
-									{detail.type === 'sold' ? '💰 Dijual' : '👨‍✈️ Staff'}
-								</span>
-							</div>
-
-							<div class="quick-detail-info">
-								<div class="quick-info-row">
-									<span class="quick-label">Check-In:</span>
-									<span class="quick-value"
-										>{new Date(detail.checkIn).toLocaleDateString('id-ID', {
-											day: 'numeric',
-											month: 'short',
-											year: 'numeric'
-										})}</span
-									>
-								</div>
-								<div class="quick-info-row">
-									<span class="quick-label">Check-Out:</span>
-									<span class="quick-value"
-										>{new Date(detail.checkOut).toLocaleDateString('id-ID', {
-											day: 'numeric',
-											month: 'short',
-											year: 'numeric'
-										})}</span
-									>
-								</div>
-								<div class="quick-info-row">
-									<span class="quick-label">Durasi:</span>
-									<span class="quick-value">{detail.dates.length} malam</span>
-								</div>
-
-								{#if detail.type === 'sold'}
-									<div class="quick-info-row">
-										<span class="quick-label">Status:</span>
-										<select
-											class="quick-status-select"
-											value={detail.data.status || 'available'}
-											onchange={(e) =>
-												updateQuickDetailStatus(detail.roomId, detail.type, e.target.value)}
-										>
-											<option value="available">○ Available</option>
-											<option value="sold">✓ Sold</option>
-										</select>
-									</div>
-									<div class="quick-info-row">
-										<span class="quick-label">Harga:</span>
-										<input
-											type="number"
-											class="quick-price-input"
-											value={detail.data.price || 0}
-											placeholder="0"
-											oninput={(e) =>
-												updateQuickDetailPrice(detail.roomId, detail.type, e.target.value)}
-										/>
-									</div>
-								{:else}
-									<div class="quick-info-row">
-										<span class="quick-label">Staff:</span>
-										<div class="quick-staff-container">
-											{#if detail.data.staffList && detail.data.staffList.length > 0}
-												<div class="quick-staff-list-inline">
-													{#each detail.data.staffList as staff}
-														<div class="quick-staff-item-inline">
-															<span class="staff-name-inline">{staff}</span>
-															<button
-																class="remove-staff-inline"
-																onclick={() => removeQuickStaff(detail.roomId, staff)}
-																title="Hapus"
-															>
-																×
-															</button>
-														</div>
-													{/each}
-												</div>
-											{:else}
-												<span class="quick-value empty">Belum ada staff</span>
-											{/if}
-
-											{#if quickAddingStaff === detail.roomId}
-												<div class="quick-add-staff-form">
-													<input
-														type="text"
-														class="quick-staff-input"
-														bind:value={quickAddStaffInput[detail.roomId]}
-														placeholder="Nama staff..."
-														onkeydown={(e) => e.key === 'Enter' && addQuickStaff(detail.roomId)}
-													/>
-													<button
-														class="quick-staff-btn add"
-														onclick={() => addQuickStaff(detail.roomId)}
-														disabled={!quickAddStaffInput[detail.roomId]?.trim()}
-													>
-														✓
-													</button>
-													<button
-														class="quick-staff-btn cancel"
-														onclick={() => toggleQuickAddStaff(detail.roomId)}
-													>
-														×
-													</button>
-												</div>
-											{:else}
-												<button
-													class="quick-add-staff-btn"
-													onclick={() => toggleQuickAddStaff(detail.roomId)}
-												>
-													+ Add Staff
-												</button>
-											{/if}
-										</div>
-									</div>
-								{/if}
-							</div>
-						</div>
-					{/each}
-				</div>
-			</div>
-			<div class="quick-modal-footer">
-				<button class="quick-btn-close" onclick={() => (showQuickDetailModal = false)}>Tutup</button
-				>
-			</div>
-		</div>
-	</div>
-{/if}
+<QuickDetailModal
+	bind:show={showQuickDetailModal}
+	{quickDetailData}
+	{quickAddingStaff}
+	bind:quickAddStaffInput
+	onUpdateStatus={updateQuickDetailStatus}
+	onUpdatePrice={updateQuickDetailPrice}
+	onRemoveStaff={removeQuickStaff}
+	onToggleAddStaff={toggleQuickAddStaff}
+	onAddStaff={addQuickStaff}
+/>
 
 <style>
-	/* Toast Animation */
-	@keyframes slide-up-fade {
-		from {
-			opacity: 0;
-			transform: translateX(-50%) translateY(20px);
-		}
-		to {
-			opacity: 1;
-			transform: translateX(-50%) translateY(0);
-		}
-	}
-	.toast-undo {
-		position: fixed;
-		bottom: 24px;
-		left: 50%;
-		transform: translateX(-50%);
-		background: #1e293b;
-		color: white;
-		padding: 10px 20px;
-		border-radius: 30px;
-		font-size: 13px;
-		font-weight: 500;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-		z-index: 9999;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		animation: slide-up-fade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-		pointer-events: none;
-	}
-
 	.contract-grid-wrapper {
 		background: #fff;
 		border: 1px solid #e2e8f0;
@@ -2494,220 +2223,7 @@
 	}
 
 	.contract-grid-wrapper.fullscreen .grid-main-area {
-		height: calc(100vh - 130px); /* toolbar + floor selector + hint bar */
-	}
-
-	/* Toolbar */
-	.grid-toolbar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 10px 16px;
-		background: linear-gradient(135deg, #0f172a, #1e293b);
-		color: white;
-	}
-	.toolbar-left {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-	.toolbar-title {
-		font-size: 13px;
-		font-weight: 700;
-	}
-	.toolbar-subtitle {
-		font-size: 11px;
-		color: rgba(255, 255, 255, 0.5);
-	}
-	.toolbar-right {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.toolbar-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		gap: 6px;
-		min-width: 28px;
-		height: 28px;
-		padding: 0 8px;
-		background: rgba(255, 255, 255, 0.08);
-		border: 1px solid rgba(255, 255, 255, 0.15);
-		border-radius: 6px;
-		color: white;
-		cursor: pointer;
-		transition: background 0.15s;
-		font-size: 12px;
-		font-weight: 500;
-		white-space: nowrap;
-	}
-	.toolbar-btn:hover,
-	.toolbar-btn.active {
-		background: rgba(255, 255, 255, 0.2);
-	}
-
-	/* Floor Selector */
-	.floor-selector-bar {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 8px 16px;
-		background: #f8fafc;
-		border-bottom: 1px solid #e2e8f0;
-	}
-
-	.floor-tabs {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-
-	.floor-actions {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-	}
-
-	.save-room-types-btn {
-		padding: 6px 12px;
-		border: 1px solid #e2e8f0;
-		background: white;
-		border-radius: 6px;
-		font-size: 12px;
-		font-weight: 600;
-		color: #374151;
-		cursor: pointer;
-		transition: all 0.15s;
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-
-	.save-room-types-btn:not(:disabled):hover {
-		border-color: #16a34a;
-		color: #16a34a;
-		background: #f0fdf4;
-	}
-
-	.save-room-types-btn:not(:disabled) {
-		border-color: #16a34a;
-		color: #16a34a;
-		background: #f0fdf4;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-	}
-
-	.save-room-types-btn.has-changes {
-		border-color: #f59e0b;
-		color: #f59e0b;
-		background: #fffbeb;
-		animation: pulse-changes 2s infinite;
-	}
-
-	@keyframes pulse-changes {
-		0%,
-		100% {
-			opacity: 1;
-		}
-		50% {
-			opacity: 0.7;
-		}
-	}
-
-	.changes-indicator {
-		color: #f59e0b;
-		font-size: 8px;
-		animation: blink 1s infinite;
-	}
-
-	@keyframes blink {
-		0%,
-		50% {
-			opacity: 1;
-		}
-		51%,
-		100% {
-			opacity: 0;
-		}
-	}
-
-	.unsaved-indicator {
-		color: #f59e0b;
-		font-weight: 600;
-		margin-left: 8px;
-	}
-
-	.save-room-types-btn:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-		background: #f9fafb;
-		color: #9ca3af;
-	}
-
-	.floor-label {
-		font-size: 12px;
-		font-weight: 600;
-		color: #64748b;
-		margin-right: 4px;
-	}
-
-	.floor-tab {
-		padding: 6px 12px;
-		border: 1px solid #e2e8f0;
-		background: white;
-		border-radius: 6px;
-		font-size: 12px;
-		font-weight: 500;
-		color: #64748b;
-		cursor: pointer;
-		transition: all 0.15s;
-		position: relative;
-	}
-
-	.unset-dot {
-		position: absolute;
-		top: -4px;
-		right: -4px;
-		width: 10px;
-		height: 10px;
-		border-radius: 50%;
-		border: 2px solid white;
-		box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-		transition: background-color 0.2s ease;
-	}
-
-	.unset-dot.dot-red {
-		background: #ef4444;
-	}
-
-	.unset-dot.dot-yellow {
-		background: #fbbf24;
-	}
-
-	.unset-dot.dot-green {
-		background: #10b981;
-	}
-
-	.floor-tab.active .unset-dot {
-		border-color: #972395;
-	}
-
-	.floor-tab:hover {
-		border-color: #972395;
-		color: #972395;
-	}
-
-	.floor-tab.active {
-		background: #972395;
-		border-color: #972395;
-		color: white;
-	}
-
-	.floor-info {
-		font-size: 11px;
-		color: #64748b;
-		font-weight: 500;
+		height: calc(100vh - 100px); /* toolbar + hint bar */
 	}
 
 	/* Hint bar */
@@ -2757,484 +2273,5 @@
 	.grid-main-area {
 		display: flex;
 		overflow: hidden;
-	}
-
-	/* Context Menu */
-	.context-menu-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100vw;
-		height: 100vh;
-		z-index: 10000;
-	}
-	.context-menu {
-		position: fixed;
-		background: white;
-		border: 1px solid #e2e8f0;
-		border-radius: 8px;
-		box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-		padding: 5px;
-		z-index: 10001;
-		min-width: 180px;
-	}
-	.context-menu-title {
-		font-size: 10px;
-		font-weight: 700;
-		color: #94a3b8;
-		padding: 5px 8px;
-		border-bottom: 1px solid #f1f5f9;
-		margin-bottom: 3px;
-	}
-	.context-menu-item {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		width: 100%;
-		padding: 6px 8px;
-		border: none;
-		background: none;
-		font-size: 11px;
-		color: #334155;
-		cursor: pointer;
-		border-radius: 4px;
-		text-align: left;
-	}
-	.context-menu-item:hover {
-		background: #f1f5f9;
-	}
-	.context-menu-item.active {
-		background: #f0f9ff;
-		color: #0284c7;
-		font-weight: 600;
-	}
-	.context-menu-item.reset {
-		color: #ef4444;
-	}
-	.context-menu-item.sold {
-		color: #16a34a;
-		font-weight: 600;
-	}
-	.context-menu-item.staff {
-		color: #4f46e5;
-		font-weight: 600;
-	}
-	.context-menu-item.danger {
-		color: #dc2626;
-	}
-	.context-menu-item.danger:hover {
-		background: #fef2f2;
-	}
-	.ctx-dot {
-		width: 8px;
-		height: 8px;
-		border-radius: 50%;
-	}
-	.context-menu-divider {
-		height: 1px;
-		background: #f1f5f9;
-		margin: 3px 0;
-	}
-
-	/* Quick Detail Modal */
-	.quick-modal-overlay {
-		position: fixed;
-		top: 0;
-		left: 0;
-		width: 100vw;
-		height: 100vh;
-		background: rgba(0, 0, 0, 0.5);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 10100;
-		backdrop-filter: blur(2px);
-	}
-
-	.quick-modal {
-		background: white;
-		border-radius: 16px;
-		box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
-		width: 90%;
-		max-width: 500px;
-		max-height: 80vh;
-		display: flex;
-		flex-direction: column;
-		overflow: hidden;
-	}
-
-	.quick-modal-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		padding: 16px 20px;
-		border-bottom: 1px solid #e5e7eb;
-		background: linear-gradient(135deg, #f9fafb, #ffffff);
-	}
-
-	.quick-modal-title {
-		font-size: 16px;
-		font-weight: 700;
-		color: #111827;
-		margin: 0;
-	}
-
-	.quick-close-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 28px;
-		height: 28px;
-		border-radius: 6px;
-		border: none;
-		background: #f3f4f6;
-		color: #6b7280;
-		font-size: 16px;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.quick-close-btn:hover {
-		background: #e5e7eb;
-		color: #111827;
-	}
-
-	.quick-modal-body {
-		flex: 1;
-		overflow-y: auto;
-		padding: 16px 20px;
-	}
-
-	.quick-wave-info {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 10px 12px;
-		background: #f9fafb;
-		border: 1px solid #e5e7eb;
-		border-radius: 8px;
-		margin-bottom: 16px;
-	}
-
-	.quick-wave-label {
-		font-size: 12px;
-		font-weight: 600;
-		color: #6b7280;
-	}
-
-	.quick-wave-name {
-		font-size: 13px;
-		font-weight: 700;
-		color: #111827;
-	}
-
-	.quick-details-list {
-		display: flex;
-		flex-direction: column;
-		gap: 12px;
-	}
-
-	.quick-detail-card {
-		border: 1px solid #e5e7eb;
-		border-radius: 10px;
-		padding: 12px;
-		background: white;
-	}
-
-	.quick-detail-card.sold-card {
-		background: linear-gradient(135deg, #f0fdf4, #ffffff);
-		border-color: #bbf7d0;
-	}
-
-	.quick-detail-card.staff-card {
-		background: linear-gradient(135deg, #eff6ff, #ffffff);
-		border-color: #bfdbfe;
-	}
-
-	.quick-detail-header {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		margin-bottom: 12px;
-		padding-bottom: 10px;
-		border-bottom: 1px solid #e5e7eb;
-	}
-
-	.quick-room-badge {
-		font-size: 13px;
-		font-weight: 700;
-		color: #111827;
-	}
-
-	.quick-type-badge {
-		font-size: 11px;
-		font-weight: 600;
-		padding: 3px 8px;
-		border-radius: 6px;
-	}
-
-	.quick-type-badge.sold-badge {
-		background: #dcfce7;
-		color: #15803d;
-	}
-
-	.quick-type-badge.staff-badge {
-		background: #dbeafe;
-		color: #1e40af;
-	}
-
-	.quick-detail-info {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-
-	.quick-info-row {
-		display: flex;
-		align-items: flex-start;
-		justify-content: space-between;
-		gap: 12px;
-	}
-
-	.quick-label {
-		font-size: 12px;
-		font-weight: 600;
-		color: #6b7280;
-		min-width: 80px;
-	}
-
-	.quick-value {
-		font-size: 12px;
-		font-weight: 600;
-		color: #111827;
-		text-align: right;
-	}
-
-	.quick-value.status-sold {
-		color: #15803d;
-	}
-
-	.quick-value.status-available {
-		color: #9ca3af;
-	}
-
-	.quick-value.price {
-		color: #16a34a;
-		font-weight: 700;
-	}
-
-	.quick-value.empty {
-		color: #9ca3af;
-		font-style: italic;
-	}
-
-	.quick-staff-list {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		align-items: flex-end;
-	}
-
-	.quick-staff-container {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-		flex: 1;
-		align-items: flex-end;
-	}
-
-	.quick-staff-list-inline {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-		justify-content: flex-end;
-	}
-
-	.quick-staff-item-inline {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-		background: #dbeafe;
-		padding: 4px 8px;
-		border-radius: 6px;
-		border: 1px solid #bfdbfe;
-	}
-
-	.staff-name-inline {
-		font-size: 12px;
-		font-weight: 600;
-		color: #1e40af;
-	}
-
-	.remove-staff-inline {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 16px;
-		height: 16px;
-		background: #ef4444;
-		color: white;
-		border: none;
-		border-radius: 50%;
-		font-size: 12px;
-		font-weight: 700;
-		cursor: pointer;
-		transition: all 0.15s;
-		line-height: 1;
-	}
-
-	.remove-staff-inline:hover {
-		background: #dc2626;
-		transform: scale(1.1);
-	}
-
-	.quick-add-staff-btn {
-		font-size: 11px;
-		font-weight: 600;
-		padding: 4px 10px;
-		background: #4f46e5;
-		color: white;
-		border: none;
-		border-radius: 6px;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.quick-add-staff-btn:hover {
-		background: #4338ca;
-		transform: translateY(-1px);
-	}
-
-	.quick-add-staff-form {
-		display: flex;
-		gap: 4px;
-		align-items: center;
-	}
-
-	.quick-staff-input {
-		font-size: 11px;
-		padding: 5px 8px;
-		border: 1px solid #d1d5db;
-		border-radius: 6px;
-		width: 140px;
-		transition: all 0.15s;
-	}
-
-	.quick-staff-input:focus {
-		outline: none;
-		border-color: #4f46e5;
-		box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
-	}
-
-	.quick-staff-btn {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 24px;
-		height: 24px;
-		border: none;
-		border-radius: 6px;
-		font-size: 14px;
-		font-weight: 700;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.quick-staff-btn.add {
-		background: #16a34a;
-		color: white;
-	}
-
-	.quick-staff-btn.add:hover:not(:disabled) {
-		background: #15803d;
-		transform: scale(1.1);
-	}
-
-	.quick-staff-btn.add:disabled {
-		opacity: 0.5;
-		cursor: not-allowed;
-	}
-
-	.quick-staff-btn.cancel {
-		background: #ef4444;
-		color: white;
-	}
-
-	.quick-staff-btn.cancel:hover {
-		background: #dc2626;
-		transform: scale(1.1);
-	}
-
-	.quick-staff-item {
-		font-size: 12px;
-		font-weight: 600;
-		color: #1e40af;
-		background: #dbeafe;
-		padding: 2px 8px;
-		border-radius: 4px;
-	}
-
-	.quick-status-select {
-		font-size: 12px;
-		font-weight: 600;
-		padding: 6px 10px;
-		border: 1px solid #d1d5db;
-		border-radius: 6px;
-		background: white;
-		color: #374151;
-		cursor: pointer;
-		transition: all 0.15s;
-		min-width: 120px;
-	}
-
-	.quick-status-select:focus {
-		outline: none;
-		border-color: #16a34a;
-		box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
-	}
-
-	.quick-price-input {
-		font-size: 12px;
-		font-weight: 600;
-		padding: 6px 10px;
-		border: 1px solid #d1d5db;
-		border-radius: 6px;
-		background: white;
-		color: #374151;
-		width: 140px;
-		text-align: right;
-		transition: all 0.15s;
-	}
-
-	.quick-price-input:focus {
-		outline: none;
-		border-color: #16a34a;
-		box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
-	}
-
-	.quick-modal-footer {
-		display: flex;
-		align-items: center;
-		justify-content: flex-end;
-		padding: 12px 20px;
-		border-top: 1px solid #e5e7eb;
-		background: #f9fafb;
-	}
-
-	.quick-btn-close {
-		padding: 8px 16px;
-		border: 1px solid #d1d5db;
-		border-radius: 8px;
-		background: white;
-		color: #374151;
-		font-size: 13px;
-		font-weight: 600;
-		cursor: pointer;
-		transition: all 0.15s;
-	}
-
-	.quick-btn-close:hover {
-		background: #f3f4f6;
-		border-color: #9ca3af;
 	}
 </style>

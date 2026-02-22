@@ -372,7 +372,8 @@
 							onmouseleave={() => (hoveredCell = null)}
 							onmouseup={handleCellMouseUp}
 							oncontextmenu={(e) => {
-								const waveId = parts.right?.wave?.id || parts.left?.wave?.id || contextWave?.id;
+								const waveId =
+									parts.right?.wave?.id || parts.left?.wave?.id || getContextWave(room)?.id;
 								onOpenRoomTypeMenu(e, room.id, waveId);
 							}}
 							ondragover={(e) => onRoomDragOver(e, room.id)}
@@ -909,18 +910,7 @@
 		gap: 1px;
 		padding: 2px 4px;
 	}
-	.greg-date {
-		font-size: 10px;
-		font-weight: 700;
-		color: #1e293b;
-		font-variant-numeric: tabular-nums;
-	}
-	.hijri-short {
-		font-size: 7px;
-		color: #94a3b8;
-		font-weight: 500;
-		white-space: nowrap;
-	}
+
 	.day-name-cell {
 		background: white;
 		border-right: 2px solid #e2e8f0;

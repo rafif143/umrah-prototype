@@ -1,5 +1,5 @@
 <script>
-	import { X, Package, Users, Calendar } from 'lucide-svelte';
+	import { X, Package, Users, Calendar, Bed, ChevronRight, ChevronDown } from 'lucide-svelte';
 	import { packageStore } from '$lib/stores/packageStore.svelte.js';
 	import { bookingStore } from '$lib/stores/bookingStore.svelte.js';
 
@@ -8,29 +8,26 @@
 	let selectedPackageId = $state('');
 	let selectedTripDateId = $state('');
 	let bookingsToImport = $state([]);
+	let expandedRooms = $state({});
 
 	// Get all packages
 	let packages = $derived(packageStore.packages);
 
 	// Get selected package
-	let selectedPackage = $derived(
-		packages.find((p) => p.id === selectedPackageId) || null
-	);
+	let selectedPackage = $derived(packages.find((p) => p.id === selectedPackageId) || null);
 
 	// Get trip dates for selected package
 	let tripDates = $derived(selectedPackage?.tripDates || []);
 
 	// Get selected trip date
-	let selectedTripDate = $derived(
-		tripDates.find((td) => td.id === selectedTripDateId) || null
-	);
+	let selectedTripDate = $derived(tripDates.find((td) => td.id === selectedTripDateId) || null);
 
 	// Filter bookings by selected package name
 	let availableBookings = $derived(() => {
 		if (!selectedPackage) return [];
 		// Match bookings by package name (you might need to adjust this logic based on your data structure)
-		return bookingStore.bookings.filter((b) => 
-			b.packageName && b.packageName.includes(selectedPackage.name)
+		return bookingStore.bookings.filter(
+			(b) => b.packageName && b.packageName.includes(selectedPackage.name)
 		);
 	});
 
@@ -40,6 +37,7 @@
 			selectedPackageId = '';
 			selectedTripDateId = '';
 			bookingsToImport = [];
+			expandedRooms = {};
 		}
 	});
 
@@ -60,6 +58,37 @@
 		}
 	}
 
+	function toggleRoom(e, bookingId, type) {
+		e.preventDefault();
+		e.stopPropagation();
+		const key = `${bookingId}-${type}`;
+		expandedRooms[key] = !expandedRooms[key];
+	}
+
+	// Calculate visual rooms required for a booking based on capacity
+	function getRoomsForBooking(booking) {
+		const capacities = { double: 2, triple: 3, quad: 4, quint: 5 };
+		const typeGroups = {};
+		for (const p of booking.pilgrims || []) {
+			const rt = (p.roomType || booking.roomType || 'double').toLowerCase();
+			if (!typeGroups[rt]) typeGroups[rt] = [];
+			typeGroups[rt].push(p);
+		}
+
+		const rooms = [];
+		for (const [type, pilgrims] of Object.entries(typeGroups)) {
+			const cap = capacities[type] || 2;
+			const numRooms = Math.ceil(pilgrims.length / cap);
+			rooms.push({
+				type: type.toUpperCase(),
+				roomCount: numRooms,
+				pax: pilgrims.length,
+				pilgrims: pilgrims
+			});
+		}
+		return rooms;
+	}
+
 	function handleImport() {
 		if (!selectedPackage || !selectedTripDate) {
 			alert('Pilih package dan trip date terlebih dahulu');
@@ -72,21 +101,24 @@
 		}
 
 		// Get selected bookings
-		const bookings = bookingStore.bookings.filter((b) => 
-			bookingsToImport.includes(b.id)
-		);
+		const bookings = bookingStore.bookings.filter((b) => bookingsToImport.includes(b.id));
 
-		// Convert bookings to jamaah format
+		// Convert bookings to jamaah format based on individual pilgrim's configured room
 		const jamaahList = [];
 		bookings.forEach((booking) => {
 			booking.pilgrims.forEach((pilgrim, idx) => {
+				// Here pilgrim.assignedRoom might be 'quad', 'double', etc based on package allocation
+				// default to booking.roomType if available, or 'double' as last resort
+				const reqType = (pilgrim.roomType || booking.roomType || 'double').toLowerCase();
+
 				jamaahList.push({
 					id: `${booking.id}-${idx}`,
 					name: pilgrim.name,
 					gender: pilgrim.gender || 'L', // Default to L if not specified
 					roomId: '', // Not assigned yet
 					bookingId: booking.id,
-					requestedRoomType: (booking.roomType || 'double').toLowerCase()
+					bookingName: booking.applicantName, // Pass the parent name
+					requestedRoomType: reqType
 				});
 			});
 		});
@@ -167,7 +199,9 @@
 									}
 								}}
 							>
-								{bookingsToImport.length === availableBookings().length ? 'Unselect All' : 'Select All'}
+								{bookingsToImport.length === availableBookings().length
+									? 'Unselect All'
+									: 'Select All'}
 							</button>
 						</div>
 
@@ -179,6 +213,13 @@
 						{:else}
 							<div class="bookings-list">
 								{#each availableBookings() as booking}
+									{@const types = Array.from(
+										new Set(
+											(booking.pilgrims || []).map((p) =>
+												(p.roomType || booking.roomType || 'N/A').toUpperCase()
+											)
+										)
+									).join(', ')}
 									<label class="booking-card">
 										<input
 											type="checkbox"
@@ -188,12 +229,52 @@
 										<div class="booking-info">
 											<div class="booking-header">
 												<span class="booking-id">{booking.id}</span>
-												<span class="booking-type">{booking.roomType || 'N/A'}</span>
+												<span class="booking-type">{types}</span>
 											</div>
 											<div class="booking-name">{booking.applicantName}</div>
 											<div class="booking-pax">
 												<Users size={12} />
 												{booking.pilgrims?.length || 0} jamaah
+											</div>
+
+											<div class="booking-sub-rooms">
+												{#each getRoomsForBooking(booking) as room}
+													{@const roomKey = `${booking.id}-${room.type}`}
+													<!-- svelte-ignore a11y_click_events_have_key_events -->
+													<!-- svelte-ignore a11y_no_static_element_interactions -->
+													<div class="sub-room-container">
+														<div
+															class="sub-room-badge"
+															onclick={(e) => toggleRoom(e, booking.id, room.type)}
+															style="cursor: pointer;"
+														>
+															<span class="sub-room-icon-count">
+																{#if expandedRooms[roomKey]}
+																	<ChevronDown size={14} />
+																{:else}
+																	<ChevronRight size={14} />
+																{/if}
+																<Bed size={12} />
+																{room.roomCount}x {room.type}
+															</span>
+															<span class="sub-room-pax">{room.pax} pax</span>
+														</div>
+														{#if expandedRooms[roomKey]}
+															<div class="sub-room-pilgrims">
+																{#each room.pilgrims as pilgrim}
+																	<div class="pilgrim-row">
+																		<span class="pilgrim-name">• {pilgrim.name}</span>
+																		<span
+																			class="pilgrim-gender"
+																			class:male={pilgrim.gender === 'L'}
+																			class:female={pilgrim.gender === 'P'}>{pilgrim.gender}</span
+																		>
+																	</div>
+																{/each}
+															</div>
+														{/if}
+													</div>
+												{/each}
 											</div>
 										</div>
 									</label>
@@ -217,11 +298,7 @@
 
 			<div class="modal-footer">
 				<button class="btn-cancel" onclick={() => (isOpen = false)}>Batal</button>
-				<button
-					class="btn-import"
-					onclick={handleImport}
-					disabled={bookingsToImport.length === 0}
-				>
+				<button class="btn-import" onclick={handleImport} disabled={bookingsToImport.length === 0}>
 					Import {bookingsToImport.length > 0 ? `(${bookingsToImport.length})` : ''}
 				</button>
 			</div>
@@ -464,6 +541,87 @@
 		display: flex;
 		align-items: center;
 		gap: 4px;
+	}
+
+	.booking-sub-rooms {
+		margin-top: 8px;
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+		padding-top: 8px;
+		border-top: 1px dashed #e2e8f0;
+	}
+
+	.sub-room-badge {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		background: #f8fafc;
+		border: 1px solid #e2e8f0;
+		padding: 4px 8px;
+		border-radius: 6px;
+		font-size: 11px;
+		color: #475569;
+		user-select: none;
+		transition: background-color 0.15s;
+	}
+
+	.sub-room-badge:hover {
+		background: #f1f5f9;
+	}
+
+	.sub-room-container {
+		display: flex;
+		flex-direction: column;
+		gap: 6px;
+	}
+
+	.sub-room-pilgrims {
+		padding-left: 12px;
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+	}
+
+	.pilgrim-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		font-size: 11px;
+		padding: 2px 4px;
+	}
+
+	.pilgrim-name {
+		color: #475569;
+	}
+
+	.pilgrim-gender {
+		font-size: 9px;
+		font-weight: 700;
+		padding: 2px 4px;
+		border-radius: 4px;
+	}
+
+	.pilgrim-gender.male {
+		background: #e0f2fe;
+		color: #0284c7;
+	}
+
+	.pilgrim-gender.female {
+		background: #fce7f3;
+		color: #db2777;
+	}
+
+	.sub-room-icon-count {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		font-weight: 500;
+	}
+
+	.sub-room-pax {
+		font-weight: 500;
+		color: #64748b;
 	}
 
 	.import-summary {

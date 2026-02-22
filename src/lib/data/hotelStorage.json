@@ -22,31 +22,151 @@
                         },
                         {
                             "id": 2,
-                            "name": "Floor 2", 
+                            "name": "Floor 2",
                             "roomCount": 8
                         }
                     ],
                     "rooms": [
-                        { "id": "R101", "floor": "Floor 1", "floorId": 1, "type": "double", "originalType": "unset" },
-                        { "id": "R102", "floor": "Floor 1", "floorId": 1, "type": "triple", "originalType": "unset" },
-                        { "id": "R103", "floor": "Floor 1", "floorId": 1, "type": "double", "originalType": "unset" },
-                        { "id": "R104", "floor": "Floor 1", "floorId": 1, "type": "unset", "originalType": "unset" },
-                        { "id": "R105", "floor": "Floor 1", "floorId": 1, "type": "unset", "originalType": "unset" },
-                        { "id": "R106", "floor": "Floor 1", "floorId": 1, "type": "unset", "originalType": "unset" },
-                        { "id": "R107", "floor": "Floor 1", "floorId": 1, "type": "unset", "originalType": "unset" },
-                        { "id": "R108", "floor": "Floor 1", "floorId": 1, "type": "unset", "originalType": "unset" },
-                        { "id": "R109", "floor": "Floor 1", "floorId": 1, "type": "unset", "originalType": "unset" },
-                        { "id": "R110", "floor": "Floor 1", "floorId": 1, "type": "unset", "originalType": "unset" },
-                        { "id": "R111", "floor": "Floor 1", "floorId": 1, "type": "unset", "originalType": "unset" },
-                        { "id": "R112", "floor": "Floor 1", "floorId": 1, "type": "unset", "originalType": "unset" },
-                        { "id": "R201", "floor": "Floor 2", "floorId": 2, "type": "unset", "originalType": "unset" },
-                        { "id": "R202", "floor": "Floor 2", "floorId": 2, "type": "unset", "originalType": "unset" },
-                        { "id": "R203", "floor": "Floor 2", "floorId": 2, "type": "unset", "originalType": "unset" },
-                        { "id": "R204", "floor": "Floor 2", "floorId": 2, "type": "unset", "originalType": "unset" },
-                        { "id": "R205", "floor": "Floor 2", "floorId": 2, "type": "unset", "originalType": "unset" },
-                        { "id": "R206", "floor": "Floor 2", "floorId": 2, "type": "unset", "originalType": "unset" },
-                        { "id": "R207", "floor": "Floor 2", "floorId": 2, "type": "unset", "originalType": "unset" },
-                        { "id": "R208", "floor": "Floor 2", "floorId": 2, "type": "unset", "originalType": "unset" }
+                        {
+                            "id": "R101",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "double",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R102",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "triple",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R103",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "double",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R104",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R105",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R106",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R107",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R108",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R109",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R110",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R111",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R112",
+                            "floor": "Floor 1",
+                            "floorId": 1,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R201",
+                            "floor": "Floor 2",
+                            "floorId": 2,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R202",
+                            "floor": "Floor 2",
+                            "floorId": 2,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R203",
+                            "floor": "Floor 2",
+                            "floorId": 2,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R204",
+                            "floor": "Floor 2",
+                            "floorId": 2,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R205",
+                            "floor": "Floor 2",
+                            "floorId": 2,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R206",
+                            "floor": "Floor 2",
+                            "floorId": 2,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R207",
+                            "floor": "Floor 2",
+                            "floorId": 2,
+                            "type": "unset",
+                            "originalType": "unset"
+                        },
+                        {
+                            "id": "R208",
+                            "floor": "Floor 2",
+                            "floorId": 2,
+                            "type": "unset",
+                            "originalType": "unset"
+                        }
                     ],
                     "waves": [
                         {
@@ -60,12 +180,16 @@
                                 "text": "#fff"
                             },
                             "roomIds": [
-                                "R101", "R102", "R103", "R104", "R105"
+                                "R101",
+                                "R102",
+                                "R103",
+                                "R104",
+                                "R105"
                             ],
                             "roomsUsed": 5,
                             "roomTypeOverrides": {
                                 "R101": "double",
-                                "R102": "triple", 
+                                "R102": "triple",
                                 "R103": "quad"
                             },
                             "jamaah": [
@@ -81,6 +205,27 @@
                                     "name": "Fatimah Zahra",
                                     "gender": "P",
                                     "roomId": "R101",
+                                    "bookingId": "BOOK-F1-01"
+                                },
+                                {
+                                    "id": "j-001-3",
+                                    "name": "Anak Ahmad",
+                                    "gender": "L",
+                                    "roomId": "R103",
+                                    "bookingId": "BOOK-F1-01"
+                                },
+                                {
+                                    "id": "j-001-4",
+                                    "name": "Saudara Ahmad",
+                                    "gender": "L",
+                                    "roomId": "R103",
+                                    "bookingId": "BOOK-F1-01"
+                                },
+                                {
+                                    "id": "j-001-5",
+                                    "name": "Ibu Ahmad",
+                                    "gender": "P",
+                                    "roomId": "R103",
                                     "bookingId": "BOOK-F1-01"
                                 },
                                 {
@@ -110,7 +255,10 @@
                                 "text": "#fff"
                             },
                             "roomIds": [
-                                "R201", "R202", "R203", "R204"
+                                "R201",
+                                "R202",
+                                "R203",
+                                "R204"
                             ],
                             "roomsUsed": 4,
                             "jamaah": [
