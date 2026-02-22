@@ -28,7 +28,6 @@
 		onImportPackage,
 		onAutoAllocateBooking
 	} = $props();
-
 	let expandedWaveKeys = $state(new Set([0]));
 	let expandedRoomKeys = $state(new Set());
 	let openDropdownIndex = $state(null); // Track which dropdown is open
