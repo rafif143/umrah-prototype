@@ -10,8 +10,10 @@ export function getRoomTypeForWave(room, wave) {
         return wave.roomTypeOverrides[room.id];
     }
 
-    // Fall back to room's current type (no more originalType)
-    return room.type || 'unset';
+    // Fall back to room's actual base type
+    return room.originalType && room.originalType !== 'unset'
+        ? room.originalType
+        : room.type || 'unset';
 }
 
 /**
@@ -31,5 +33,8 @@ export function isRoomManipulatedInWave(room, wave) {
  * Get the base type of a room (before any wave manipulation)
  */
 export function getRoomBaseType(room) {
-    return room?.type || 'unset';
+    if (!room) return 'unset';
+    return room.originalType && room.originalType !== 'unset'
+        ? room.originalType
+        : room.type || 'unset';
 }

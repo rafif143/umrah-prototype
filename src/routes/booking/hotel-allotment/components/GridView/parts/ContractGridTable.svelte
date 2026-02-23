@@ -58,16 +58,7 @@
 		const groups = [];
 		for (const room of orderedRoomsValue) {
 			const waveCtx = getContextWave(room);
-			let headerType =
-				room.originalType && room.originalType !== 'unset'
-					? room.originalType
-					: room.type && room.type !== 'unset'
-						? room.type
-						: 'unset';
-
-			if (headerType === 'unset') {
-				headerType = getRoomTypeForWave(room, waveCtx);
-			}
+			let headerType = getRoomTypeForWave(room, waveCtx);
 
 			if (groups.length === 0) {
 				groups.push({ type: headerType, rooms: [room] });

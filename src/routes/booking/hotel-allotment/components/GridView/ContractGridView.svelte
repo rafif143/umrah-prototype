@@ -565,15 +565,27 @@
 		const targetWave = (contract.waves || [])[waveIndex];
 		if (!targetWave) return;
 
+		const updates = {};
+
+		let currentOverrides = { ...(targetWave.roomTypeOverrides || {}) };
+		const effType = getRoomTypeForWave(room, targetWave);
+		if (jamaahData.requestedRoomType && jamaahData.requestedRoomType !== effType) {
+			currentOverrides[room.id] = jamaahData.requestedRoomType;
+			updates.roomTypeOverrides = currentOverrides;
+		}
+
 		if (!(targetWave.roomIds || []).includes(room.id)) {
 			const newRoomIds = [...(targetWave.roomIds || []), room.id];
-			updateWave(targetWave.id, { roomIds: newRoomIds, roomsUsed: newRoomIds.length });
+			updates.roomIds = newRoomIds;
+			updates.roomsUsed = newRoomIds.length;
 		}
 
 		const updatedJamaah = targetWave.jamaah.map((j) =>
 			j.id === jamaahData.id ? { ...j, roomId: room.id } : j
 		);
-		updateWave(targetWave.id, { jamaah: updatedJamaah });
+		updates.jamaah = updatedJamaah;
+
+		updateWave(targetWave.id, updates);
 	}
 
 	function processJamaahDrop(room, jamaahData, waveIndex) {
@@ -711,6 +723,85 @@
 		const targetWave = (contract.waves || [])[waveIndex];
 		if (!targetWave) return;
 
+		const totalNeeded = chunks.reduce((sum, c) => sum + c.count, 0);
+
+		// STRICT PRE-VALIDATION for explicit room drops
+		if (targetRoomId) {
+			const targetRoom = contract.rooms.find((r) => r.id === targetRoomId);
+			if (!targetRoom) return;
+
+			if (isRoomSold(targetRoom.id) || isRoomStaff(targetRoom.id)) {
+				alertState = {
+					show: true,
+					title: '❌ Kamar Tidak Tersedia',
+					message: `Kamar ${targetRoom.id} sedang berstatus Dijual atau Dialokasikan Untuk Staff.`,
+					type: 'error',
+					onConfirm: () => closeAlert()
+				};
+				return;
+			}
+
+			const currentOccupants = getJamaahInRoom(contract, waveIndex, targetRoom.id);
+			const occ = currentOccupants.length;
+
+			const baseType =
+				targetRoom.originalType && targetRoom.originalType !== 'unset'
+					? targetRoom.originalType
+					: targetRoom.type && targetRoom.type !== 'unset'
+						? targetRoom.type
+						: 'unset';
+			const cap = roomCapacity[baseType] === '-' ? 999 : roomCapacity[baseType] || 2;
+			const avail = cap - occ;
+
+			if (avail < totalNeeded) {
+				alertState = {
+					show: true,
+					title: '⚠️ Gagal Masuk: Kamar Tidak Muat!',
+					message: `Rombongan "${bookingName}" berjumlah ${totalNeeded} orang.\nKamar ${targetRoom.id} (${baseType.toUpperCase()}) hanya sisa ${avail} kasur (Kapasitas: ${cap}, Terisi: ${occ}).\n\nSistem MENOLAK memecah rombongan ke beda kamar secara paksa karena Anda menargetkan kamar spesifik.`,
+					type: 'error',
+					onConfirm: () => closeAlert()
+				};
+				return;
+			}
+
+			// Validate Gender & Mahram
+			const existingGenders = [...new Set(currentOccupants.map((j) => j.gender).filter(Boolean))];
+			const existingFam = currentOccupants.some((j) => j.isFamily);
+			const existingBkgIds = new Set(currentOccupants.map((j) => j.bookingId).filter(Boolean));
+
+			const incomingData = chunks.flatMap((c) => c.jamaahData || []);
+			const incomingGenders = [...new Set(incomingData.map((j) => j.gender).filter(Boolean))];
+			const isIncomingFamily = incomingData.some((j) => j.isFamily);
+
+			let isClash = false;
+			if (occ > 0) {
+				const isMixingBookings =
+					!existingBkgIds.has(bookingId) || existingBkgIds.size > 1 || existingBkgIds.size === 0;
+
+				if (isMixingBookings) {
+					if (existingFam || isIncomingFamily) {
+						isClash = true;
+					} else if (
+						(existingGenders.includes('L') && incomingGenders.includes('P')) ||
+						(existingGenders.includes('P') && incomingGenders.includes('L'))
+					) {
+						isClash = true;
+					}
+				}
+			}
+
+			if (isClash) {
+				alertState = {
+					show: true,
+					title: '⛔ Gagal Masuk: Bentrok Mahram',
+					message: `Rombongan "${bookingName}" ditolak masuk ke Kamar ${targetRoom.id} karena melanggar privasi keluarga ATAU percampuran gender (non-mahram) dengan jamaah yang sudah ada.\n\nSistem menolak mengacak penempatan karena Anda menargetkan kamar spesifik.`,
+					type: 'error',
+					onConfirm: () => closeAlert()
+				};
+				return;
+			}
+		}
+
 		// Build a usage map of current occupancy per room
 		const tentativeOccupancy = {};
 		const tentativeGenders = {};
@@ -728,7 +819,6 @@
 		const usedRoomIds = new Set(targetWave.roomIds || []);
 		const allocated = []; // { jamaahIds, roomId, roomType }
 		const failed = []; // { requestedType, needed, reason }
-		let targetRoomRejectedReason = null;
 
 		// Helper: find room for N pax — exact type first, then any type fallback
 		function findRoom(requestedType, count, incomingGenders, isIncomingFamily, incomingBkgId) {
@@ -791,14 +881,6 @@
 			if (targetRoomId) {
 				const room = contract.rooms.find((r) => r.id === targetRoomId);
 				if (room) {
-					// If we haven't already captured a reason, test it with reason tracking
-					if (!targetRoomRejectedReason) {
-						const reasonCheck = checkRoom(room, true);
-						if (reasonCheck && reasonCheck.reason) {
-							targetRoomRejectedReason = reasonCheck.reason;
-						}
-					}
-
 					const check = checkRoom(room);
 					if (check && check.avail >= 1) {
 						// As long as it can hold at least 1 person
@@ -806,6 +888,8 @@
 						return { room, ...check, effType };
 					}
 				}
+				// If a target room is specified, DO NOT fallback. Prevent auto-splitting.
+				return null;
 			}
 
 			// Pass 1: exact effective-type match
@@ -873,7 +957,7 @@
 				if (!tentativeBookingIds[room.id]) tentativeBookingIds[room.id] = new Set();
 				tentativeBookingIds[room.id].add(incomingBkgId);
 
-				allocated.push({ jamaahIds: placing, roomId: room.id, roomType: effType });
+				allocated.push({ jamaahIds: placing, roomId: room.id, roomType: effType, requestedType });
 			}
 		}
 
@@ -894,23 +978,16 @@
 			confirmMsg += `\u2022 ${a.jamaahIds.length} pax \u2192 Kamar ${a.roomId} (${a.roomType.toUpperCase()})\n`;
 		});
 
-		if (targetRoomRejectedReason) {
-			confirmMsg = `\u26a0\ufe0f PERINGATAN: Kamar tujuan (${targetRoomId}) ditolak karena ${targetRoomRejectedReason}.\nSistem secara otomatis mencarikan kamar pengganti:\n\n${confirmMsg}`;
-		}
-
 		if (failed.length > 0) {
 			const totalFailed = failed.reduce((sum, f) => sum + f.needed, 0);
-			confirmMsg += `\n\u26a0\ufe0f ${totalFailed} jamaah tidak bisa dialokasikan: tidak ada kamar tersisa.\nHanya jamaah yang memenuhi syarat yang otomatis masuk.`;
+			confirmMsg += `\n\u26a0\ufe0f ${totalFailed} jamaah tidak bisa dialokasikan.\n`;
 		}
 
 		alertState = {
 			show: true,
-			title:
-				failed.length > 0 || targetRoomRejectedReason
-					? 'Peringatan Auto-Alokasi'
-					: 'Konfirmasi Auto-Alokasi',
+			title: failed.length > 0 ? 'Peringatan Auto-Alokasi' : 'Konfirmasi Auto-Alokasi',
 			message: confirmMsg,
-			type: failed.length > 0 || targetRoomRejectedReason ? 'warning' : 'info',
+			type: failed.length > 0 ? 'warning' : 'info',
 			onConfirm: () => {
 				executeBookingGroupDrop(targetWave, waveIndex, allocated, usedRoomIds);
 				closeAlert();
@@ -922,16 +999,21 @@
 		pushHistory();
 
 		let updatedJamaah = [...(targetWave.jamaah || [])];
+		let currentOverrides = { ...(targetWave.roomTypeOverrides || {}) };
 
 		// Assign each planned jamaah to their room
-		for (const { jamaahIds, roomId } of allocated) {
+		for (const { jamaahIds, roomId, roomType, requestedType } of allocated) {
 			updatedJamaah = updatedJamaah.map((j) => (jamaahIds.includes(j.id) ? { ...j, roomId } : j));
+			if (requestedType && requestedType !== roomType) {
+				currentOverrides[roomId] = requestedType;
+			}
 		}
 
 		updateWave(targetWave.id, {
 			jamaah: updatedJamaah,
 			roomIds: [...usedRoomIds],
-			roomsUsed: usedRoomIds.size
+			roomsUsed: usedRoomIds.size,
+			roomTypeOverrides: currentOverrides
 		});
 	}
 
@@ -1028,6 +1110,13 @@
 
 		// Prepare updates
 		const updates = {};
+
+		let currentOverrides = { ...(targetWave.roomTypeOverrides || {}) };
+		const effType = getRoomTypeForWave(room, targetWave);
+		if (bookingData.requestedRoomType && bookingData.requestedRoomType !== effType) {
+			currentOverrides[room.id] = bookingData.requestedRoomType;
+			updates.roomTypeOverrides = currentOverrides;
+		}
 
 		// Add room to wave if not already there
 		if (!(targetWave.roomIds || []).includes(room.id)) {

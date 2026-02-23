@@ -209,8 +209,28 @@
                                     "gender": "L",
                                     "isFamily": false,
                                     "roomId": "",
-                                    "bookingId": "BKG-SINGLE-001",
-                                    "bookingName": "Single Budi",
+                                    "bookingId": "BKG-TRIPLE-001",
+                                    "bookingName": "Rombongan Budi dkk",
+                                    "requestedRoomType": "triple"
+                                },
+                                {
+                                    "id": "j-2-02",
+                                    "name": "Mas Andi",
+                                    "gender": "L",
+                                    "isFamily": false,
+                                    "roomId": "",
+                                    "bookingId": "BKG-TRIPLE-001",
+                                    "bookingName": "Rombongan Budi dkk",
+                                    "requestedRoomType": "triple"
+                                },
+                                {
+                                    "id": "j-2-03",
+                                    "name": "Mas Cipto",
+                                    "gender": "L",
+                                    "isFamily": false,
+                                    "roomId": "",
+                                    "bookingId": "BKG-TRIPLE-001",
+                                    "bookingName": "Rombongan Budi dkk",
                                     "requestedRoomType": "triple"
                                 },
                                 {
@@ -222,6 +242,45 @@
                                     "bookingId": "BKG-SINGLE-002",
                                     "bookingName": "Single Siti",
                                     "requestedRoomType": "quad"
+                                }
+                            ]
+                        },
+                        {
+                            "id": "w-test-clean-2",
+                            "name": "Gelombang Sambungan",
+                            "tripName": "Keberangkatan Lanjutan",
+                            "start": "2026-03-10",
+                            "end": "2026-03-20",
+                            "color": {
+                                "bg": "#8b5cf6",
+                                "text": "#fff"
+                            },
+                            "roomIds": [
+                                "R101",
+                                "R102"
+                            ],
+                            "roomsUsed": 2,
+                            "roomTypeOverrides": {},
+                            "jamaah": [
+                                {
+                                    "id": "j-4-01",
+                                    "name": "H. Budi Lanjutan",
+                                    "gender": "L",
+                                    "isFamily": false,
+                                    "roomId": "R101",
+                                    "bookingId": "BKG-NEW-01",
+                                    "bookingName": "Single Budi Lanjut",
+                                    "requestedRoomType": "double"
+                                },
+                                {
+                                    "id": "j-4-02",
+                                    "name": "Hj. Siti Lanjutan",
+                                    "gender": "P",
+                                    "isFamily": false,
+                                    "roomId": "R102",
+                                    "bookingId": "BKG-NEW-02",
+                                    "bookingName": "Single Siti Lanjut",
+                                    "requestedRoomType": "double"
                                 }
                             ]
                         }
