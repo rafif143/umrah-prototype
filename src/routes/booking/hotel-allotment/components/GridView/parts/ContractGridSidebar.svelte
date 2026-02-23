@@ -426,6 +426,12 @@
 											chunks: bookingGroup.chunks.map((c) => ({
 												requestedType: c.requestedType,
 												jamaahIds: c.jamaah.map((j) => j.id),
+												jamaahData: c.jamaah.map((j) => ({
+													id: j.id,
+													gender: j.gender,
+													isFamily: !!j.isFamily,
+													bookingId: j.bookingId
+												})),
 												count: c.jamaah.length
 											}))
 										})
@@ -521,6 +527,12 @@
 															bookingId: bookingGroup.bookingId,
 															waveIndex: i,
 															jamaahIds: chunk.jamaah.map((j) => j.id),
+															jamaahData: chunk.jamaah.map((j) => ({
+																id: j.id,
+																gender: j.gender,
+																isFamily: !!j.isFamily,
+																bookingId: j.bookingId
+															})),
 															requestedRoomType: chunk.requestedType,
 															count: chunk.jamaah.length
 														})

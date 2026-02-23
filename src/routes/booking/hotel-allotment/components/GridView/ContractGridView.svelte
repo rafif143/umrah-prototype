@@ -592,20 +592,57 @@
 			return;
 		}
 
-		const roomType = getRoomTypeForWave(room, targetWave);
-		const capacity = roomCapacity[roomType] === '-' ? 999 : roomCapacity[roomType] || 2; // Allow unlimited for unset
+		const baseType =
+			room.originalType && room.originalType !== 'unset'
+				? room.originalType
+				: room.type && room.type !== 'unset'
+					? room.type
+					: 'unset';
+		const capacity = roomCapacity[baseType] === '-' ? 999 : roomCapacity[baseType] || 2;
 		const currentInRoom = getJamaahInRoom(contract, waveIndex, room.id);
 
 		if (currentInRoom.length >= capacity && jamaahData.roomId !== room.id) {
 			alertState = {
 				show: true,
-				title: 'Kamar Penuh',
-				message: `Kamar ${room.id} sudah penuh! (${currentInRoom.length}/${capacity})`,
+				title: 'Kapasitas Fisik Tidak Cukup',
+				message: `Kamar Asli ${room.id} (${baseType.toUpperCase()}) maksimal ${capacity} kasur (Sudah Terisi ${currentInRoom.length}).`,
 				type: 'error',
 				onConfirm: () => closeAlert()
 			};
 			return;
 		}
+
+		// Gender Validation
+		const incomingGender = jamaahData.gender;
+		const incomingBookingId = jamaahData.bookingId;
+		const existingGenders = [...new Set(currentInRoom.map((j) => j.gender).filter(Boolean))];
+		const existingBookingIds = new Set(currentInRoom.map((j) => j.bookingId).filter(Boolean));
+		const isIncomingFamily = !!jamaahData.isFamily;
+		const isExistingFamily = currentInRoom.some((j) => j.isFamily);
+
+		let isClash = false;
+		if (currentInRoom.length > 0) {
+			const isMixingBookings =
+				!existingBookingIds.has(incomingBookingId) || existingBookingIds.size > 1;
+			if (isMixingBookings) {
+				if (isExistingFamily || isIncomingFamily) isClash = true;
+				else if (existingGenders.includes('L') && incomingGender === 'P') isClash = true;
+				else if (existingGenders.includes('P') && incomingGender === 'L') isClash = true;
+			}
+		}
+
+		if (isClash) {
+			alertState = {
+				show: true,
+				title: 'Penolakan Alokasi Kamar (Mahram/Gender)',
+				message: `Kamar ini tidak bisa dicampur. Kamar keluarga bersifat privat, dan jamaah single laki-laki & perempuan beda booking tidak boleh digabung.`,
+				type: 'error',
+				onConfirm: () => closeAlert()
+			};
+			return;
+		}
+
+		const roomType = getRoomTypeForWave(room, targetWave);
 
 		// Always show confirmation modal
 		alertState = {
@@ -640,7 +677,7 @@
 
 			// Handle Booking GROUP Drop (auto-allocate all chunks)
 			if (parsed.type === 'booking-group') {
-				processBookingGroupDrop(parsed);
+				processBookingGroupDrop(parsed, roomId);
 				return;
 			}
 
@@ -669,70 +706,173 @@
 		draggedJamaah = null;
 	}
 
-	function processBookingGroupDrop(groupData) {
+	function processBookingGroupDrop(groupData, targetRoomId = null) {
 		const { waveIndex, chunks, bookingId, bookingName } = groupData;
 		const targetWave = (contract.waves || [])[waveIndex];
 		if (!targetWave) return;
 
 		// Build a usage map of current occupancy per room
 		const tentativeOccupancy = {};
+		const tentativeGenders = {};
+		const tentativeIsFamily = {};
+		const tentativeBookingIds = {};
+
 		contract.rooms.forEach((r) => {
-			tentativeOccupancy[r.id] = getJamaahInRoom(contract, waveIndex, r.id).length;
+			const current = getJamaahInRoom(contract, waveIndex, r.id);
+			tentativeOccupancy[r.id] = current.length;
+			tentativeGenders[r.id] = [...new Set(current.map((j) => j.gender).filter(Boolean))];
+			tentativeIsFamily[r.id] = current.some((j) => j.isFamily);
+			tentativeBookingIds[r.id] = new Set(current.map((j) => j.bookingId).filter(Boolean));
 		});
 
 		const usedRoomIds = new Set(targetWave.roomIds || []);
 		const allocated = []; // { jamaahIds, roomId, roomType }
 		const failed = []; // { requestedType, needed, reason }
+		let targetRoomRejectedReason = null;
 
 		// Helper: find room for N pax — exact type first, then any type fallback
-		function findRoom(requestedType, count) {
+		function findRoom(requestedType, count, incomingGenders, isIncomingFamily, incomingBkgId) {
+			const checkRoom = (room, returnReason = false) => {
+				if (isRoomSold(room.id) || isRoomStaff(room.id)) {
+					return returnReason ? { reason: 'kamar dijual/staff' } : false;
+				}
+
+				const baseType =
+					room.originalType && room.originalType !== 'unset'
+						? room.originalType
+						: room.type && room.type !== 'unset'
+							? room.type
+							: 'unset';
+				const cap = roomCapacity[baseType] === '-' ? 999 : roomCapacity[baseType] || 2;
+				const avail = cap - (tentativeOccupancy[room.id] ?? 0);
+
+				if (avail < 1) {
+					return returnReason ? { reason: 'kapasitas tidak cukup' } : false;
+				}
+
+				// Gender check
+				const occ = tentativeOccupancy[room.id] ?? 0;
+				const existing = tentativeGenders[room.id] || [];
+				const existingFam = tentativeIsFamily[room.id] || false;
+				const existingBkgIds = tentativeBookingIds[room.id] || new Set();
+
+				let isClash = false;
+				if (occ > 0) {
+					// Are we mixing jamaah from different bookings?
+					const isMixingBookings =
+						!existingBkgIds.has(incomingBkgId) ||
+						existingBkgIds.size > 1 ||
+						existingBkgIds.size === 0;
+
+					if (isMixingBookings) {
+						if (existingFam || isIncomingFamily) {
+							// Family rooms are strictly private
+							isClash = true;
+						} else if (
+							(existing.includes('L') && incomingGenders.includes('P')) ||
+							(existing.includes('P') && incomingGenders.includes('L'))
+						) {
+							// Single men and women from different bookings cannot mix
+							isClash = true;
+						}
+					}
+				}
+
+				if (isClash) {
+					return returnReason
+						? { reason: 'aturan pemisahan mahram & larangan campur gender' }
+						: false;
+				}
+
+				return { cap, avail };
+			};
+
+			// Pass 0: Try explicitly dropped target room first
+			if (targetRoomId) {
+				const room = contract.rooms.find((r) => r.id === targetRoomId);
+				if (room) {
+					// If we haven't already captured a reason, test it with reason tracking
+					if (!targetRoomRejectedReason) {
+						const reasonCheck = checkRoom(room, true);
+						if (reasonCheck && reasonCheck.reason) {
+							targetRoomRejectedReason = reasonCheck.reason;
+						}
+					}
+
+					const check = checkRoom(room);
+					if (check && check.avail >= 1) {
+						// As long as it can hold at least 1 person
+						const effType = getRoomTypeForWave(room, targetWave);
+						return { room, ...check, effType };
+					}
+				}
+			}
+
 			// Pass 1: exact effective-type match
 			for (const room of contract.rooms || []) {
-				if (isRoomSold(room.id) || isRoomStaff(room.id)) continue;
+				const check = checkRoom(room);
+				if (!check) continue;
 				const effType = getRoomTypeForWave(room, targetWave);
-				const cap = roomCapacity[effType] === '-' ? 999 : roomCapacity[effType] || 2;
-				const avail = cap - (tentativeOccupancy[room.id] ?? 0);
-				if (effType === requestedType && avail >= count) return { room, cap };
+				if (effType === requestedType && check.avail >= count) return { room, ...check, effType };
 			}
 			// Pass 2: any room with enough space (fallback when types unknown/unset)
 			for (const room of contract.rooms || []) {
-				if (isRoomSold(room.id) || isRoomStaff(room.id)) continue;
+				const check = checkRoom(room);
+				if (!check) continue;
 				const effType = getRoomTypeForWave(room, targetWave);
 				if (effType === 'unset') continue; // skip unset rooms
-				const cap = roomCapacity[effType] === '-' ? 999 : roomCapacity[effType] || 2;
-				const avail = cap - (tentativeOccupancy[room.id] ?? 0);
-				if (avail >= count) return { room, cap };
+				if (check.avail >= count) return { room, ...check, effType };
 			}
 			// Pass 3: any room with ANY space (partial fit)
 			for (const room of contract.rooms || []) {
-				if (isRoomSold(room.id) || isRoomStaff(room.id)) continue;
+				const check = checkRoom(room);
+				if (!check) continue;
 				const effType = getRoomTypeForWave(room, targetWave);
 				if (effType === 'unset') continue;
-				const cap = roomCapacity[effType] === '-' ? 999 : roomCapacity[effType] || 2;
-				const avail = cap - (tentativeOccupancy[room.id] ?? 0);
-				if (avail > 0) return { room, cap, partial: true };
+				if (check.avail > 0) return { room, ...check, effType, partial: true };
 			}
 			return null;
 		}
 
 		for (const chunk of chunks) {
-			const { requestedType, jamaahIds, count } = chunk;
+			const { requestedType, jamaahIds, count, jamaahData = [] } = chunk;
 			let remaining = [...jamaahIds]; // IDs still to place
+			let remainingData = [...jamaahData];
 
 			while (remaining.length > 0) {
-				const match = findRoom(requestedType, 1); // find any room with at least 1 slot
+				const incomingGenders = [...new Set(remainingData.map((j) => j.gender).filter(Boolean))];
+				const isIncomingFamily = remainingData.some((j) => j.isFamily);
+				const incomingBkgId = bookingId;
+
+				const match = findRoom(requestedType, 1, incomingGenders, isIncomingFamily, incomingBkgId); // find any room with at least 1 slot
 				if (!match) {
-					failed.push({ requestedType, needed: remaining.length, reason: 'no room available' });
+					failed.push({
+						requestedType,
+						needed: remaining.length,
+						reason: 'tidak ada kapasitas atau ada konflik mahram'
+					});
 					break;
 				}
-				const { room } = match;
-				const effType = getRoomTypeForWave(room, targetWave);
-				const cap = roomCapacity[effType] === '-' ? 999 : roomCapacity[effType] || 2;
-				const avail = cap - (tentativeOccupancy[room.id] ?? 0);
+				const { room, avail, effType } = match;
+
 				const placing = remaining.splice(0, avail); // fill this room as much as possible
+				const placingData = remainingData.splice(0, avail);
+
+				const justPlacedGenders = placingData.map((j) => j.gender).filter(Boolean);
 
 				tentativeOccupancy[room.id] = (tentativeOccupancy[room.id] ?? 0) + placing.length;
 				usedRoomIds.add(room.id);
+
+				const newGenders = [
+					...new Set([...(tentativeGenders[room.id] || []), ...justPlacedGenders])
+				];
+				tentativeGenders[room.id] = newGenders;
+
+				if (isIncomingFamily) tentativeIsFamily[room.id] = true;
+
+				if (!tentativeBookingIds[room.id]) tentativeBookingIds[room.id] = new Set();
+				tentativeBookingIds[room.id].add(incomingBkgId);
+
 				allocated.push({ jamaahIds: placing, roomId: room.id, roomType: effType });
 			}
 		}
@@ -754,17 +894,23 @@
 			confirmMsg += `\u2022 ${a.jamaahIds.length} pax \u2192 Kamar ${a.roomId} (${a.roomType.toUpperCase()})\n`;
 		});
 
+		if (targetRoomRejectedReason) {
+			confirmMsg = `\u26a0\ufe0f PERINGATAN: Kamar tujuan (${targetRoomId}) ditolak karena ${targetRoomRejectedReason}.\nSistem secara otomatis mencarikan kamar pengganti:\n\n${confirmMsg}`;
+		}
+
 		if (failed.length > 0) {
 			const totalFailed = failed.reduce((sum, f) => sum + f.needed, 0);
-			confirmMsg += `\n\u26a0\ufe0f ${totalFailed} jamaah tidak bisa dialokasikan: tidak ada kamar tersisa.\n`;
-			confirmMsg += `\nHanya yang sesuai akan dialokasikan.`;
+			confirmMsg += `\n\u26a0\ufe0f ${totalFailed} jamaah tidak bisa dialokasikan: tidak ada kamar tersisa.\nHanya jamaah yang memenuhi syarat yang otomatis masuk.`;
 		}
 
 		alertState = {
 			show: true,
-			title: failed.length > 0 ? 'Alokasi Sebagian' : 'Konfirmasi Auto-Alokasi',
+			title:
+				failed.length > 0 || targetRoomRejectedReason
+					? 'Peringatan Auto-Alokasi'
+					: 'Konfirmasi Auto-Alokasi',
 			message: confirmMsg,
-			type: failed.length > 0 ? 'warning' : 'info',
+			type: failed.length > 0 || targetRoomRejectedReason ? 'warning' : 'info',
 			onConfirm: () => {
 				executeBookingGroupDrop(targetWave, waveIndex, allocated, usedRoomIds);
 				closeAlert();
@@ -790,7 +936,7 @@
 	}
 
 	function processBookingDrop(room, bookingData) {
-		const { waveIndex, jamaahIds, requestedRoomType, count } = bookingData;
+		const { waveIndex, jamaahIds, requestedRoomType, count, jamaahData = [] } = bookingData;
 		const targetWave = (contract.waves || [])[waveIndex];
 		if (!targetWave) return;
 
@@ -806,8 +952,13 @@
 			return;
 		}
 
-		const roomType = getRoomTypeForWave(room, targetWave);
-		const capacity = roomCapacity[roomType] === '-' ? 999 : roomCapacity[roomType] || 2; // Allow unlimited for unset
+		const baseType =
+			room.originalType && room.originalType !== 'unset'
+				? room.originalType
+				: room.type && room.type !== 'unset'
+					? room.type
+					: 'unset';
+		const capacity = roomCapacity[baseType] === '-' ? 999 : roomCapacity[baseType] || 2;
 
 		// Check capacity
 		const currentInRoom = getJamaahInRoom(contract, waveIndex, room.id);
@@ -816,13 +967,45 @@
 		if (totalAfter > capacity) {
 			alertState = {
 				show: true,
-				title: 'Kapasitas Tidak Cukup',
-				message: `Booking ini memiliki ${count} jamaah, tapi kamar ${room.id} (${roomType.toUpperCase()}) hanya tersisa ${capacity - currentInRoom.length} tempat.`,
+				title: 'Kapasitas Fisik Tidak Cukup',
+				message: `Booking ini memiliki ${count} jamaah, tapi Kamar Asli ${room.id} (${baseType.toUpperCase()}) maksimal ${capacity} kasur (Tersisa ${capacity - currentInRoom.length}).`,
 				type: 'error',
 				onConfirm: () => closeAlert()
 			};
 			return;
 		}
+
+		// Gender Validation
+		const incomingGenders = [...new Set(jamaahData.map((j) => j.gender).filter(Boolean))];
+		const existingGenders = [...new Set(currentInRoom.map((j) => j.gender).filter(Boolean))];
+		const isIncomingFamily = jamaahData.some((j) => j.isFamily);
+		const isExistingFamily = currentInRoom.some((j) => j.isFamily);
+		const existingBookingIds = new Set(currentInRoom.map((j) => j.bookingId).filter(Boolean));
+		const incomingBookingId = bookingData.bookingId;
+
+		let isClash = false;
+		if (currentInRoom.length > 0) {
+			const isMixingBookings =
+				!existingBookingIds.has(incomingBookingId) || existingBookingIds.size > 1;
+			if (isMixingBookings) {
+				if (isExistingFamily || isIncomingFamily) isClash = true;
+				else if (existingGenders.includes('L') && incomingGenders.includes('P')) isClash = true;
+				else if (existingGenders.includes('P') && incomingGenders.includes('L')) isClash = true;
+			}
+		}
+
+		if (isClash) {
+			alertState = {
+				show: true,
+				title: 'Penolakan Alokasi Kamar (Mahram/Gender)',
+				message: `Kamar ini tidak bisa dicampur. Kamar keluarga bersifat privat, dan jamaah single laki-laki & perempuan beda booking tidak boleh digabung.`,
+				type: 'error',
+				onConfirm: () => closeAlert()
+			};
+			return;
+		}
+
+		const roomType = getRoomTypeForWave(room, targetWave);
 
 		// Confirm allocation
 		alertState = {

@@ -218,7 +218,12 @@
 			<tr class="header-room-row">
 				{#each orderedRoomsValue as room}
 					{@const contextWave = getContextWave(room)}
-					{@const baseType = room.originalType || room.type || 'unset'}
+					{@const baseType =
+						room.originalType && room.originalType !== 'unset'
+							? room.originalType
+							: room.type && room.type !== 'unset'
+								? room.type
+								: 'unset'}
 					<!-- Use originalType/type for logical grouping history if we want, but actually tc is baseType -->
 					{@const effectiveType = getRoomTypeForWave(room, contextWave)}
 					{@const tc = localTypeConfig[baseType] || { bg: '#eceff1', headerBg: '#607d8b' }}
@@ -235,11 +240,10 @@
 						(w) => w.id === contextWave?.id
 					)}
 					{@const occupants = getJamaahInRoom(contract, currentWaveIndex, room.id)}
-					{@const capacity =
-						effectiveType === 'unset' ? '-' : localTypeConfig[effectiveType]?.capacity || 2}
-					<!-- Use effective type for capacity -->
-					{@const isFull = effectiveType !== 'unset' && occupants.length === capacity}
-					{@const isOverload = effectiveType !== 'unset' && occupants.length > capacity}
+					{@const capacity = baseType === 'unset' ? '-' : localTypeConfig[baseType]?.capacity || 2}
+					<!-- Use base type for physical capacity -->
+					{@const isFull = baseType !== 'unset' && occupants.length === capacity}
+					{@const isOverload = baseType !== 'unset' && occupants.length > capacity}
 					<th
 						class="room-number-header"
 						class:room-selected={true}
@@ -283,7 +287,10 @@
 								<span class="staff-badge" title="Kamar staff">👨‍✈️</span>
 							{/if}
 							{#if isManipulated}
-								{@const originalType = room.originalType || room.type}
+								{@const originalType =
+									room.originalType && room.originalType !== 'unset'
+										? room.originalType
+										: room.type}
 								<span
 									class="manip-badge"
 									title="Tipe diubah: {originalType.toUpperCase()} → {effectiveType.toUpperCase()} (Wave: {contextWave?.name ||
