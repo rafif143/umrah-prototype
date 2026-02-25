@@ -1,6 +1,7 @@
 <script>
 	import { Plus, Search, Filter, Edit, Trash2, X, Save, Wrench } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
+	import { supabase } from '$lib/supabase';
 
 	// --- State ---
 	let activeTab = $state('services'); // 'services' | 'pricing'
@@ -8,11 +9,24 @@
 	let isEditing = $state(false);
 
 	// --- Services Data ---
-	let services = $state([
-		{ id: 1, name: 'Bag' },
-		{ id: 2, name: 'Handling' },
-		{ id: 3, name: 'Visa Processing' }
-	]);
+	let services = $state([]);
+
+	async function fetchServices() {
+		const { data, error } = await supabase
+			.from('master_services')
+			.select('*')
+			.order('name', { ascending: true });
+
+		if (error) {
+			console.error('Error fetching services:', error);
+		} else {
+			services = data;
+		}
+	}
+
+	$effect(() => {
+		fetchServices();
+	});
 
 	// --- Form State ---
 	let serviceForm = $state({
@@ -41,22 +55,43 @@
 		showForm = true;
 	}
 
-	function handleSave() {
+	async function handleSave() {
+		const payload = {
+			name: serviceForm.name
+		};
+
 		if (isEditing) {
-			const index = services.findIndex((s) => s.id === serviceForm.id);
-			if (index !== -1) services[index] = { ...serviceForm };
+			const { error } = await supabase
+				.from('master_services')
+				.update(payload)
+				.eq('id', serviceForm.id);
+
+			if (error) {
+				alert('Error updating service: ' + error.message);
+				return;
+			}
 		} else {
-			services.push({
-				id: Date.now(),
-				name: serviceForm.name
-			});
+			const { error } = await supabase.from('master_services').insert([payload]);
+
+			if (error) {
+				alert('Error adding service: ' + error.message);
+				return;
+			}
 		}
+
 		resetForm();
+		fetchServices();
 	}
 
-	function handleDelete(id) {
+	async function handleDelete(id) {
 		if (confirm('Are you sure you want to delete this item?')) {
-			services = services.filter((s) => s.id !== id);
+			const { error } = await supabase.from('master_services').delete().eq('id', id);
+
+			if (error) {
+				alert('Error deleting service: ' + error.message);
+			} else {
+				fetchServices();
+			}
 		}
 	}
 </script>

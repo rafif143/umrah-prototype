@@ -6,8 +6,11 @@
 <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
 	<!-- Flight Selection from Storage -->
 	<div class="col-span-2 rounded-xl border border-purple-100 bg-purple-50 p-6">
-		<label class="mb-2 block text-sm font-bold text-gray-900">Select Flight Batch</label>
+		<label for="flight-batch" class="mb-2 block text-sm font-bold text-gray-900"
+			>Select Flight Batch</label
+		>
 		<select
+			id="flight-batch"
 			bind:value={state.selectedFlightId}
 			class="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#972395] focus:ring-[#972395]"
 			onchange={(e) => state.selectFlightBooking(e.target.value)}
@@ -25,9 +28,12 @@
 
 	<!-- Auto-generated Name Section -->
 	<div class="col-span-2">
-		<label class="mb-2 block text-sm font-bold text-gray-900">Batch Name (Auto-Generated)</label>
+		<label for="batch-name" class="mb-2 block text-sm font-bold text-gray-900"
+			>Batch Name (Auto-Generated)</label
+		>
 		<div class="flex gap-2">
 			<input
+				id="batch-name"
 				type="text"
 				bind:value={state.flightInfo.batchName}
 				class="w-full rounded-lg border-gray-300 bg-white font-semibold text-[#972395] shadow-sm focus:border-[#972395] focus:ring-[#972395]"
@@ -53,8 +59,11 @@
 
 	<!-- Flight Details -->
 	<div>
-		<label class="mb-1 block text-sm font-medium text-gray-700">Airline Name</label>
+		<label for="airline-name" class="mb-1 block text-sm font-medium text-gray-700"
+			>Airline Name</label
+		>
 		<input
+			id="airline-name"
 			type="text"
 			bind:value={state.flightInfo.airline}
 			class="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#972395] focus:ring-[#972395]"
@@ -64,8 +73,11 @@
 
 	<div class="grid grid-cols-2 gap-4">
 		<div>
-			<label class="mb-1 block text-sm font-medium text-gray-700">Airline Code</label>
+			<label for="airline-code" class="mb-1 block text-sm font-medium text-gray-700"
+				>Airline Code</label
+			>
 			<input
+				id="airline-code"
 				type="text"
 				bind:value={state.flightInfo.airlineCode}
 				readonly
@@ -73,8 +85,11 @@
 			/>
 		</div>
 		<div>
-			<label class="mb-1 block text-sm font-medium text-gray-700">Flight Number</label>
+			<label for="flight-number" class="mb-1 block text-sm font-medium text-gray-700"
+				>Flight Number</label
+			>
 			<input
+				id="flight-number"
 				type="text"
 				bind:value={state.flightInfo.flightNumber}
 				class="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#972395] focus:ring-[#972395]"
@@ -84,16 +99,22 @@
 
 	<!-- Dates -->
 	<div>
-		<label class="mb-1 block text-sm font-medium text-gray-700">Departure Date</label>
+		<label for="departure-date" class="mb-1 block text-sm font-medium text-gray-700"
+			>Departure Date</label
+		>
 		<input
+			id="departure-date"
 			type="date"
 			bind:value={state.flightInfo.departureDate}
 			class="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#972395] focus:ring-[#972395]"
 		/>
 	</div>
 	<div>
-		<label class="mb-1 block text-sm font-medium text-gray-700">Arrival Date</label>
+		<label for="arrival-date" class="mb-1 block text-sm font-medium text-gray-700"
+			>Arrival Date</label
+		>
 		<input
+			id="arrival-date"
 			type="date"
 			bind:value={state.flightInfo.arrivalDate}
 			class="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#972395] focus:ring-[#972395]"
@@ -102,16 +123,22 @@
 
 	<!-- Cities -->
 	<div>
-		<label class="mb-1 block text-sm font-medium text-gray-700">Departure City</label>
+		<label for="departure-city" class="mb-1 block text-sm font-medium text-gray-700"
+			>Departure City</label
+		>
 		<input
+			id="departure-city"
 			type="text"
 			bind:value={state.flightInfo.departureCity}
 			class="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#972395] focus:ring-[#972395]"
 		/>
 	</div>
 	<div>
-		<label class="mb-1 block text-sm font-medium text-gray-700">Arrival City</label>
+		<label for="arrival-city" class="mb-1 block text-sm font-medium text-gray-700"
+			>Arrival City</label
+		>
 		<input
+			id="arrival-city"
 			type="text"
 			bind:value={state.flightInfo.arrivalCity}
 			class="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#972395] focus:ring-[#972395]"
@@ -120,8 +147,11 @@
 
 	<!-- Quota -->
 	<div>
-		<label class="mb-1 block text-sm font-medium text-gray-700">Total Seat Quota</label>
+		<label for="seat-quota" class="mb-1 block text-sm font-medium text-gray-700"
+			>Total Seat Quota</label
+		>
 		<input
+			id="seat-quota"
 			type="number"
 			bind:value={state.flightInfo.seatQuota}
 			class="w-full rounded-lg border-gray-300 shadow-sm focus:border-[#972395] focus:ring-[#972395]"

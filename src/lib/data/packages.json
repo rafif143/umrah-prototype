@@ -1,175 +1,450 @@
 [
     {
-        "id": "pkg-eco-001",
-        "name": "Pakej Umrah Economy",
-        "category": "Umrah Regular",
-        "subCategory": "Budget",
-        "duration": "12 Hari",
-        "image": "🕋",
-        "price": "RM 6,990",
+        "id": "batch-mh-2026-08-16",
+        "name": "MH 804 - 16 Ogos 2026",
+        "airline": "Malaysia Airlines",
+        "flightCode": "MH 804",
+        "departureDate": "2026-08-16",
+        "arrivalDate": "2026-08-28",
         "status": "Active",
-        "descriptions": [
-            {
-                "image": "",
-                "text": "Pakej ekonomi mampu milik."
-            }
-        ],
-        "targetAudience": [
-            "B40",
-            "M40",
-            "First Timer"
-        ],
-        "includedItems": [
-            "Tiket Penerbangan Ekonomi",
-            "Hotel 3 Bintang",
-            "Visa Umrah"
-        ],
-        "excludedItems": [
-            "Insurans Perjalanan"
-        ],
-        "faqList": [
-            {
-                "question": "Berapa jam penerbangan?",
-                "answer": "Sekitar 9-10 jam."
-            }
-        ],
-        "galleryImages": [],
-        "tripDates": [
-            {
-                "id": 1811376000000,
-                "checkIn": "2026-05-27",
-                "checkOut": "2026-06-07",
-                "duration": "12",
-                "durationNights": "11",
-                "paxCapacity": 50,
-                "currentPax": 0,
-                "allowOverload": false,
-                "validityStart": "2026-01-01",
-                "validityEnd": "2026-12-31",
-                "date": "27 May 2026",
-                "flightCode": "SV 828 / SV 829",
-                "flightId": "10001",
-                "price": "RM 6990",
-                "status": "Active",
-                "guides": [],
-                "leaders": []
-            }
-        ],
-        "itinerary": []
-    },
-    {
-        "id": "pkg-vip-002",
-        "name": "Pakej Umrah VIP",
-        "category": "Umrah VIP",
-        "subCategory": "Premium",
-        "duration": "10 Hari",
-        "image": "🕌",
-        "price": "RM 12,990",
-        "status": "Active",
-        "descriptions": [
-            {
-                "image": "",
-                "text": "Pakej VIP eksklusif berhadapan Masjidil Haram."
-            }
-        ],
-        "targetAudience": [
-            "VVIP",
-            "Korporat",
-            "Keluarga"
-        ],
-        "includedItems": [
-            "Business Class Flight",
-            "Hotel 5 Bintang",
-            "Makan Buffet Antarabangsa"
-        ],
-        "excludedItems": [
-            "Perbelanjaan Peribadi"
-        ],
-        "faqList": [
-            {
-                "question": "Boleh upgrade bilik?",
-                "answer": "Ya, tertakluk kepada kekosongan."
-            }
-        ],
-        "galleryImages": [],
-        "tripDates": [
-            {
-                "id": 1813017600000,
-                "checkIn": "2026-06-15",
-                "checkOut": "2026-06-25",
-                "duration": "10",
-                "durationNights": "9",
-                "paxCapacity": 30,
-                "currentPax": 0,
-                "allowOverload": false,
-                "validityStart": "2026-01-01",
-                "validityEnd": "2026-12-31",
-                "date": "15 Jun 2026",
-                "flightCode": "MH 152 / MH 153",
-                "flightId": "10002",
-                "price": "RM 12990",
-                "status": "Active",
-                "guides": [],
-                "leaders": []
-            }
-        ],
-        "itinerary": []
-    },
-    {
-        "id": "pkg-plus-003",
-        "name": "Pakej Umrah + Turki",
-        "category": "Umrah Plus",
-        "subCategory": "Standard",
-        "duration": "14 Hari",
         "image": "✈️",
-        "price": "RM 8,500",
-        "status": "Active",
-        "descriptions": [
+        "itinerary": [
             {
-                "image": "",
-                "text": "Gabungan ziarah Istanbul dan ibadah Umrah."
+                "day": 1,
+                "title": "Ketibaan Madinah",
+                "activity": "Penerbangan ke Madinah, Check-in Hotel."
+            },
+            {
+                "day": 2,
+                "title": "Ziarah Madinah",
+                "activity": "Ziarah Raudhah & Makam Rasulullah SAW."
+            },
+            {
+                "day": 5,
+                "title": "Mekah - Umrah 1",
+                "activity": "Bertolak ke Mekah, Bermiqat di Bir Ali, Selesai Umrah Pertama."
             }
         ],
-        "targetAudience": [
-            "Pencinta Sejarah",
-            "Pelancong"
-        ],
-        "includedItems": [
-            "Tiket Turkish Airlines",
-            "Hotel 4 Bintang",
-            "Tour Istanbul"
-        ],
-        "excludedItems": [
-            "Makan di Istanbul"
-        ],
-        "faqList": [
+        "variants": [
             {
-                "question": "Perlu visa Turki?",
-                "answer": "Tidak perlu untuk rakyat Malaysia."
-            }
-        ],
-        "galleryImages": [],
-        "tripDates": [
+                "id": "var-eco-001",
+                "name": "Pakej Hemat",
+                "categories": [
+                    "Umrah Regular"
+                ],
+                "types": [
+                    "Budget"
+                ],
+                "duration": "12 Hari",
+                "durationDays": 12,
+                "durationNights": 11,
+                "paxCapacity": 45,
+                "price": "RM 6,500",
+                "hotels": [
+                    {
+                        "city": "Madinah",
+                        "hotel": "Nozol Royal Inn",
+                        "hotelId": "hotel-mad-001",
+                        "supplier": "Nozol Hotels Group",
+                        "checkIn": "2026-08-16",
+                        "checkOut": "2026-08-20",
+                        "nights": 4,
+                        "roomType": [
+                            "Quad",
+                            "Quint"
+                        ],
+                        "basis": "Full Board",
+                        "rateCode": "Per Room Per Night",
+                        "packageMeals": "Indonesian/Malay",
+                        "hotelView": "City View",
+                        "vat": "VAT_2020",
+                        "municipalityTax": "Select",
+                        "vatPercent": 15,
+                        "municipalityTaxPercent": 5,
+                        "adultCost": 1200,
+                        "adultSell": 200,
+                        "adultOrs": 50,
+                        "adultTotal": 1450,
+                        "childCost": 600,
+                        "childSell": 100,
+                        "childOrs": 25,
+                        "childTotal": 725
+                    },
+                    {
+                        "city": "Makkah",
+                        "hotel": "Olayan Ajyad",
+                        "hotelId": "hotel-mak-001",
+                        "supplier": "Olayan Group",
+                        "checkIn": "2026-08-20",
+                        "checkOut": "2026-08-27",
+                        "nights": 7,
+                        "roomType": [
+                            "Quad",
+                            "Quint"
+                        ],
+                        "basis": "Full Board",
+                        "rateCode": "Per Room Per Night",
+                        "packageMeals": "Indonesian/Malay",
+                        "hotelView": "Haram View",
+                        "vat": "VAT_2020",
+                        "municipalityTax": "Select",
+                        "vatPercent": 15,
+                        "municipalityTaxPercent": 5,
+                        "adultCost": 1800,
+                        "adultSell": 300,
+                        "adultOrs": 50,
+                        "adultTotal": 2150,
+                        "childCost": 900,
+                        "childSell": 150,
+                        "childOrs": 25,
+                        "childTotal": 1075
+                    }
+                ],
+                "meals": [
+                    {
+                        "supplier": "Ibtisam Catering",
+                        "hotel": "Nozol Royal Inn",
+                        "foodType": "Indonesian/Malay",
+                        "fromDate": "2026-08-16",
+                        "toDate": "2026-08-20",
+                        "nights": 4,
+                        "rateCode": "Per Pax",
+                        "vat": "VAT_2020",
+                        "vatPercent": 15,
+                        "adultCost": 200,
+                        "adultSell": 50,
+                        "adultOrs": 10,
+                        "adultTotal": 260,
+                        "childCost": 100,
+                        "childSell": 25,
+                        "childOrs": 5,
+                        "childTotal": 130
+                    },
+                    {
+                        "supplier": "Ibtisam Catering",
+                        "hotel": "Olayan Ajyad",
+                        "foodType": "Indonesian/Malay",
+                        "fromDate": "2026-08-20",
+                        "toDate": "2026-08-27",
+                        "nights": 7,
+                        "rateCode": "Per Pax",
+                        "vat": "VAT_2020",
+                        "vatPercent": 15,
+                        "adultCost": 300,
+                        "adultSell": 80,
+                        "adultOrs": 20,
+                        "adultTotal": 400,
+                        "childCost": 150,
+                        "childSell": 40,
+                        "childOrs": 10,
+                        "childTotal": 200
+                    }
+                ],
+                "transport": [
+                    {
+                        "vehicle": "Bus 45 Seater",
+                        "supplier": "Saptco",
+                        "route": "Airport JED - Madinah",
+                        "adultCost": 120,
+                        "adultSell": 30,
+                        "childCost": 60,
+                        "childSell": 15
+                    },
+                    {
+                        "vehicle": "Bus 45 Seater",
+                        "supplier": "Saptco",
+                        "route": "Madinah - Makkah (via Bir Ali)",
+                        "adultCost": 100,
+                        "adultSell": 25,
+                        "childCost": 50,
+                        "childSell": 12
+                    },
+                    {
+                        "vehicle": "Bus 45 Seater",
+                        "supplier": "Saptco",
+                        "route": "Makkah - Airport JED",
+                        "adultCost": 80,
+                        "adultSell": 20,
+                        "childCost": 40,
+                        "childSell": 10
+                    }
+                ],
+                "services": [
+                    {
+                        "category": "Visa",
+                        "supplier": "Ministry of Hajj",
+                        "description": "Umrah Visa Processing - Standard",
+                        "cost": 450,
+                        "sell": 500
+                    },
+                    {
+                        "category": "Mutawif",
+                        "supplier": "Local Guide",
+                        "description": "Experienced Mutawif Guide for 12 Days",
+                        "cost": 150,
+                        "sell": 200
+                    },
+                    {
+                        "category": "Insurance",
+                        "supplier": "Takaful Malaysia",
+                        "description": "Travel Insurance - Basic Coverage",
+                        "cost": 80,
+                        "sell": 120
+                    },
+                    {
+                        "category": "Other",
+                        "supplier": "Zamzam Water Co.",
+                        "description": "Zamzam Water 10L per Jamaah",
+                        "cost": 50,
+                        "sell": 70
+                    }
+                ],
+                "additional": [
+                    {
+                        "name": "Airport Tax",
+                        "description": "Malaysian Airport Tax (KLIA2)",
+                        "cost": 100,
+                        "sell": 120
+                    },
+                    {
+                        "name": "Handling Fee",
+                        "description": "Ground handling & baggage coordination",
+                        "cost": 50,
+                        "sell": 70
+                    },
+                    {
+                        "name": "Zam-Zam Packaging",
+                        "description": "Packaging materials for Zamzam water bottles",
+                        "cost": 20,
+                        "sell": 30
+                    }
+                ],
+                "pricing": {
+                    "double": 8200,
+                    "triple": 7500,
+                    "quad": 6990,
+                    "quint": 6500
+                }
+            },
             {
-                "id": 1813449600000,
-                "checkIn": "2026-06-20",
-                "checkOut": "2026-07-04",
-                "duration": "14",
-                "durationNights": "13",
-                "paxCapacity": 40,
-                "currentPax": 0,
-                "allowOverload": false,
-                "validityStart": "2026-01-01",
-                "validityEnd": "2026-12-31",
-                "date": "20 Jun 2026",
-                "flightCode": "TK 60 / TK 69",
-                "flightId": "10003",
-                "price": "RM 8500",
-                "status": "Active",
-                "guides": [],
-                "leaders": []
+                "id": "var-pre-002",
+                "name": "Pakej Premium",
+                "categories": [
+                    "Umrah Regular"
+                ],
+                "types": [
+                    "Premium"
+                ],
+                "duration": "12 Hari",
+                "durationDays": 12,
+                "durationNights": 11,
+                "paxCapacity": 20,
+                "price": "RM 8,500",
+                "hotels": [
+                    {
+                        "city": "Madinah",
+                        "hotel": "Pullman Zamzam Madinah",
+                        "hotelId": "hotel-mad-002",
+                        "supplier": "Accor Hotels",
+                        "checkIn": "2026-08-16",
+                        "checkOut": "2026-08-20",
+                        "nights": 4,
+                        "roomType": [
+                            "Double",
+                            "Triple"
+                        ],
+                        "basis": "Full Board",
+                        "rateCode": "Per Person Per Night",
+                        "packageMeals": "International Buffet",
+                        "hotelView": "Haram View",
+                        "vat": "VAT_2020",
+                        "municipalityTax": "Select",
+                        "vatPercent": 15,
+                        "municipalityTaxPercent": 5,
+                        "adultCost": 2500,
+                        "adultSell": 500,
+                        "adultOrs": 100,
+                        "adultTotal": 3100,
+                        "childCost": 1250,
+                        "childSell": 250,
+                        "childOrs": 50,
+                        "childTotal": 1550
+                    },
+                    {
+                        "city": "Makkah",
+                        "hotel": "Fairmont Clock Tower",
+                        "hotelId": "hotel-mak-002",
+                        "supplier": "FRHI Hotels & Resorts",
+                        "checkIn": "2026-08-20",
+                        "checkOut": "2026-08-27",
+                        "nights": 7,
+                        "roomType": [
+                            "Double",
+                            "Triple"
+                        ],
+                        "basis": "Full Board",
+                        "rateCode": "Per Person Per Night",
+                        "packageMeals": "International Buffet",
+                        "hotelView": "Haram View",
+                        "vat": "VAT_2020",
+                        "municipalityTax": "Select",
+                        "vatPercent": 15,
+                        "municipalityTaxPercent": 5,
+                        "adultCost": 4500,
+                        "adultSell": 800,
+                        "adultOrs": 100,
+                        "adultTotal": 5400,
+                        "childCost": 2250,
+                        "childSell": 400,
+                        "childOrs": 50,
+                        "childTotal": 2700
+                    }
+                ],
+                "meals": [
+                    {
+                        "supplier": "Dallah Groups",
+                        "hotel": "Pullman Zamzam Madinah",
+                        "foodType": "International Buffet",
+                        "fromDate": "2026-08-16",
+                        "toDate": "2026-08-20",
+                        "nights": 4,
+                        "rateCode": "Per Pax",
+                        "vat": "VAT_2020",
+                        "vatPercent": 15,
+                        "adultCost": 500,
+                        "adultSell": 120,
+                        "adultOrs": 30,
+                        "adultTotal": 650,
+                        "childCost": 250,
+                        "childSell": 60,
+                        "childOrs": 15,
+                        "childTotal": 325
+                    },
+                    {
+                        "supplier": "Dallah Groups",
+                        "hotel": "Fairmont Clock Tower",
+                        "foodType": "International Buffet",
+                        "fromDate": "2026-08-20",
+                        "toDate": "2026-08-27",
+                        "nights": 7,
+                        "rateCode": "Per Pax",
+                        "vat": "VAT_2020",
+                        "vatPercent": 15,
+                        "adultCost": 700,
+                        "adultSell": 150,
+                        "adultOrs": 50,
+                        "adultTotal": 900,
+                        "childCost": 350,
+                        "childSell": 75,
+                        "childOrs": 25,
+                        "childTotal": 450
+                    }
+                ],
+                "transport": [
+                    {
+                        "vehicle": "GMC/Luxury Van",
+                        "supplier": "Private Transport",
+                        "route": "Airport JED - Madinah",
+                        "adultCost": 350,
+                        "adultSell": 80,
+                        "childCost": 175,
+                        "childSell": 40
+                    },
+                    {
+                        "vehicle": "GMC/Luxury Van",
+                        "supplier": "Private Transport",
+                        "route": "Madinah - Makkah (via Bir Ali)",
+                        "adultCost": 250,
+                        "adultSell": 60,
+                        "childCost": 125,
+                        "childSell": 30
+                    },
+                    {
+                        "vehicle": "GMC/Luxury Van",
+                        "supplier": "Private Transport",
+                        "route": "Makkah - Airport JED",
+                        "adultCost": 200,
+                        "adultSell": 50,
+                        "childCost": 100,
+                        "childSell": 25
+                    }
+                ],
+                "services": [
+                    {
+                        "category": "Visa",
+                        "supplier": "Ministry of Hajj",
+                        "description": "Umrah Visa Premium - Fast Track",
+                        "cost": 450,
+                        "sell": 550
+                    },
+                    {
+                        "category": "Mutawif",
+                        "supplier": "Premium Guides KSA",
+                        "description": "VIP Mutawif Guide for 12 Days - Multilingual",
+                        "cost": 350,
+                        "sell": 450
+                    },
+                    {
+                        "category": "Insurance",
+                        "supplier": "Takaful Malaysia",
+                        "description": "Travel Insurance - Premium Coverage incl. Medical",
+                        "cost": 180,
+                        "sell": 250
+                    },
+                    {
+                        "category": "Other",
+                        "supplier": "Jeddah Airport VIP",
+                        "description": "VIP Airport Lounge Access (Arrival & Departure)",
+                        "cost": 200,
+                        "sell": 280
+                    },
+                    {
+                        "category": "Other",
+                        "supplier": "Zamzam Water Co.",
+                        "description": "Premium Zamzam Water 20L per Jamaah",
+                        "cost": 80,
+                        "sell": 110
+                    }
+                ],
+                "additional": [
+                    {
+                        "name": "Airport Tax",
+                        "description": "Malaysian Airport Tax (KLIA)",
+                        "cost": 100,
+                        "sell": 120
+                    },
+                    {
+                        "name": "Travel Insurance Premium",
+                        "description": "Enhanced travel insurance with medical evacuation coverage",
+                        "cost": 150,
+                        "sell": 200
+                    },
+                    {
+                        "name": "Handling Fee",
+                        "description": "VIP ground handling & porter service",
+                        "cost": 80,
+                        "sell": 120
+                    },
+                    {
+                        "name": "Zam-Zam Packaging",
+                        "description": "Heavy-duty packaging for 20L Zamzam containers",
+                        "cost": 40,
+                        "sell": 60
+                    },
+                    {
+                        "name": "Souvenir Kit",
+                        "description": "Premium travel kit (prayer mat, tasbih, ihram set)",
+                        "cost": 120,
+                        "sell": 180
+                    }
+                ],
+                "pricing": {
+                    "double": 9500,
+                    "triple": 9200,
+                    "quad": 8900,
+                    "quint": 8500
+                }
             }
-        ],
-        "itinerary": []
+        ]
     }
 ]

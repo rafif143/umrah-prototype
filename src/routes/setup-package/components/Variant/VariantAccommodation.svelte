@@ -186,25 +186,27 @@
 					</div>
 					<div class="grid grid-cols-3 gap-4">
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700"
+							<label for="acc-city" class="text-[13px] font-medium text-gray-700"
 								>City <span class="text-red-500">*</span></label
 							>
 							<select
+								id="acc-city"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.accommodationForm.city}
 								onchange={() => state.onAccommodationCityChange()}
 							>
 								<option value="">Select city</option>
-								<option value="Makkah">Makkah</option>
-								<option value="Madinah">Madinah</option>
-								<option value="Jeddah">Jeddah</option>
+								{#each state.cities as city}
+									<option value={city}>{city}</option>
+								{/each}
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700"
+							<label for="acc-hotel" class="text-[13px] font-medium text-gray-700"
 								>Hotel <span class="text-red-500">*</span></label
 							>
 							<select
+								id="acc-hotel"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								value={state.accommodationForm.hotelId}
 								onchange={(e) => state.selectHotelForAccommodation(e.target.value)}
@@ -219,16 +221,18 @@
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700"
+							<label for="acc-supplier" class="text-[13px] font-medium text-gray-700"
 								>Supplier <span class="text-red-500">*</span></label
 							>
 							<select
+								id="acc-supplier"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.accommodationForm.supplier}
 							>
 								<option value="">Select supplier</option>
-								<option value="Al Safwah Royale Orchid">Al Safwah Royale Orchid</option>
-								<option value="Medina Oberoi">Medina Oberoi</option>
+								{#each state.hotelSuppliers as supplier}
+									<option value={supplier}>{supplier}</option>
+								{/each}
 							</select>
 						</div>
 					</div>
@@ -302,16 +306,17 @@
 						<div class="flex flex-col gap-1.5">
 							<MultiSelect
 								label="Room Type *"
-								options={['DBL', 'TWN', 'TRP', 'QUD']}
+								options={state.roomTypes}
 								selected={state.accommodationForm.roomType}
 								onchange={(val) => (state.accommodationForm.roomType = val)}
 							/>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700"
+							<label for="acc-checkin" class="text-[13px] font-medium text-gray-700"
 								>Check-in <span class="text-red-500">*</span></label
 							>
 							<input
+								id="acc-checkin"
 								type="date"
 								class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.accommodationForm.checkIn}
@@ -319,10 +324,11 @@
 							/>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700"
+							<label for="acc-checkout" class="text-[13px] font-medium text-gray-700"
 								>Check-out <span class="text-red-500">*</span></label
 							>
 							<input
+								id="acc-checkout"
 								type="date"
 								class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.accommodationForm.checkOut}
@@ -330,8 +336,9 @@
 							/>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">Nights</label>
+							<label for="acc-nights" class="text-[13px] font-medium text-gray-700">Nights</label>
 							<input
+								id="acc-nights"
 								type="number"
 								class="rounded-lg border border-gray-300 bg-gray-100 px-3.5 py-2.5 text-sm outline-none"
 								bind:value={state.accommodationForm.nights}
@@ -353,21 +360,24 @@
 					</div>
 					<div class="grid grid-cols-4 gap-4">
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">Basis</label>
+							<label for="acc-basis" class="text-[13px] font-medium text-gray-700">Basis</label>
 							<select
+								id="acc-basis"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.accommodationForm.basis}
 							>
 								<option value="">Select basis</option>
-								<option value="Room Only">Room Only</option>
-								<option value="Bed & Breakfast">Bed & Breakfast</option>
-								<option value="Half Board">Half Board</option>
-								<option value="Full Board">Full Board</option>
+								{#each state.basisTypes as basis}
+									<option value={basis}>{basis}</option>
+								{/each}
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">Rate Code</label>
+							<label for="acc-ratecode" class="text-[13px] font-medium text-gray-700"
+								>Rate Code</label
+							>
 							<select
+								id="acc-ratecode"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.accommodationForm.rateCode}
 							>
@@ -377,27 +387,31 @@
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">Package Meals</label>
+							<label for="acc-meals" class="text-[13px] font-medium text-gray-700"
+								>Package Meals</label
+							>
 							<select
+								id="acc-meals"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.accommodationForm.packageMeals}
 							>
 								<option value="">Select meals</option>
-								<option value="Breakfast Asian">Breakfast Asian</option>
-								<option value="Lunch Asian">Lunch Asian</option>
-								<option value="Dinner Asian">Dinner Asian</option>
+								{#each state.foodTypes as ft}
+									<option value={ft}>{ft}</option>
+								{/each}
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">Hotel View</label>
+							<label for="acc-view" class="text-[13px] font-medium text-gray-700">Hotel View</label>
 							<select
+								id="acc-view"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.accommodationForm.hotelView}
 							>
 								<option value="">Select view</option>
-								<option value="Haram View">Haram View</option>
-								<option value="City View">City View</option>
-								<option value="Sea View">Sea View</option>
+								{#each state.hotelViews as view}
+									<option value={view}>{view}</option>
+								{/each}
 							</select>
 						</div>
 					</div>
@@ -415,8 +429,9 @@
 					</div>
 					<div class="grid grid-cols-4 gap-4">
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">VAT</label>
+							<label for="acc-vat" class="text-[13px] font-medium text-gray-700">VAT</label>
 							<select
+								id="acc-vat"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.accommodationForm.vat}
 							>
@@ -425,8 +440,11 @@
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">Municipality Tax</label>
+							<label for="acc-municipality-tax-select" class="text-[13px] font-medium text-gray-700"
+								>Municipality Tax</label
+							>
 							<select
+								id="acc-municipality-tax-select"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.accommodationForm.municipalityTax}
 							>
@@ -435,8 +453,11 @@
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">VAT %</label>
+							<label for="acc-vat-percent" class="text-[13px] font-medium text-gray-700"
+								>VAT %</label
+							>
 							<input
+								id="acc-vat-percent"
 								type="number"
 								placeholder="15"
 								class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -445,8 +466,11 @@
 							/>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">Municipality Tax %</label>
+							<label for="acc-municipality-tax" class="text-[13px] font-medium text-gray-700"
+								>Municipality Tax %</label
+							>
 							<input
+								id="acc-municipality-tax"
 								type="number"
 								placeholder="5"
 								class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -473,8 +497,9 @@
 							<h4 class="mb-3 text-sm font-semibold text-gray-900">Adult Pricing</h4>
 							<div class="grid grid-cols-4 gap-3">
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Cost</label>
+									<label for="acc-adult-cost" class="text-xs font-medium text-gray-600">Cost</label>
 									<input
+										id="acc-adult-cost"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -483,8 +508,9 @@
 									/>
 								</div>
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Sell</label>
+									<label for="acc-adult-sell" class="text-xs font-medium text-gray-600">Sell</label>
 									<input
+										id="acc-adult-sell"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -493,8 +519,9 @@
 									/>
 								</div>
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Ors</label>
+									<label for="acc-adult-ors" class="text-xs font-medium text-gray-600">Ors</label>
 									<input
+										id="acc-adult-ors"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -518,8 +545,9 @@
 							<h4 class="mb-3 text-sm font-semibold text-gray-900">Child Pricing</h4>
 							<div class="grid grid-cols-4 gap-3">
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Cost</label>
+									<label for="acc-child-cost" class="text-xs font-medium text-gray-600">Cost</label>
 									<input
+										id="acc-child-cost"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -528,8 +556,9 @@
 									/>
 								</div>
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Sell</label>
+									<label for="acc-child-sell" class="text-xs font-medium text-gray-600">Sell</label>
 									<input
+										id="acc-child-sell"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -538,8 +567,9 @@
 									/>
 								</div>
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Ors</label>
+									<label for="acc-child-ors" class="text-xs font-medium text-gray-600">Ors</label>
 									<input
+										id="acc-child-ors"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"

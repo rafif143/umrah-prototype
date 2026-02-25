@@ -130,46 +130,48 @@
 					</div>
 					<div class="grid grid-cols-3 gap-4">
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700"
+							<label for="meal-supplier" class="text-[13px] font-medium text-gray-700"
 								>Supplier <span class="text-red-500">*</span></label
 							>
 							<select
+								id="meal-supplier"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.mealsForm.supplier}
 							>
 								<option value="">Select supplier</option>
-								<option value="Ibtisam Catering">Ibtisam Catering</option>
-								<option value="Dallah Groups">Dallah Groups</option>
-								<option value="Al Baik Catering">Al Baik Catering</option>
+								{#each state.mealSuppliers as supplier}
+									<option value={supplier}>{supplier}</option>
+								{/each}
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700"
+							<label for="meal-hotel" class="text-[13px] font-medium text-gray-700"
 								>Hotel <span class="text-red-500">*</span></label
 							>
 							<select
+								id="meal-hotel"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.mealsForm.hotel}
 							>
 								<option value="">Select hotel</option>
-								<option value="Abdul Aziz Husni">Abdul Aziz Husni</option>
-								<option value="Dallah Taibah">Dallah Taibah</option>
-								<option value="Al Safwah Royale Orchid">Al Safwah Royale Orchid</option>
+								{#each hotelStorageStore.hotels.map((h) => h.hotelName) as hotel}
+									<option value={hotel}>{hotel}</option>
+								{/each}
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700"
+							<label for="meal-food-type" class="text-[13px] font-medium text-gray-700"
 								>Food Type <span class="text-red-500">*</span></label
 							>
 							<select
+								id="meal-food-type"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.mealsForm.foodType}
 							>
 								<option value="">Select food type</option>
-								<option value="FullBoard">FullBoard</option>
-								<option value="Lunch">Lunch</option>
-								<option value="Dinner">Dinner</option>
-								<option value="Breakfast">Breakfast</option>
+								{#each state.foodTypes as ft}
+									<option value={ft}>{ft}</option>
+								{/each}
 							</select>
 						</div>
 					</div>
@@ -187,28 +189,31 @@
 					</div>
 					<div class="grid grid-cols-3 gap-4">
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700"
+							<label for="meal-from-date" class="text-[13px] font-medium text-gray-700"
 								>From Date <span class="text-red-500">*</span></label
 							>
 							<input
+								id="meal-from-date"
 								type="date"
 								class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.mealsForm.fromDate}
 							/>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700"
+							<label for="meal-to-date" class="text-[13px] font-medium text-gray-700"
 								>To Date <span class="text-red-500">*</span></label
 							>
 							<input
+								id="meal-to-date"
 								type="date"
 								class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.mealsForm.toDate}
 							/>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">Nights</label>
+							<label for="meal-nights" class="text-sm font-medium text-gray-700">Nights</label>
 							<input
+								id="meal-nights"
 								type="number"
 								placeholder="0"
 								class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -230,8 +235,10 @@
 					</div>
 					<div class="grid grid-cols-3 gap-4">
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">Rate Code</label>
+							<label for="meal-rate-code" class="text-sm font-medium text-gray-700">Rate Code</label
+							>
 							<select
+								id="meal-rate-code"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.mealsForm.rateCode}
 							>
@@ -241,8 +248,9 @@
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">VAT</label>
+							<label for="meal-vat" class="text-sm font-medium text-gray-700">VAT</label>
 							<select
+								id="meal-vat"
 								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 								bind:value={state.mealsForm.vat}
 							>
@@ -252,8 +260,11 @@
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
-							<label class="text-[13px] font-medium text-gray-700">VAT %</label>
+							<label for="meal-vat-percent" class="text-[13px] font-medium text-gray-700"
+								>VAT %</label
+							>
 							<input
+								id="meal-vat-percent"
 								type="number"
 								placeholder="15"
 								class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -280,8 +291,10 @@
 							<h4 class="mb-3 text-sm font-semibold text-gray-900">Adult Pricing</h4>
 							<div class="grid grid-cols-4 gap-3">
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Cost</label>
+									<label for="meal-adult-cost" class="text-xs font-medium text-gray-600">Cost</label
+									>
 									<input
+										id="meal-adult-cost"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -290,8 +303,10 @@
 									/>
 								</div>
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Sell</label>
+									<label for="meal-adult-sell" class="text-xs font-medium text-gray-600">Sell</label
+									>
 									<input
+										id="meal-adult-sell"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -300,8 +315,9 @@
 									/>
 								</div>
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Ors</label>
+									<label for="meal-adult-ors" class="text-xs font-medium text-gray-600">Ors</label>
 									<input
+										id="meal-adult-ors"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -325,8 +341,10 @@
 							<h4 class="mb-3 text-sm font-semibold text-gray-900">Child Pricing</h4>
 							<div class="grid grid-cols-4 gap-3">
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Cost</label>
+									<label for="meal-child-cost" class="text-xs font-medium text-gray-600">Cost</label
+									>
 									<input
+										id="meal-child-cost"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -335,8 +353,10 @@
 									/>
 								</div>
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Sell</label>
+									<label for="meal-child-sell" class="text-xs font-medium text-gray-600">Sell</label
+									>
 									<input
+										id="meal-child-sell"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
@@ -345,8 +365,9 @@
 									/>
 								</div>
 								<div class="flex flex-col gap-1">
-									<label class="text-xs font-medium text-gray-600">Ors</label>
+									<label for="meal-child-ors" class="text-xs font-medium text-gray-600">Ors</label>
 									<input
+										id="meal-child-ors"
 										type="number"
 										placeholder="0"
 										class="rounded border border-gray-200 px-2 py-1.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"

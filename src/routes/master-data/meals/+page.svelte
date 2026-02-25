@@ -15,31 +15,42 @@
 	} from 'lucide-svelte';
 	import { fade, slide, fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-
-	import { mealStore } from '$lib/stores/mealStore.svelte.js';
+	import { supabase } from '$lib/supabase';
 
 	// --- State ---
 	let activeTab = $state('food-type'); // 'food-type' | 'basis'
 	let showForm = $state(false);
 	let isEditing = $state(false);
 
-	// --- Food Types Data ---
-	let foodTypes = $derived((mealStore.foodTypes || []).filter((f) => f));
+	// --- Data ---
+	let foodTypes = $state([]);
+	let bases = $state([]);
+	let suppliers = $state([]);
+	let hotels = $state([]);
 
-	// --- Basis Data ---
-	let bases = $derived((mealStore.bases || []).filter((b) => b));
+	async function fetchData() {
+		const [foodRes, basisRes, joinRes] = await Promise.all([
+			supabase.from('master_meal_food_types').select('*').order('name'),
+			supabase.from('master_meal_basis').select('*').order('name'),
+			supabase.from('master_meal_basis_foods').select('*')
+		]);
 
-	let suppliers = $state([
-		{ id: 1, name: 'Catering Al-Woqood' },
-		{ id: 2, name: 'Makkah Kitchen' },
-		{ id: 3, name: 'Madinah Meals' }
-	]);
+		if (foodRes.error) console.error('Error fetching foods:', foodRes.error);
+		else foodTypes = foodRes.data;
 
-	let hotels = $state([
-		{ id: 1, name: 'Hilton Makkah Convention' },
-		{ id: 2, name: 'Anjum Hotel Makkah' },
-		{ id: 3, name: 'Pullman ZamZam Madinah' }
-	]);
+		if (basisRes.error) console.error('Error fetching basis:', basisRes.error);
+		else {
+			const joinData = joinRes.data || [];
+			bases = basisRes.data.map((b) => ({
+				...b,
+				foodTypeIds: joinData.filter((j) => j.basis_id === b.id).map((j) => j.food_type_id)
+			}));
+		}
+	}
+
+	$effect(() => {
+		fetchData();
+	});
 
 	// --- Forms State ---
 	let foodTypeForm = $state({
@@ -91,41 +102,68 @@
 		showForm = true;
 	}
 
-	function handleSave() {
+	async function handleSave() {
 		if (activeTab === 'food-type') {
+			const payload = {
+				name: foodTypeForm.name,
+				description: foodTypeForm.description
+			};
 			if (isEditing) {
-				mealStore.updateFoodType(foodTypeForm.id, { ...foodTypeForm });
+				const { error } = await supabase
+					.from('master_meal_food_types')
+					.update(payload)
+					.eq('id', foodTypeForm.id);
+				if (error) alert(error.message);
 			} else {
-				mealStore.addFoodType({
-					id: Date.now(),
-					name: foodTypeForm.name,
-					description: foodTypeForm.description
-				});
+				const { error } = await supabase.from('master_meal_food_types').insert([payload]);
+				if (error) alert(error.message);
 			}
 		} else if (activeTab === 'basis') {
+			const payload = { name: basisForm.name };
+			let basisId = basisForm.id;
+
 			if (isEditing) {
-				mealStore.updateBasis(basisForm.id, {
-					...basisForm,
-					foodTypeIds: [...basisForm.foodTypeIds]
-				});
+				const { error } = await supabase
+					.from('master_meal_basis')
+					.update(payload)
+					.eq('id', basisId);
+				if (error) {
+					alert(error.message);
+					return;
+				}
+				// Sync join table
+				await supabase.from('master_meal_basis_foods').delete().eq('basis_id', basisId);
 			} else {
-				mealStore.addBasis({
-					id: Date.now(),
-					name: basisForm.name,
-					foodTypeIds: [...basisForm.foodTypeIds]
-				});
+				const { data, error } = await supabase.from('master_meal_basis').insert([payload]).select();
+				if (error) {
+					alert(error.message);
+					return;
+				}
+				basisId = data[0].id;
+			}
+
+			// Add join table entries
+			if (basisForm.foodTypeIds.length > 0) {
+				const joinPayload = basisForm.foodTypeIds.map((ftId) => ({
+					basis_id: basisId,
+					food_type_id: ftId
+				}));
+				const { error: jError } = await supabase
+					.from('master_meal_basis_foods')
+					.insert(joinPayload);
+				if (jError) alert(jError.message);
 			}
 		}
 		resetForms();
+		fetchData();
 	}
 
-	function handleDelete(id) {
+	async function handleDelete(id) {
 		if (confirm('Are you sure you want to delete this item?')) {
-			if (activeTab === 'food-type') {
-				mealStore.deleteFoodType(id);
-			} else {
-				mealStore.deleteBasis(id);
-			}
+			const table = activeTab === 'food-type' ? 'master_meal_food_types' : 'master_meal_basis';
+			const { error } = await supabase.from(table).delete().eq('id', id);
+			if (error) alert(error.message);
+			else fetchData();
 		}
 	}
 

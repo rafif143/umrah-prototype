@@ -1,6 +1,9 @@
 <script>
 	import VariantAccommodation from './VariantAccommodation.svelte';
 	import VariantMeal from './VariantMeal.svelte';
+	import VariantTransport from './VariantTransport.svelte';
+	import VariantServices from './VariantServices.svelte';
+	import VariantAdditional from './VariantAdditional.svelte';
 
 	/** @type {{ state: import('../../packageState.svelte.js').PackageState }} */
 	let { state } = $props();
@@ -39,23 +42,11 @@
 		{:else if state.activeVariantTab === 'meal'}
 			<VariantMeal {state} />
 		{:else if state.activeVariantTab === 'transport'}
-			<div
-				class="flex h-40 items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 text-gray-500"
-			>
-				<p>Transport functionality will be here</p>
-			</div>
+			<VariantTransport {state} />
 		{:else if state.activeVariantTab === 'services'}
-			<div
-				class="flex h-40 items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 text-gray-500"
-			>
-				<p>Services functionality will be here</p>
-			</div>
+			<VariantServices {state} />
 		{:else if state.activeVariantTab === 'additional'}
-			<div
-				class="flex h-40 items-center justify-center rounded-xl border border-dashed border-gray-300 bg-gray-50 text-gray-500"
-			>
-				<p>Additional Cost functionality will be here</p>
-			</div>
+			<VariantAdditional {state} />
 		{/if}
 	</div>
 </div>

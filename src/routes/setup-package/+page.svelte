@@ -10,7 +10,12 @@
 	const state = new PackageState();
 
 	onMount(() => {
-		// Load existing data logic here eventually
+		const urlParams = new URLSearchParams(window.location.search);
+		const id = urlParams.get('id');
+		if (id) {
+			state.load(id);
+			state.activeSection = 'packages'; // Go to variants if editing
+		}
 	});
 </script>
 

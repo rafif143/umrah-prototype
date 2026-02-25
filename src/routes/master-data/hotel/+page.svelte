@@ -23,14 +23,79 @@
 	} from 'lucide-svelte';
 	import { fade, slide, fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
-
-	import { hotelStore } from '$lib/stores/hotelStore.svelte.js';
+	import { supabase } from '$lib/supabase';
 
 	// --- Configurable Lists Data ---
-	let roomTypes = $derived(hotelStore.roomTypes);
-	let basisTypes = $derived(hotelStore.basisTypes);
-	let foodTypes = $derived(hotelStore.foodTypes);
-	let hotelViews = $derived(hotelStore.hotelViews);
+	let roomTypes = $state([]);
+	let basisTypes = $state([]);
+	let foodTypes = $state([]);
+	let hotelViews = $state([]);
+	let hotels = $state([]);
+	let showForm = $state(false);
+	let isEditing = $state(false);
+
+	async function fetchData() {
+		const [hRes, rtRes, bRes, ftRes, hvRes, selRtRes, selBRes, selFtRes, selHvRes] =
+			await Promise.all([
+				supabase.from('master_hotels').select('*').order('name'),
+				supabase.from('master_hotel_room_types').select('*').order('name'),
+				supabase.from('master_meal_basis').select('*').order('name'),
+				supabase.from('master_meal_food_types').select('*').order('name'),
+				supabase.from('master_hotel_views').select('*').order('name'),
+				supabase.from('master_hotel_selected_room_types').select('*'),
+				supabase.from('master_hotel_selected_basis').select('*'),
+				supabase.from('master_hotel_selected_food_types').select('*'),
+				supabase.from('master_hotel_selected_views').select('*')
+			]);
+
+		if (rtRes.data) roomTypes = rtRes.data;
+		if (bRes.data) basisTypes = bRes.data;
+		if (ftRes.data) foodTypes = ftRes.data;
+		if (hvRes.data) hotelViews = hvRes.data;
+
+		if (hRes.data) {
+			const selRt = selRtRes.data || [];
+			const selB = selBRes.data || [];
+			const selFt = selFtRes.data || [];
+			const selHv = selHvRes.data || [];
+
+			hotels = hRes.data.map((h) => ({
+				...h,
+				shortName: h.short_name,
+				openingBalance: h.opening_balance,
+				starRating: h.star_rating,
+				isAllotment: h.is_allotment,
+				distanceFromCity: h.distance_from_city,
+				phoneNumber: h.phone_number,
+				cpName: h.cp_name,
+				cpDesignation: h.cp_designation,
+				cpPhone: h.cp_phone,
+				cpMobile: h.cp_mobile,
+				cpEmail: h.cp_email,
+				cpFax: h.cp_fax,
+				roomTypes: selRt
+					.filter((r) => r.hotel_id === h.id)
+					.map((r) => roomTypes.find((rt) => rt.id === r.room_type_id))
+					.filter(Boolean),
+				basis: selB
+					.filter((b) => b.hotel_id === h.id)
+					.map((b) => basisTypes.find((bt) => bt.id === b.basis_id))
+					.filter(Boolean),
+				foodTypes: selFt
+					.filter((f) => f.hotel_id === h.id)
+					.map((f) => foodTypes.find((ft) => ft.id === f.food_type_id))
+					.filter(Boolean),
+				hotelViews: selHv
+					.filter((v) => v.hotel_id === h.id)
+					.map((v) => hotelViews.find((hv) => hv.id === v.view_id))
+					.filter(Boolean)
+			}));
+		}
+	}
+
+	$effect(() => {
+		fetchData();
+	});
 
 	// --- Form State ---
 	let formData = $state({
@@ -105,50 +170,141 @@
 	}
 
 	// Add New Room Type
-	function addRoomType() {
+	async function addRoomType() {
 		if (!newRoomType.name || !newRoomType.capacity) return;
-
-		const newItem = {
-			id: Date.now().toString(),
-			name: newRoomType.name,
-			capacity: parseInt(newRoomType.capacity)
-		};
-
-		hotelStore.addRoomType(newItem);
-		formData.roomTypes = [...formData.roomTypes, newItem]; // Auto select
-		newRoomType = { name: '', capacity: '' }; // Reset
+		const newItem = { name: newRoomType.name, capacity: parseInt(newRoomType.capacity) };
+		const { data, error } = await supabase
+			.from('master_hotel_room_types')
+			.insert([newItem])
+			.select();
+		if (error) alert(error.message);
+		else {
+			fetchData();
+			formData.roomTypes = [...formData.roomTypes, data[0]];
+		}
+		newRoomType = { name: '', capacity: '' };
 	}
 
 	// Add New Food Type
-	function addFoodType() {
+	async function addFoodType() {
 		if (!newFoodType) return;
-
-		const newItem = {
-			id: Date.now().toString(),
-			name: newFoodType
-		};
-
-		hotelStore.addFoodType(newItem);
-		formData.foodTypes = [...formData.foodTypes, newItem]; // Auto select
-		newFoodType = ''; // Reset
+		const newItem = { name: newFoodType };
+		const { data, error } = await supabase
+			.from('master_meal_food_types')
+			.insert([newItem])
+			.select();
+		if (error) alert(error.message);
+		else {
+			fetchData();
+			formData.foodTypes = [...formData.foodTypes, data[0]];
+		}
+		newFoodType = '';
 	}
 
 	// Add New Hotel View
-	function addHotelView() {
+	async function addHotelView() {
 		if (!newHotelView) return;
+		const newItem = { name: newHotelView };
+		const { data, error } = await supabase.from('master_hotel_views').insert([newItem]).select();
+		if (error) alert(error.message);
+		else {
+			fetchData();
+			formData.hotelViews = [...formData.hotelViews, data[0]];
+		}
+		newHotelView = '';
+	}
 
-		const newItem = {
-			id: Date.now().toString(),
-			name: newHotelView
+	async function handleSave() {
+		const payload = {
+			name: formData.name,
+			short_name: formData.shortName,
+			country: formData.country,
+			state: formData.state,
+			city: formData.city,
+			district: formData.district,
+			address: formData.address,
+			distance_from_city: formData.distanceFromCity,
+			email: formData.email,
+			phone_number: formData.phoneNumber,
+			fax: formData.fax,
+			opening_balance: Number(formData.openingBalance) || 0,
+			type: formData.type,
+			star_rating: formData.starRating,
+			is_allotment: formData.isAllotment,
+			cp_name: formData.cpName,
+			cp_designation: formData.cpDesignation,
+			cp_phone: formData.cpPhone,
+			cp_mobile: formData.cpMobile,
+			cp_email: formData.cpEmail,
+			cp_fax: formData.cpFax
 		};
 
-		hotelStore.addHotelView(newItem);
-		formData.hotelViews = [...formData.hotelViews, newItem]; // Auto select
-		newHotelView = ''; // Reset
+		let hotelId = formData.id;
+		if (isEditing) {
+			const { error } = await supabase.from('master_hotels').update(payload).eq('id', hotelId);
+			if (error) {
+				alert(error.message);
+				return;
+			}
+			// Delete existing relations
+			await Promise.all([
+				supabase.from('master_hotel_selected_room_types').delete().eq('hotel_id', hotelId),
+				supabase.from('master_hotel_selected_basis').delete().eq('hotel_id', hotelId),
+				supabase.from('master_hotel_selected_food_types').delete().eq('hotel_id', hotelId),
+				supabase.from('master_hotel_selected_views').delete().eq('hotel_id', hotelId)
+			]);
+		} else {
+			const { data, error } = await supabase.from('master_hotels').insert([payload]).select();
+			if (error) {
+				alert(error.message);
+				return;
+			}
+			hotelId = data[0].id;
+		}
+
+		// Insert relations
+		const relations = [];
+		if (formData.roomTypes.length)
+			relations.push(
+				supabase
+					.from('master_hotel_selected_room_types')
+					.insert(formData.roomTypes.map((rt) => ({ hotel_id: hotelId, room_type_id: rt.id })))
+			);
+		if (formData.basis.length)
+			relations.push(
+				supabase
+					.from('master_hotel_selected_basis')
+					.insert(formData.basis.map((b) => ({ hotel_id: hotelId, basis_id: b.id })))
+			);
+		if (formData.foodTypes.length)
+			relations.push(
+				supabase
+					.from('master_hotel_selected_food_types')
+					.insert(formData.foodTypes.map((f) => ({ hotel_id: hotelId, food_type_id: f.id })))
+			);
+		if (formData.hotelViews.length)
+			relations.push(
+				supabase
+					.from('master_hotel_selected_views')
+					.insert(formData.hotelViews.map((v) => ({ hotel_id: hotelId, view_id: v.id })))
+			);
+
+		await Promise.all(relations);
+		showForm = false;
+		fetchData();
+	}
+
+	async function handleDelete(id) {
+		if (confirm('Are you sure you want to delete this hotel?')) {
+			const { error } = await supabase.from('master_hotels').delete().eq('id', id);
+			if (error) alert(error.message);
+			else fetchData();
+		}
 	}
 
 	// Edit Hotel
 	function loadHotel(hotel) {
+		isEditing = true;
 		formData = {
 			...hotel,
 			roomTypes: hotel.roomTypes || [],
@@ -159,17 +315,41 @@
 		showForm = true;
 	}
 
-	// Hotel List
-	let hotels = $derived((hotelStore.hotels || []).filter((h) => h));
+	function handleAdd() {
+		isEditing = false;
+		formData = {
+			name: '',
+			shortName: '',
+			country: '',
+			state: '',
+			city: '',
+			district: '',
+			roomTypes: [],
+			basis: [],
+			foodTypes: [],
+			hotelViews: [],
+			distanceFromCity: '',
+			email: '',
+			phoneNumber: '',
+			fax: '',
+			openingBalance: '',
+			type: 'credit',
+			address: '',
+			starRating: 0,
+			isAllotment: false,
+			cpName: '',
+			cpDesignation: '',
+			cpPhone: '',
+			cpMobile: '',
+			cpEmail: '',
+			cpFax: ''
+		};
+		showForm = true;
+	}
 
 	// --- Suppliers Data (Mock) ---
-	let suppliers = $state([
-		{ id: 1, name: 'Hotel Provider A' },
-		{ id: 2, name: 'Hotel Provider B' },
-		{ id: 3, name: 'Direct Booking' }
-	]);
+	let suppliers = $state([]);
 
-	let showForm = $state(false);
 	let activeTab = $state('general');
 
 	// Click outside to close dropdowns
@@ -218,6 +398,7 @@
 				</button>
 				<button
 					class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
+					onclick={handleSave}
 				>
 					<Save size={18} />
 					Save Hotel
@@ -842,7 +1023,7 @@
 			</div>
 			<button
 				class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
-				onclick={() => (showForm = true)}
+				onclick={handleAdd}
 			>
 				<Plus size={18} />
 				Add Hotel

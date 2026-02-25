@@ -14,14 +14,56 @@
 	} from 'lucide-svelte';
 	import { fade, slide, fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
+	import { supabase } from '$lib/supabase';
 
 	// Ensure activePage matches the new ID in Sidebar
-	// Sidebar ID is 'operational-cost', so we pass that.
-	// Previously it was likely just matching by route or ID.
 	let activePage = $state('operational-cost');
 
 	// Current active tab
 	let activeTab = $state('category');
+
+	// --- Data ---
+	let categories = $state([]);
+	let costings = $state([]);
+	let suppliers = $state([]);
+	let isEditing = $state(false);
+
+	async function fetchData() {
+		const [catRes, costRes, itemRes, supRes] = await Promise.all([
+			supabase.from('master_op_categories').select('*').order('name'),
+			supabase.from('master_op_costings').select('*').order('name'),
+			supabase.from('master_op_costing_items').select('*'),
+			supabase.from('master_suppliers').select('id, name').order('name')
+		]);
+
+		if (catRes.error) console.error(catRes.error);
+		else categories = catRes.data.map((c) => ({ ...c, vatOption: c.vat_option }));
+
+		if (supRes.data) suppliers = [{ id: 'none', name: "Don't use supplier" }, ...supRes.data];
+
+		if (costRes.data) {
+			const items = itemRes.data || [];
+			costings = costRes.data.map((c) => ({
+				...c,
+				costItems: items
+					.filter((i) => i.costing_id === c.id)
+					.map((i) => ({
+						...i,
+						categoryId: i.category_id,
+						adultCost: i.adult_cost,
+						adultSell: i.adult_sell,
+						childCost: i.child_cost,
+						childSell: i.child_sell,
+						infantCost: i.infant_cost,
+						infantSell: i.infant_sell
+					}))
+			}));
+		}
+	}
+
+	$effect(() => {
+		fetchData();
+	});
 
 	// ===== CATEGORY =====
 	let showCategoryForm = $state(false);
@@ -32,14 +74,6 @@
 	});
 
 	const vatOptions = ['0%', '5%', '10%', '15%', '20%'];
-
-	// Simulated category data
-	let categories = $state([
-		{ id: 1, name: 'Transportation Fee', type: 'local', vatOption: '10%' },
-		{ id: 2, name: 'Guide Services', type: 'local', vatOption: '5%' },
-		{ id: 3, name: 'Visa Processing', type: 'other', vatOption: '0%' },
-		{ id: 4, name: 'Insurance', type: 'other', vatOption: '15%' }
-	]);
 
 	// ===== COSTING =====
 	let showCostingForm = $state(false);
@@ -130,114 +164,112 @@
 		showCostingForm = true;
 	}
 
+	function handleAddCategory() {
+		categoryFormData = {
+			name: '',
+			type: '',
+			vatOption: ''
+		};
+		showCategoryForm = true;
+	}
+
+	function handleAddCosting() {
+		costingFormData = {
+			name: '',
+			costItems: []
+		};
+		showCostingForm = true;
+	}
+
 	// Get category type for item
 	function getCategoryType(categoryId) {
 		if (!categoryId) return null;
-		const cat = categories.find((c) => c.id === parseInt(categoryId));
+		const cat = categories.find((c) => c.id === categoryId);
 		return cat ? cat.type : null;
 	}
 
-	// Simulated suppliers
-	const suppliers = [
-		{ id: 'none', name: "Don't use supplier" },
-		{ id: 1, name: 'Al-Haram Hotels Group' },
-		{ id: 2, name: 'Zamzam Catering Services' },
-		{ id: 3, name: 'Makkah Transport Co.' }
-	];
+	async function handleSaveCategory() {
+		const payload = {
+			name: categoryFormData.name,
+			type: categoryFormData.type,
+			vat_option: categoryFormData.vatOption
+		};
 
-	// Simulated costing data
-	let costings = $state([
-		{
-			id: 1,
-			name: 'Standard Umrah Package Costs',
-			costItems: [
-				{
-					categoryId: 1,
-					categoryName: 'Transportation Fee',
-					categoryType: 'local',
-					supplier: 'Makkah Transport Co.',
-					adultCost: 150,
-					adultSell: 200,
-					childCost: 100,
-					childSell: 150,
-					infantCost: 0,
-					infantSell: 0
-				},
-				{
-					categoryId: 2,
-					categoryName: 'Guide Services',
-					categoryType: 'local',
-					supplier: "Don't use supplier",
-					adultCost: 80,
-					adultSell: 120,
-					childCost: 40,
-					childSell: 60,
-					infantCost: 0,
-					infantSell: 0
-				}
-			]
-		},
-		{
-			id: 2,
-			name: 'Premium Package Costs',
-			costItems: [
-				{
-					categoryId: 3,
-					categoryName: 'Visa Processing',
-					categoryType: 'other',
-					supplier: "Don't use supplier",
-					adultCost: 300,
-					adultSell: 350,
-					childCost: 300,
-					childSell: 350,
-					infantCost: 150,
-					infantSell: 175
-				}
-			]
-		},
-		{
-			id: 3,
-			name: 'Full Service Package',
-			costItems: [
-				{
-					categoryId: 1,
-					categoryName: 'Transportation Fee',
-					categoryType: 'local',
-					supplier: 'Makkah Transport Co.',
-					adultCost: 200,
-					adultSell: 280,
-					childCost: 150,
-					childSell: 200,
-					infantCost: 0,
-					infantSell: 0
-				},
-				{
-					categoryId: 3,
-					categoryName: 'Visa Processing',
-					categoryType: 'other',
-					supplier: "Don't use supplier",
-					adultCost: 350,
-					adultSell: 400,
-					childCost: 350,
-					childSell: 400,
-					infantCost: 175,
-					infantSell: 200
-				},
-				{
-					categoryId: 4,
-					categoryName: 'Insurance',
-					categoryType: 'other',
-					supplier: 'Al-Haram Hotels Group',
-					adultCost: 50,
-					adultSell: 80,
-					childCost: 50,
-					childSell: 80,
-					infantCost: 50,
-					infantSell: 80
-				}
-			]
+		if (categoryFormData.id) {
+			const { error } = await supabase
+				.from('master_op_categories')
+				.update(payload)
+				.eq('id', categoryFormData.id);
+			if (error) alert(error.message);
+		} else {
+			const { error } = await supabase.from('master_op_categories').insert([payload]);
+			if (error) alert(error.message);
 		}
-	]);
+		showCategoryForm = false;
+		fetchData();
+	}
+
+	async function deleteCategory(id) {
+		if (confirm('Are you sure?')) {
+			const { error } = await supabase.from('master_op_categories').delete().eq('id', id);
+			if (error) alert(error.message);
+			else fetchData();
+		}
+	}
+
+	async function handleSaveCosting() {
+		const payload = { name: costingFormData.name };
+		let templateId = costingFormData.id;
+
+		if (templateId) {
+			const { error } = await supabase
+				.from('master_op_costings')
+				.update(payload)
+				.eq('id', templateId);
+			if (error) {
+				alert(error.message);
+				return;
+			}
+			await supabase.from('master_op_costing_items').delete().eq('costing_id', templateId);
+		} else {
+			const { data, error } = await supabase.from('master_op_costings').insert([payload]).select();
+			if (error) {
+				alert(error.message);
+				return;
+			}
+			templateId = data[0].id;
+		}
+
+		if (costingFormData.costItems.length > 0) {
+			const itemsPayload = costingFormData.costItems.map((i) => ({
+				costing_id: templateId,
+				category_id: i.categoryId,
+				supplier: i.supplier_name || i.supplier || '',
+				adult_cost: Number(i.adultCost),
+				adult_sell: Number(i.adultSell),
+				child_cost: Number(i.childCost),
+				child_sell: Number(i.childSell),
+				infant_cost: Number(i.infantCost),
+				infant_sell: Number(i.infantSell)
+			}));
+			const { error } = await supabase.from('master_op_costing_items').insert(itemsPayload);
+			if (error) alert(error.message);
+		}
+
+		showCostingForm = false;
+		fetchData();
+	}
+
+	async function deleteCosting(id) {
+		if (confirm('Are you sure?')) {
+			const { error } = await supabase
+				.from('master_operational_cost_templates')
+				.delete()
+				.eq('id', id);
+			if (error) alert(error.message);
+			else fetchData();
+		}
+	}
 </script>
 
 <svelte:head>
@@ -258,9 +290,9 @@
 			class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
 			onclick={() => {
 				if (activeTab === 'category') {
-					showCategoryForm = true;
+					handleAddCategory();
 				} else {
-					showCostingForm = true;
+					handleAddCosting();
 				}
 			}}
 		>
@@ -350,9 +382,12 @@
 												class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
 												onclick={() => editCategory(category)}><Edit size={16} /></button
 											>
-											<button class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
-												><Trash2 size={16} /></button
+											<button
+												class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
+												onclick={() => deleteCategory(category.id)}
 											>
+												<Trash2 size={16} />
+											</button>
 										</div>
 									</td>
 								</tr>
@@ -374,7 +409,9 @@
 							transition:slide={{ axis: 'y', duration: 300 }}
 						>
 							<div class="flex items-center justify-between border-b border-gray-200 px-6 py-5">
-								<h3 class="text-lg font-semibold text-gray-900">Add New Category</h3>
+								<h3 class="text-lg font-semibold text-gray-900">
+									{isEditing ? 'Edit Category' : 'Add New Category'}
+								</h3>
 								<button
 									class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-900"
 									onclick={() => (showCategoryForm = false)}
@@ -434,9 +471,10 @@
 								</button>
 								<button
 									class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#7a1c78]"
+									onclick={handleSaveCategory}
 								>
 									<Save size={18} />
-									Save Category
+									{isEditing ? 'Update Category' : 'Save Category'}
 								</button>
 							</div>
 						</div>
@@ -480,9 +518,12 @@
 												class="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
 												onclick={() => editCosting(costing)}><Edit size={16} /></button
 											>
-											<button class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
-												><Trash2 size={16} /></button
+											<button
+												class="rounded p-1 text-red-400 hover:bg-red-50 hover:text-red-600"
+												onclick={() => deleteCosting(costing.id)}
 											>
+												<Trash2 size={16} />
+											</button>
 										</div>
 									</td>
 								</tr>
@@ -506,8 +547,12 @@
 								class="sticky top-0 z-10 flex items-center justify-between rounded-t-2xl border-b border-gray-200 bg-white px-6 py-5"
 							>
 								<div>
-									<h2 class="text-lg font-semibold text-gray-900">Add New Costing</h2>
-									<p class="text-[13px] text-gray-500">Fill in costing information</p>
+									<h2 class="text-lg font-semibold text-gray-900">
+										{isEditing ? 'Edit Costing' : 'Add New Costing'}
+									</h2>
+									<p class="text-[13px] text-gray-500">
+										{isEditing ? 'Update costing information' : 'Fill in costing information'}
+									</p>
 								</div>
 								<button
 									class="flex h-8 w-8 items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-900"
@@ -784,9 +829,10 @@
 								</button>
 								<button
 									class="flex items-center gap-2 rounded-lg bg-[#972395] px-5 py-2.5 text-sm font-medium text-white hover:bg-[#7a1c78]"
+									onclick={handleSaveCosting}
 								>
 									<Save size={18} />
-									Save Costing
+									{isEditing ? 'Update Costing' : 'Save Costing'}
 								</button>
 							</div>
 						</div>

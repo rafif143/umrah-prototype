@@ -10,14 +10,44 @@
 		ArrowLeft,
 		Save,
 		MapPin,
-		Package,
-		Info
+		Package
 	} from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
 	import Sidebar from '$lib/components/Sidebar.svelte';
+	import { supabase } from '$lib/supabase';
 
 	// Supplying item types
 	const supplyingItemTypes = ['Hotel', 'Food', 'Service', 'Transport'];
+
+	// Suppliers state
+	let suppliers = $state([]);
+
+	// Fetch data
+	async function fetchSuppliers() {
+		const { data, error } = await supabase
+			.from('master_suppliers')
+			.select('*')
+			.order('name', { ascending: true });
+
+		if (error) {
+			console.error('Error fetching suppliers:', error);
+		} else {
+			// Map snake_case to camelCase if needed, or just use as is if we adjust UI
+			suppliers = data.map((item) => ({
+				...item,
+				openingBalance: item.opening_balance,
+				isAgent: item.is_agent,
+				isSupplier: item.is_supplier,
+				agentType: item.agent_type,
+				supplyingItems: item.supplying_items || []
+			}));
+		}
+	}
+
+	// Fetch on mount
+	$effect(() => {
+		fetchSuppliers();
+	});
 
 	// Form state
 	let formData = $state({
@@ -39,107 +69,15 @@
 		supplyingItems: []
 	});
 
-	// Add supplying item
-	function addSupplyingItem() {
-		formData.supplyingItems = [...formData.supplyingItems, { itemType: '', itemName: '' }];
-	}
-
-	// Remove supplying item
-	function removeSupplyingItem(index) {
-		formData.supplyingItems = formData.supplyingItems.filter((_, i) => i !== index);
-	}
-
-	// Simulated supplier data
-	let suppliers = $state([
-		{
-			id: 1,
-			name: 'Al-Haram Hotels Group',
-			email: 'contact@alharamhotels.com',
-			phone: '+966 12 345 6789',
-			fax: '+966 12 345 6790',
-			type: 'Supplier',
-			openingBalance: 0,
-			country: 'Saudi Arabia',
-			state: 'Makkah Region',
-			city: 'Makkah',
-			district: 'Ajyad',
-			address: 'Ajyad Street, Near Haram',
-			isAgent: false,
-			isSupplier: true,
-			agentType: '',
-			status: 'Active',
-			supplyingItems: [
-				{ itemType: 'hotel', itemName: 'Pullman Zamzam Makkah' },
-				{ itemType: 'hotel', itemName: 'Swissotel Makkah' }
-			]
-		},
-		{
-			id: 2,
-			name: 'Zamzam Catering Services',
-			email: 'info@zamzamcatering.com',
-			phone: '+966 55 123 4567',
-			fax: '',
-			type: 'Agent Supplier',
-			openingBalance: 1500,
-			country: 'Saudi Arabia',
-			state: 'Makkah Region',
-			city: 'Makkah',
-			district: 'Al Aziziyah',
-			address: 'King Abdul Aziz Road, Al Aziziyah District',
-			isAgent: true,
-			isSupplier: true,
-			agentType: 'sub-agent',
-			status: 'Active',
-			supplyingItems: [
-				{ itemType: 'food', itemName: 'Full Board Catering' },
-				{ itemType: 'food', itemName: 'Snack Box Premium' }
-			]
-		},
-		{
-			id: 3,
-			name: 'VIP Transport Co.',
-			email: 'bookings@viptransport.sa',
-			phone: '+966 50 987 6543',
-			fax: '',
-			type: 'Supplier',
-			openingBalance: 5000,
-			country: 'Saudi Arabia',
-			state: 'Makkah Region',
-			city: 'Jeddah',
-			district: 'Al Hamra',
-			address: 'Palestine Street, Al Hamra District',
-			isAgent: false,
-			isSupplier: true,
-			agentType: '',
-			status: 'Active',
-			supplyingItems: [
-				{ itemType: 'transport', itemName: 'GMC Yukon 2024' },
-				{ itemType: 'transport', itemName: 'Toyota Coaster' }
-			]
-		},
-		{
-			id: 4,
-			name: 'Madinah Local Guides',
-			email: 'tours@madinahguides.com',
-			phone: '+966 54 555 1212',
-			fax: '',
-			type: 'Agent Supplier',
-			openingBalance: 0,
-			country: 'Saudi Arabia',
-			state: 'Madinah Region',
-			city: 'Madinah',
-			district: 'Al Haram',
-			address: 'King Fahd Road, Near Gate 25',
-			isAgent: true,
-			isSupplier: true,
-			agentType: 'travel-agent',
-			status: 'Nonactive',
-			supplyingItems: [
-				{ itemType: 'service', itemName: 'City Tour Guide' },
-				{ itemType: 'service', itemName: 'Ziarah Coordination' }
-			]
+	// Toggle supplying item type
+	function toggleSupplyingItem(type) {
+		const lower = type.toLowerCase();
+		if (formData.supplyingItems.includes(lower)) {
+			formData.supplyingItems = formData.supplyingItems.filter((t) => t !== lower);
+		} else {
+			formData.supplyingItems = [...formData.supplyingItems, lower];
 		}
-	]);
+	}
 
 	let showForm = $state(false);
 	let activeTab = $state('basic');
@@ -199,18 +137,59 @@
 		showForm = true;
 	}
 
-	function handleSave() {
+	async function handleSave() {
+		const payload = {
+			name: formData.name,
+			email: formData.email,
+			phone: formData.phone,
+			fax: formData.fax,
+			type: formData.type,
+			opening_balance: Number(formData.openingBalance) || 0,
+			country: formData.country,
+			state: formData.state,
+			city: formData.city,
+			district: formData.district,
+			address: formData.address,
+			is_agent: formData.isAgent,
+			is_supplier: formData.isSupplier,
+			agent_type: formData.agentType,
+			status: formData.status,
+			supplying_items: formData.supplyingItems
+		};
+
 		if (isEditing) {
-			const index = suppliers.findIndex((s) => s.id === formData.id);
-			if (index !== -1) suppliers[index] = { ...formData };
+			const { error } = await supabase
+				.from('master_suppliers')
+				.update(payload)
+				.eq('id', formData.id);
+
+			if (error) {
+				alert('Error updating supplier: ' + error.message);
+				return;
+			}
 		} else {
-			suppliers.push({
-				...formData,
-				id: Date.now(),
-				status: 'Active'
-			});
+			const { error } = await supabase.from('master_suppliers').insert([payload]);
+
+			if (error) {
+				alert('Error adding supplier: ' + error.message);
+				return;
+			}
 		}
+
 		resetForm();
+		fetchSuppliers();
+	}
+
+	async function handleDelete(id) {
+		if (confirm('Are you sure you want to delete this agent/supplier?')) {
+			const { error } = await supabase.from('master_suppliers').delete().eq('id', id);
+
+			if (error) {
+				alert('Error deleting supplier: ' + error.message);
+			} else {
+				fetchSuppliers();
+			}
+		}
 	}
 </script>
 
@@ -660,68 +639,45 @@
 					{/if}
 
 					{#if activeTab === 'items'}
-						<div class="flex flex-col gap-4" in:fade={{ duration: 150 }}>
-							<div class="flex items-center justify-between">
-								<p class="text-sm text-gray-500">Define what items this supplier provides</p>
-								<button
-									class="flex items-center gap-1.5 rounded-lg border border-dashed border-[#972395] px-3.5 py-2 text-[13px] font-medium text-[#972395] transition-colors hover:bg-[#972395]/5"
-									onclick={addSupplyingItem}
-								>
-									<Plus size={16} />
-									Add Item
-								</button>
-							</div>
+						<div class="flex flex-col gap-5" in:fade={{ duration: 150 }}>
+							<p class="text-sm text-gray-500">Select the item types this supplier provides</p>
 
-							{#if formData.supplyingItems.length === 0}
-								<div
-									class="flex flex-col items-center justify-center rounded-lg border border-dashed border-gray-200 bg-gray-50 py-12 text-center"
-								>
-									<Package size={32} class="mb-2 text-gray-300" />
-									<p class="text-sm font-medium text-gray-900">No items added</p>
-									<p class="text-xs text-gray-500">
-										Click "Add Item" to start adding supplying items.
-									</p>
-								</div>
-							{:else}
-								<div class="flex flex-col gap-3">
-									{#each formData.supplyingItems as item, index}
-										<div
-											class="flex items-end gap-3 rounded-lg border border-gray-200 bg-gray-50 p-4"
-											transition:slide={{ duration: 200 }}
+							<div class="rounded-lg border border-gray-200 bg-gray-50 p-5">
+								<p class="mb-3 text-[13px] font-medium text-gray-700">
+									Item Types <span class="text-red-500">*</span>
+								</p>
+								<div class="flex flex-wrap gap-2.5">
+									{#each supplyingItemTypes as type}
+										{@const isSelected = formData.supplyingItems.includes(type.toLowerCase())}
+										<button
+											class="flex items-center gap-2 rounded-full border px-4 py-2.5 text-sm font-medium transition-all {isSelected
+												? 'border-[#972395] bg-[#972395] text-white shadow-md shadow-[#972395]/25'
+												: 'border-gray-300 bg-white text-gray-700 hover:border-[#972395]/50 hover:text-[#972395]'}"
+											onclick={() => toggleSupplyingItem(type)}
 										>
-											<div class="grid flex-1 grid-cols-[1fr_2fr] gap-4">
-												<div class="flex flex-col gap-1.5">
-													<label class="text-[13px] font-medium text-gray-700">Item Type</label>
-													<select
-														class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-														bind:value={item.itemType}
-													>
-														<option value="">Select item type</option>
-														{#each supplyingItemTypes as type}
-															<option value={type.toLowerCase()}>{type}</option>
-														{/each}
-													</select>
-												</div>
-												<div class="flex flex-col gap-1.5">
-													<label class="text-[13px] font-medium text-gray-700">Item Name</label>
-													<input
-														type="text"
-														placeholder="Enter item name"
-														class="rounded-lg border border-gray-300 px-3.5 py-2.5 text-sm transition-shadow outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
-														bind:value={item.itemName}
-													/>
-												</div>
-											</div>
-											<button
-												class="mb-1.5 flex h-9 w-9 items-center justify-center rounded-lg border border-red-100 bg-red-50 text-red-500 transition-colors hover:border-red-500 hover:bg-red-50"
-												onclick={() => removeSupplyingItem(index)}
-											>
-												<X size={18} />
-											</button>
-										</div>
+											{#if isSelected}
+												<svg
+													class="h-4 w-4"
+													fill="none"
+													viewBox="0 0 24 24"
+													stroke="currentColor"
+													stroke-width="2.5"
+												>
+													<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+												</svg>
+											{/if}
+											{type}
+										</button>
 									{/each}
 								</div>
-							{/if}
+
+								{#if formData.supplyingItems.length > 0}
+									<p class="mt-4 text-xs text-gray-500">
+										<span class="font-medium text-gray-700">{formData.supplyingItems.length}</span>
+										item type{formData.supplyingItems.length > 1 ? 's' : ''} selected
+									</p>
+								{/if}
+							</div>
 						</div>
 					{/if}
 				</div>

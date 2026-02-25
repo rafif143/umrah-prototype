@@ -71,6 +71,13 @@
 		<div class="h-2 w-full rounded-full bg-gray-100">
 			<div class="h-2 rounded-full bg-[#972395]" style="width: {progressPercent}%"></div>
 		</div>
-		<p class="mt-2 text-xs text-gray-500">Step {currentStepIndex} of {steps.length}</p>
+		<p class="mt-2 text-center text-xs text-gray-500">Step {currentStepIndex} of {steps.length}</p>
+
+		<button
+			onclick={() => state.save()}
+			class="mt-6 w-full rounded-lg bg-[#972395] py-3 text-sm font-bold text-white shadow-lg transition-all hover:bg-[#7a1c78] hover:shadow-xl active:scale-95"
+		>
+			Save All & Exit
+		</button>
 	</div>
 </aside>

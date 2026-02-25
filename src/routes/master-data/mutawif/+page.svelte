@@ -1,26 +1,30 @@
 <script>
 	import { Plus, Search, Filter, Edit, Trash2, X, Save } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
+	import { supabase } from '$lib/supabase';
 
 	// --- State ---
+	let trips = $state([]);
+
+	async function fetchTrips() {
+		const { data, error } = await supabase
+			.from('master_mutawif_trips')
+			.select('*')
+			.order('name', { ascending: true });
+
+		if (error) {
+			console.error('Error fetching trips:', error);
+		} else {
+			trips = data;
+		}
+	}
+
+	$effect(() => {
+		fetchTrips();
+	});
+
 	let showForm = $state(false);
 	let isEditing = $state(false);
-
-	// --- Trip Data ---
-	let trips = $state([
-		{
-			id: 1,
-			name: 'Daily Fee',
-			amount: 100,
-			currency: 'SAR'
-		},
-		{
-			id: 2,
-			name: 'Full Trip',
-			amount: 1500,
-			currency: 'SAR'
-		}
-	]);
 
 	// --- Form State ---
 	let formData = $state({
@@ -53,22 +57,45 @@
 		showForm = true;
 	}
 
-	function handleSave() {
+	async function handleSave() {
+		const payload = {
+			name: formData.name,
+			amount: Number(formData.amount),
+			currency: formData.currency
+		};
+
 		if (isEditing) {
-			const index = trips.findIndex((t) => t.id === formData.id);
-			if (index !== -1) trips[index] = { ...formData };
+			const { error } = await supabase
+				.from('master_mutawif_trips')
+				.update(payload)
+				.eq('id', formData.id);
+
+			if (error) {
+				alert('Error updating trip: ' + error.message);
+				return;
+			}
 		} else {
-			trips.push({
-				...formData,
-				id: Date.now()
-			});
+			const { error } = await supabase.from('master_mutawif_trips').insert([payload]);
+
+			if (error) {
+				alert('Error adding trip: ' + error.message);
+				return;
+			}
 		}
+
 		resetForm();
+		fetchTrips();
 	}
 
-	function handleDelete(id) {
+	async function handleDelete(id) {
 		if (confirm('Are you sure you want to delete this trip?')) {
-			trips = trips.filter((t) => t.id !== id);
+			const { error } = await supabase.from('master_mutawif_trips').delete().eq('id', id);
+
+			if (error) {
+				alert('Error deleting trip: ' + error.message);
+			} else {
+				fetchTrips();
+			}
 		}
 	}
 </script>

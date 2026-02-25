@@ -46,14 +46,14 @@
 							</span>
 						</td>
 						<td class="px-4 py-3 text-gray-600">
-							{#if variant.categories.length > 0}
+							{#if variant.categories && variant.categories.length > 0}
 								{variant.categories.join(', ')}
 							{:else}
 								<span class="text-gray-400">—</span>
 							{/if}
 						</td>
 						<td class="px-4 py-3 text-gray-600">
-							{#if variant.types.length > 0}
+							{#if variant.types && variant.types.length > 0}
 								{variant.types.join(', ')}
 							{:else}
 								<span class="text-gray-400">—</span>

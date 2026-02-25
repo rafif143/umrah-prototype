@@ -15,33 +15,39 @@
 	} from 'lucide-svelte';
 	import { fade, slide, fly } from 'svelte/transition';
 	import { cubicOut } from 'svelte/easing';
+	import { supabase } from '$lib/supabase';
 
 	// --- State ---
 	let activeTab = $state('vehicle'); // 'vehicle' | 'trip'
 	let showForm = $state(false);
 	let isEditing = $state(false);
 
-	// --- Vehicle Data ---
-	let vehicles = $state([
-		{ id: 1, name: 'GMC' },
-		{ id: 2, name: 'Coaster' },
-		{ id: 3, name: 'Bus (49 Seater)' },
-		{ id: 4, name: 'Sedan' }
-	]);
+	// --- Data ---
+	let vehicles = $state([]);
+	let trips = $state([]);
+	let suppliers = $state([]);
 
-	// --- Trip Data ---
-	let trips = $state([
-		{ id: 1, name: 'Airport Transfer (Jeddah - Makkah)', fromCity: 'Jeddah', toCity: 'Makkah' },
-		{ id: 2, name: 'Makkah - Madinah', fromCity: 'Makkah', toCity: 'Madinah' },
-		{ id: 3, name: 'Madinah - Jeddah Airport', fromCity: 'Madinah', toCity: 'Jeddah' },
-		{ id: 4, name: 'City Tour Makkah', fromCity: 'Makkah', toCity: 'Makkah' }
-	]);
+	async function fetchData() {
+		const [vRes, tRes] = await Promise.all([
+			supabase.from('master_transport_vehicles').select('*').order('name'),
+			supabase.from('master_transport_routes').select('*').order('name')
+		]);
 
-	let suppliers = $state([
-		{ id: 1, name: 'Saptco' },
-		{ id: 2, name: 'Dallah Trans' },
-		{ id: 3, name: 'Rawahel' }
-	]);
+		if (vRes.error) console.error('Error fetching vehicles:', vRes.error);
+		else vehicles = vRes.data;
+
+		if (tRes.error) console.error('Error fetching routes:', tRes.error);
+		else
+			trips = tRes.data.map((r) => ({
+				...r,
+				fromCity: r.from_city,
+				toCity: r.to_city
+			}));
+	}
+
+	$effect(() => {
+		fetchData();
+	});
 
 	// --- Forms State ---
 	let vehicleForm = $state({
@@ -85,40 +91,47 @@
 		showForm = true;
 	}
 
-	function handleSave() {
+	async function handleSave() {
 		if (activeTab === 'vehicle') {
+			const payload = { name: vehicleForm.name };
 			if (isEditing) {
-				const index = vehicles.findIndex((v) => v.id === vehicleForm.id);
-				if (index !== -1) vehicles[index] = { ...vehicleForm };
+				const { error } = await supabase
+					.from('master_transport_vehicles')
+					.update(payload)
+					.eq('id', vehicleForm.id);
+				if (error) alert(error.message);
 			} else {
-				vehicles.push({
-					id: Date.now(),
-					name: vehicleForm.name
-				});
+				const { error } = await supabase.from('master_transport_vehicles').insert([payload]);
+				if (error) alert(error.message);
 			}
 		} else if (activeTab === 'trip') {
+			const payload = {
+				name: tripForm.name,
+				from_city: tripForm.fromCity,
+				to_city: tripForm.toCity
+			};
 			if (isEditing) {
-				const index = trips.findIndex((t) => t.id === tripForm.id);
-				if (index !== -1) trips[index] = { ...tripForm };
+				const { error } = await supabase
+					.from('master_transport_routes')
+					.update(payload)
+					.eq('id', tripForm.id);
+				if (error) alert(error.message);
 			} else {
-				trips.push({
-					id: Date.now(),
-					name: tripForm.name,
-					fromCity: tripForm.fromCity,
-					toCity: tripForm.toCity
-				});
+				const { error } = await supabase.from('master_transport_routes').insert([payload]);
+				if (error) alert(error.message);
 			}
 		}
 		resetForms();
+		fetchData();
 	}
 
-	function handleDelete(id) {
+	async function handleDelete(id) {
 		if (confirm('Are you sure you want to delete this item?')) {
-			if (activeTab === 'vehicle') {
-				vehicles = vehicles.filter((v) => v.id !== id);
-			} else {
-				trips = trips.filter((t) => t.id !== id);
-			}
+			const table =
+				activeTab === 'vehicle' ? 'master_transport_vehicles' : 'master_transport_routes';
+			const { error } = await supabase.from(table).delete().eq('id', id);
+			if (error) alert(error.message);
+			else fetchData();
 		}
 	}
 </script>

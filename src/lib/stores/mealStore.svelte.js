@@ -1,8 +1,12 @@
 import { persistedState } from './persistedState.svelte.js';
-import initialMeals from '../data/meals.json';
+
+const initialMeals = {
+    foodTypes: [],
+    bases: []
+};
 
 // Create a persisted store for Meals Master Data
-const mealState = persistedState('umrah_master_meals_config', initialMeals);
+const mealState = persistedState('umrah_master_meals_config_v2', initialMeals);
 
 export const mealStore = {
     get foodTypes() { return mealState.value?.foodTypes || []; },
