@@ -145,35 +145,6 @@
 			</div>
 
 			<div class="space-y-6 p-6">
-				<!-- Hotel Contract Auto-Fill (Optional) -->
-				<div class="rounded-xl border border-blue-200 bg-blue-50 p-5">
-					<div class="mb-3 flex items-center gap-3">
-						<div
-							class="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-sm font-bold text-white"
-						>
-							★
-						</div>
-						<h3 class="text-sm font-semibold text-gray-900">
-							Select Available Contract (Optional)
-						</h3>
-					</div>
-					<div class="grid grid-cols-1 gap-4">
-						<select
-							class="w-full rounded-lg border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-							bind:value={state.accommodationForm.selectedWaveId}
-							onchange={(e) => state.selectHotelWaveForAccommodation(e.target.value)}
-						>
-							<option value="">-- Choose Hotel Contract --</option>
-							{#each state.availableHotelWaves as wave}
-								<option value={wave.id}>{wave.fullLabel}</option>
-							{/each}
-						</select>
-						<p class="text-xs text-blue-600">
-							Selecting a contract will auto-fill City, Hotel, and Dates.
-						</p>
-					</div>
-				</div>
-
 				<!-- Section 1: Basic Information -->
 				<div class="rounded-xl border border-gray-200 bg-gray-50/30 p-5">
 					<div class="mb-4 flex items-center gap-3">
@@ -184,7 +155,7 @@
 						</div>
 						<h3 class="text-sm font-semibold text-gray-900">Basic Information</h3>
 					</div>
-					<div class="grid grid-cols-3 gap-4">
+					<div class="grid grid-cols-4 gap-4">
 						<div class="flex flex-col gap-1.5">
 							<label for="acc-city" class="text-[13px] font-medium text-gray-700"
 								>City <span class="text-red-500">*</span></label
@@ -216,13 +187,34 @@
 									>{state.accommodationForm.city ? 'Select hotel' : 'Select city first'}</option
 								>
 								{#each state.hotelsForSelectedCity as hotel}
-									<option value={hotel.hotelId}>{hotel.hotelName}</option>
+									<option value={hotel.id}>{hotel.name}</option>
+								{/each}
+							</select>
+						</div>
+						<div class="flex flex-col gap-1.5">
+							<label for="acc-contract" class="text-[13px] font-medium text-gray-700"
+								>Contract <span class="text-red-500">*</span></label
+							>
+							<select
+								id="acc-contract"
+								class="rounded-lg border border-gray-300 bg-white px-3.5 py-2.5 text-sm outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
+								bind:value={state.accommodationForm.contractId}
+								disabled={!state.accommodationForm.hotelId}
+								onchange={() => state.onContractChange()}
+							>
+								<option value=""
+									>{state.accommodationForm.hotelId
+										? 'Select contract'
+										: 'Select hotel first'}</option
+								>
+								{#each state.contractsForSelectedHotel as contract}
+									<option value={contract.id}>{contract.contract_number} - {contract.title}</option>
 								{/each}
 							</select>
 						</div>
 						<div class="flex flex-col gap-1.5">
 							<label for="acc-supplier" class="text-[13px] font-medium text-gray-700"
-								>Supplier <span class="text-red-500">*</span></label
+								>Supplier (Agent) <span class="text-red-500">*</span></label
 							>
 							<select
 								id="acc-supplier"

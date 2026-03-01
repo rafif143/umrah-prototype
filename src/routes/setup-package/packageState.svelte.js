@@ -6,6 +6,7 @@ import { mealStore } from '$lib/stores/mealStore.svelte.js';
 import { transportStore } from '$lib/stores/transportStore.svelte.js';
 import { serviceStore } from '$lib/stores/serviceStore.svelte.js';
 import { packageStore } from '$lib/stores/packageStore.svelte.js';
+import { supabase } from '$lib/supabase';
 
 export class PackageState {
     // Top Level Tabs
@@ -14,6 +15,39 @@ export class PackageState {
 
     // View mode: 'main' = top-level (flight/variant list), 'variant' = inside a variant
     viewMode = $state('main');
+
+    // Supabase Master Data
+    masterHotels = $state([]);
+    masterHotelContracts = $state([]);
+    masterSuppliers = $state([]);
+
+    async init() {
+        try {
+            const [hotelsRes, contractsRes, suppliersRes] = await Promise.all([
+                supabase.from('master_hotels').select('*'),
+                supabase.from('master_hotel_contracts').select(`
+                    id, contract_number, title, start_date, end_date, hotel_id, supplier_id,
+                    master_hotel_contract_periods (
+                        id, name, start_date, end_date,
+                        master_hotel_contract_rates (
+                            id, period_id, room_type_id, cost_price, selling_price, ors_margin
+                        )
+                    )
+                `),
+                supabase.from('master_suppliers').select('*')
+            ]);
+
+            if (hotelsRes.error) console.error('Hotels error:', hotelsRes.error);
+            if (contractsRes.error) console.error('Contracts error:', contractsRes.error);
+            if (suppliersRes.error) console.error('Suppliers error:', suppliersRes.error);
+
+            if (hotelsRes.data) this.masterHotels = hotelsRes.data;
+            if (contractsRes.data) this.masterHotelContracts = contractsRes.data;
+            if (suppliersRes.data) this.masterSuppliers = suppliersRes.data;
+        } catch (err) {
+            console.error('Failed to fetch master data', err);
+        }
+    }
 
     // Flight Info (Root Entity)
     flightInfo = $state({
@@ -94,12 +128,12 @@ export class PackageState {
 
     // --- Master Data Getters (Non-Hardcoded) ---
     get cities() {
-        const fromHotels = hotelStorageStore.hotels.map(h => h.city);
+        const fromHotels = this.masterHotels.map(h => h.city);
         return [...new Set(fromHotels)].filter(Boolean).sort();
     }
 
     get hotelSuppliers() {
-        return hotelStore.hotels.map(h => h.name);
+        return this.masterSuppliers.filter(s => s.is_supplier).map(s => s.name);
     }
 
     get mealSuppliers() {
@@ -264,22 +298,37 @@ export class PackageState {
     get hotelsForSelectedCity() {
         const city = this.accommodationForm.city;
         if (!city) return [];
-        return hotelStorageStore.hotels.filter(h => h.city === city);
+        return this.masterHotels.filter(h => h.city === city);
+    }
+
+    // Get contracts for selected hotel
+    get contractsForSelectedHotel() {
+        const hotelId = this.accommodationForm.hotelId;
+        if (!hotelId) return [];
+        return this.masterHotelContracts.filter(c => c.hotel_id === hotelId);
+    }
+
+    // Change contract handler
+    onContractChange() {
+        const contract = this.masterHotelContracts.find(c => c.id === this.accommodationForm.contractId);
+        if (contract) {
+            // we could preset dates or rates later, right now let's just make sure it's valid 
+        }
     }
 
     // Select hotel from storage and auto-fill details
     selectHotelForAccommodation(hotelId) {
-        const hotel = hotelStorageStore.hotels.find(h => h.hotelId === hotelId);
+        const hotel = this.masterHotels.find(h => h.id === hotelId);
         if (hotel) {
-            this.accommodationForm.hotel = hotel.hotelName;
-            this.accommodationForm.hotelId = hotel.hotelId;
+            this.accommodationForm.hotel = hotel.name;
+            this.accommodationForm.hotelId = hotel.id;
             this.accommodationForm.selectedHotelData = {
-                hotelName: hotel.hotelName,
+                hotelName: hotel.name,
                 city: hotel.city,
-                starRating: hotel.starRating || 0,
-                location: hotel.location || '',
-                distanceToHaram: hotel.distanceToHaram || '',
-                features: hotel.features || []
+                starRating: hotel.star_rating || 0,
+                location: hotel.district || '',
+                distanceToHaram: hotel.distance_from_city || '',
+                features: []
             };
         } else {
             this.accommodationForm.hotel = '';
@@ -298,7 +347,7 @@ export class PackageState {
     resetAccommodationForm() {
         this.editingAccommodationIndex = null;
         this.accommodationForm = {
-            city: '', hotel: '', hotelId: '', selectedHotelData: null,
+            city: '', hotel: '', hotelId: '', contractId: '', selectedHotelData: null,
             supplier: '', roomType: [], checkIn: '', checkOut: '', nights: 0,
             basis: '', rateCode: '', packageMeals: '', hotelView: '',
             vat: '', municipalityTax: '', vatPercent: 15, municipalityTaxPercent: 5,

@@ -9,8 +9,8 @@
 		LayoutGrid,
 		List
 	} from 'lucide-svelte';
-	import Sidebar from '$lib/components/Sidebar.svelte';
-	import { hotelStorageStore } from '$lib/stores/hotelStorageStore.svelte.js';
+	import { onMount } from 'svelte';
+	import { supabase } from '$lib/supabase';
 	import ContractCard from './components/CardView/ContractCard.svelte';
 	import ContractGridView from './components/GridView/ContractGridView.svelte';
 	import AddHotelModal from './components/Modals/AddHotelModal.svelte';
@@ -19,6 +19,19 @@
 	import { slide } from 'svelte/transition';
 
 	import { sidebarState } from '$lib/runes/sidebarState.svelte.js';
+	import Sidebar from '$lib/components/Sidebar.svelte';
+
+	let rawHotels = $state([]);
+	let rawContracts = $state([]);
+
+	onMount(async () => {
+		const [hotelsRes, contractsRes] = await Promise.all([
+			supabase.from('master_hotels').select('*'),
+			supabase.from('master_hotel_contracts').select('*')
+		]);
+		if (hotelsRes.data) rawHotels = hotelsRes.data;
+		if (contractsRes.data) rawContracts = contractsRes.data;
+	});
 
 	let searchQuery = $state('');
 	let expandedHotelId = $state(null);
@@ -34,16 +47,33 @@
 	let editingContract = $state(null);
 
 	let hotels = $derived(
-		hotelStorageStore.hotels.filter((h) => {
-			const q = searchQuery.toLowerCase();
-			const matchesSearch =
-				!q || h.hotelName.toLowerCase().includes(q) || h.city.toLowerCase().includes(q);
-			const matchesFilter =
-				activeFilter === 'all' ||
-				(activeFilter === 'makkah' && h.city === 'Makkah') ||
-				(activeFilter === 'madinah' && h.city === 'Madinah');
-			return matchesSearch && matchesFilter;
-		})
+		rawHotels
+			.map((h) => ({
+				hotelId: h.id,
+				hotelName: h.name,
+				city: h.city || 'Unknown',
+				starRating: h.star_rating || 0,
+				contracts: rawContracts
+					.filter((c) => c.hotel_id === h.id)
+					.map((c) => ({
+						id: c.id,
+						name: c.title,
+						contract_number: c.contract_number,
+						contractPeriod: { from: c.start_date, to: c.end_date },
+						totalRooms: 0, // Placeholder mapping
+						waves: [] // Placeholder mapping
+					}))
+			}))
+			.filter((h) => {
+				const q = searchQuery.toLowerCase();
+				const matchesSearch =
+					!q || h.hotelName.toLowerCase().includes(q) || h.city.toLowerCase().includes(q);
+				const matchesFilter =
+					activeFilter === 'all' ||
+					(activeFilter === 'makkah' && h.city === 'Makkah') ||
+					(activeFilter === 'madinah' && h.city === 'Madinah');
+				return matchesSearch && matchesFilter;
+			})
 	);
 
 	function toggleHotel(id) {
@@ -82,7 +112,7 @@
 
 	function handleEditContract(contract) {
 		// Find the hotel that contains this contract
-		const hotel = hotels.find(h => h.contracts.some(c => c.id === contract.id));
+		const hotel = hotels.find((h) => h.contracts.some((c) => c.id === contract.id));
 		if (hotel) {
 			selectedHotelForContract = hotel;
 		}
@@ -103,15 +133,17 @@
 
 	function handleUpdateSoldStatus(waveId, roomId, periodIndex, newStatus) {
 		// Update the sold cell status in the contract
-		const hotel = hotels.find(h => h.contracts.some(c => c.id === selectedContractForDetail.id));
+		const hotel = hotels.find((h) =>
+			h.contracts.some((c) => c.id === selectedContractForDetail.id)
+		);
 		if (!hotel) return;
 
-		const contract = hotel.contracts.find(c => c.id === selectedContractForDetail.id);
-		const wave = contract.waves.find(w => w.id === waveId);
-		
+		const contract = hotel.contracts.find((c) => c.id === selectedContractForDetail.id);
+		const wave = contract.waves.find((w) => w.id === waveId);
+
 		if (wave && wave.soldCells) {
 			// Find the cells for this room and update status
-			Object.keys(wave.soldCells).forEach(cellKey => {
+			Object.keys(wave.soldCells).forEach((cellKey) => {
 				if (cellKey.startsWith(roomId + '_')) {
 					wave.soldCells[cellKey] = {
 						...wave.soldCells[cellKey],
@@ -119,23 +151,26 @@
 					};
 				}
 			});
-			
+
 			// Trigger reactivity
-			hotelStorageStore.updateContract(hotel.hotelId, contract.id, { waves: contract.waves });
+			rawContracts = [...rawContracts];
+			// TODO: Sync `contract.waves` back to Supabase if needed (currently these are mock values/JSON columns in a real app, assuming they sit in `master_hotel_allotments` or `master_hotel_contracts` jsonb fields)
 		}
 	}
 
 	function handleUpdatePrice(waveId, roomId, periodIndex, newPrice) {
 		// Update the price for sold cells
-		const hotel = hotels.find(h => h.contracts.some(c => c.id === selectedContractForDetail.id));
+		const hotel = hotels.find((h) =>
+			h.contracts.some((c) => c.id === selectedContractForDetail.id)
+		);
 		if (!hotel) return;
 
-		const contract = hotel.contracts.find(c => c.id === selectedContractForDetail.id);
-		const wave = contract.waves.find(w => w.id === waveId);
-		
+		const contract = hotel.contracts.find((c) => c.id === selectedContractForDetail.id);
+		const wave = contract.waves.find((w) => w.id === waveId);
+
 		if (wave && wave.soldCells) {
 			// Find the cells for this room and update price
-			Object.keys(wave.soldCells).forEach(cellKey => {
+			Object.keys(wave.soldCells).forEach((cellKey) => {
 				if (cellKey.startsWith(roomId + '_')) {
 					wave.soldCells[cellKey] = {
 						...wave.soldCells[cellKey],
@@ -143,22 +178,24 @@
 					};
 				}
 			});
-			
+
 			// Trigger reactivity
-			hotelStorageStore.updateContract(hotel.hotelId, contract.id, { waves: contract.waves });
+			rawContracts = [...rawContracts];
 		}
 	}
 
 	function handleAddStaff(waveId, roomId, staffName) {
-		const hotel = hotels.find(h => h.contracts.some(c => c.id === selectedContractForDetail.id));
+		const hotel = hotels.find((h) =>
+			h.contracts.some((c) => c.id === selectedContractForDetail.id)
+		);
 		if (!hotel) return;
 
-		const contract = hotel.contracts.find(c => c.id === selectedContractForDetail.id);
-		const wave = contract.waves.find(w => w.id === waveId);
-		
+		const contract = hotel.contracts.find((c) => c.id === selectedContractForDetail.id);
+		const wave = contract.waves.find((w) => w.id === waveId);
+
 		if (wave && wave.staffCells) {
 			// Add staff to all cells for this room
-			Object.keys(wave.staffCells).forEach(cellKey => {
+			Object.keys(wave.staffCells).forEach((cellKey) => {
 				if (cellKey.startsWith(roomId + '_')) {
 					const currentStaffList = wave.staffCells[cellKey].staffList || [];
 					wave.staffCells[cellKey] = {
@@ -167,52 +204,63 @@
 					};
 				}
 			});
-			
+
 			// Trigger reactivity
-			hotelStorageStore.updateContract(hotel.hotelId, contract.id, { waves: contract.waves });
+			rawContracts = [...rawContracts];
 		}
 	}
 
 	function handleRemoveStaff(waveId, roomId, staffName) {
-		const hotel = hotels.find(h => h.contracts.some(c => c.id === selectedContractForDetail.id));
+		const hotel = hotels.find((h) =>
+			h.contracts.some((c) => c.id === selectedContractForDetail.id)
+		);
 		if (!hotel) return;
 
-		const contract = hotel.contracts.find(c => c.id === selectedContractForDetail.id);
-		const wave = contract.waves.find(w => w.id === waveId);
-		
+		const contract = hotel.contracts.find((c) => c.id === selectedContractForDetail.id);
+		const wave = contract.waves.find((w) => w.id === waveId);
+
 		if (wave && wave.staffCells) {
 			// Remove staff from all cells for this room
-			Object.keys(wave.staffCells).forEach(cellKey => {
+			Object.keys(wave.staffCells).forEach((cellKey) => {
 				if (cellKey.startsWith(roomId + '_')) {
 					const currentStaffList = wave.staffCells[cellKey].staffList || [];
 					wave.staffCells[cellKey] = {
 						...wave.staffCells[cellKey],
-						staffList: currentStaffList.filter(name => name !== staffName)
+						staffList: currentStaffList.filter((name) => name !== staffName)
 					};
 				}
 			});
-			
+
 			// Trigger reactivity
-			hotelStorageStore.updateContract(hotel.hotelId, contract.id, { waves: contract.waves });
+			rawContracts = [...rawContracts];
 		}
 	}
 
 	function handleDeleteContract(contract) {
 		// Find the hotel that contains this contract
-		const hotel = hotels.find(h => h.contracts.some(c => c.id === contract.id));
+		const hotel = hotels.find((h) => h.contracts.some((c) => c.id === contract.id));
 		if (!hotel) {
 			alert('Error: Hotel not found for this contract');
 			return;
 		}
 
-		// Delete the contract
-		hotelStorageStore.deleteContract(hotel.hotelId, contract.id);
-		
+		// Delete the contract from local state
+		rawContracts = rawContracts.filter((c) => c.id !== contract.id);
+
+		// Delete from Supabase
+		supabase
+			.from('master_hotel_contracts')
+			.delete()
+			.eq('id', contract.id)
+			.then(({ error }) => {
+				if (error) alert('Error deleting contract from database.');
+			});
+
 		// Close expanded states if this contract was expanded
 		if (expandedContractId === contract.id) {
 			expandedContractId = null;
 		}
-		
+
 		// Close modal if this contract was being edited
 		if (editingContract?.id === contract.id) {
 			handleCloseContractModal();
@@ -426,7 +474,7 @@
 	show={showAddContractModal}
 	hotelId={selectedHotelForContract?.hotelId}
 	hotelName={selectedHotelForContract?.hotelName}
-	editingContract={editingContract}
+	{editingContract}
 	onClose={handleCloseContractModal}
 />
 

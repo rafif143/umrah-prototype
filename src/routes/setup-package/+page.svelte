@@ -9,7 +9,8 @@
 	// Instantiate state
 	const state = new PackageState();
 
-	onMount(() => {
+	onMount(async () => {
+		await state.init();
 		const urlParams = new URLSearchParams(window.location.search);
 		const id = urlParams.get('id');
 		if (id) {
