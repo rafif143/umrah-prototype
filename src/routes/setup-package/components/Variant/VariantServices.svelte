@@ -7,7 +7,6 @@
 
 	// Use state from PackageState
 	let servicesList = $derived(pkgState.activeVariant?.services || []);
-	let showModal = $derived(pkgState.showServiceModal);
 	let form = $derived(pkgState.serviceForm);
 
 	function handleSaveService() {
@@ -26,7 +25,10 @@
 			</div>
 			<button
 				class="flex items-center gap-2 rounded-lg bg-[#972395] px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-[#7a1c78]"
-				onclick={() => (showModal = true)}
+				onclick={() => {
+					pkgState.resetServiceForm();
+					pkgState.showServiceModal = true;
+				}}
 			>
 				<Plus size={16} />
 				Add Service
@@ -95,7 +97,7 @@
 	</div>
 </div>
 
-{#if showModal}
+{#if pkgState.showServiceModal}
 	<div
 		class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
 		transition:fade={{ duration: 200 }}
@@ -109,7 +111,10 @@
 					{pkgState.editingServiceIndex !== null ? 'Edit' : 'Add'} Service
 				</h2>
 				<button
-					onclick={() => (pkgState.showServiceModal = false)}
+					onclick={() => {
+						pkgState.showServiceModal = false;
+						pkgState.resetServiceForm();
+					}}
 					class="text-gray-400 hover:text-gray-600"
 				>
 					<X size={20} />
@@ -177,7 +182,10 @@
 			</div>
 			<div class="flex justify-end gap-3 border-t border-gray-100 p-6">
 				<button
-					onclick={() => (pkgState.showServiceModal = false)}
+					onclick={() => {
+						pkgState.showServiceModal = false;
+						pkgState.resetServiceForm();
+					}}
 					class="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-700"
 					>Cancel</button
 				>

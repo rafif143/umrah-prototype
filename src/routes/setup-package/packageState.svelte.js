@@ -1,11 +1,5 @@
 import { Info, FileText, CheckCircle, HelpCircle, Image, Map, Plane, Hotel, Users, CreditCard, Package } from 'lucide-svelte';
 import { flightStorageStore } from '$lib/stores/flightStorageStore.svelte.js';
-import { hotelStorageStore } from '$lib/stores/hotelStorageStore.svelte.js';
-import { hotelStore } from '$lib/stores/hotelStore.svelte.js';
-import { mealStore } from '$lib/stores/mealStore.svelte.js';
-import { transportStore } from '$lib/stores/transportStore.svelte.js';
-import { serviceStore } from '$lib/stores/serviceStore.svelte.js';
-import { packageStore } from '$lib/stores/packageStore.svelte.js';
 import { supabase } from '$lib/supabase';
 
 export class PackageState {
@@ -21,9 +15,22 @@ export class PackageState {
     masterHotelContracts = $state([]);
     masterSuppliers = $state([]);
 
+    // New Supabase Master Data for dropdowns
+    masterFoodTypes = $state([]);
+    masterBasisTypes = $state([]);
+    masterVehicles = $state([]);
+    masterRoutes = $state([]);
+    masterServices = $state([]);
+    masterRoomTypes = $state([]);
+    masterHotelViews = $state([]);
+
     async init() {
         try {
-            const [hotelsRes, contractsRes, suppliersRes] = await Promise.all([
+            const [
+                hotelsRes, contractsRes, suppliersRes,
+                foodTypesRes, basisRes, vehiclesRes, routesRes,
+                servicesRes, roomTypesRes, viewsRes
+            ] = await Promise.all([
                 supabase.from('master_hotels').select('*'),
                 supabase.from('master_hotel_contracts').select(`
                     id, contract_number, title, start_date, end_date, hotel_id, supplier_id, waves,
@@ -34,16 +41,28 @@ export class PackageState {
                         )
                     )
                 `),
-                supabase.from('master_suppliers').select('*')
+                supabase.from('master_suppliers').select('*'),
+                supabase.from('master_meal_food_types').select('*'),
+                supabase.from('master_meal_basis').select('*'),
+                supabase.from('master_transport_vehicles').select('*'),
+                supabase.from('master_transport_routes').select('*'),
+                supabase.from('master_services').select('*'),
+                supabase.from('master_hotel_room_types').select('*'),
+                supabase.from('master_hotel_views').select('*')
             ]);
-
-            if (hotelsRes.error) console.error('Hotels error:', hotelsRes.error);
-            if (contractsRes.error) console.error('Contracts error:', contractsRes.error);
-            if (suppliersRes.error) console.error('Suppliers error:', suppliersRes.error);
 
             if (hotelsRes.data) this.masterHotels = hotelsRes.data;
             if (contractsRes.data) this.masterHotelContracts = contractsRes.data;
             if (suppliersRes.data) this.masterSuppliers = suppliersRes.data;
+
+            if (foodTypesRes.data) this.masterFoodTypes = foodTypesRes.data;
+            if (basisRes.data) this.masterBasisTypes = basisRes.data;
+            if (vehiclesRes.data) this.masterVehicles = vehiclesRes.data;
+            if (routesRes.data) this.masterRoutes = routesRes.data;
+            if (servicesRes.data) this.masterServices = servicesRes.data;
+            if (roomTypesRes.data) this.masterRoomTypes = roomTypesRes.data;
+            if (viewsRes.data) this.masterHotelViews = viewsRes.data;
+
         } catch (err) {
             console.error('Failed to fetch master data', err);
         }
@@ -142,27 +161,27 @@ export class PackageState {
     }
 
     get foodTypes() {
-        return mealStore.foodTypes.map(ft => ft.name);
+        return this.masterFoodTypes.map(ft => ft.name);
     }
 
     get transportVehicles() {
-        return transportStore.vehicleTypes.map(v => v.name);
+        return this.masterVehicles.map(v => v.name);
     }
 
     get transportSuppliers() {
-        return transportStore.suppliers.map(s => s.name);
+        return this.masterSuppliers.filter(s => s.is_supplier).map(s => s.name);
     }
 
     get transportRoutes() {
-        return transportStore.routes.map(r => r.name);
+        return this.masterRoutes.map(r => r.name);
     }
 
     get serviceCategories() {
-        return ["Visa", "Mutawif", "Insurance", "Other"];
+        return this.masterServices.map(s => s.name);
     }
 
     get serviceSuppliers() {
-        return serviceStore.suppliers.map(s => s.name);
+        return this.masterSuppliers.filter(s => s.is_supplier).map(s => s.name);
     }
 
     get packageCategories() {
@@ -174,15 +193,15 @@ export class PackageState {
     }
 
     get roomTypes() {
-        return ["Double", "Triple", "Quad", "Quint"];
+        return this.masterRoomTypes.map(rt => rt.name);
     }
 
     get basisTypes() {
-        return mealStore.bases.map(b => b.name);
+        return this.masterBasisTypes.map(b => b.name);
     }
 
     get hotelViews() {
-        return hotelStore.hotelViews.map(hv => hv.name);
+        return this.masterHotelViews.map(hv => hv.name);
     }
 
     // Select Hotel Wave and Pre-fill Accommodation Form
@@ -597,17 +616,24 @@ export class PackageState {
     }
 
     // --- Persistence ---
-    load(id) {
-        const batch = packageStore.packages.find(p => p.id === id);
-        if (!batch) return;
+    async load(id) {
+        if (!id) return;
+        this.batchId = id;
 
-        this.batchId = batch.id;
+        const { data: batch, error: batchError } = await supabase
+            .from('flight_batches')
+            .select('*')
+            .eq('id', id)
+            .single();
+
+        if (batchError || !batch) return;
+
         this.flightInfo = {
             airline: batch.airline || '',
-            airlineCode: batch.flightCode?.split(' ')[0] || '',
-            flightNumber: batch.flightCode?.split(' ')[1] || '',
-            departureDate: batch.departureDate || '',
-            arrivalDate: batch.arrivalDate || '',
+            airlineCode: batch.flight_code?.split(' ')[0] || '',
+            flightNumber: batch.flight_code?.split(' ')[1] || '',
+            departureDate: batch.departure_date || '',
+            arrivalDate: batch.arrival_date || '',
             departureCity: '',
             arrivalCity: '',
             batchName: batch.name || '',
@@ -616,64 +642,256 @@ export class PackageState {
         };
 
         this.itinerary = batch.itinerary || [];
-        this.packageVariants = $state.snapshot(batch.variants || []).map(v => ({
-            ...v,
+
+        const { data: dbVariants } = await supabase
+            .from('package_variants')
+            .select(`
+                *,
+                variant_hotels (*),
+                variant_meals (*),
+                variant_transport (*),
+                variant_services (*),
+                variant_additional (*)
+            `)
+            .eq('batch_id', id);
+
+        this.packageVariants = (dbVariants || []).map(v => ({
+            id: v.id,
+            name: v.name,
             categories: v.categories || [],
-            types: v.types || [],
-            hotels: (v.hotels || []).map(h => ({
-                ...h,
-                adultCost: h.adultCost || 0,
-                adultSell: h.adultSell || 0,
-                adultOrs: h.adultOrs || h.ors_margin || 0,
-                adultTotal: (h.adultCost || 0) + (h.adultSell || 0) + (h.adultOrs || h.ors_margin || 0)
+            types: v.variant_types || [],
+            durationDays: v.duration_days || 0,
+            durationNights: v.duration_nights || 0,
+            pricing: v.pricing || { double: 0, triple: 0, quad: 0, quint: 0 },
+            hotels: (v.variant_hotels || []).map(h => ({
+                city: h.city || '',
+                hotel: h.hotel_name || '',
+                hotelId: h.hotel_id || '',
+                checkIn: h.check_in || '',
+                checkOut: h.check_out || '',
+                nights: h.nights || 0,
+                roomType: h.room_types || [],
+                basis: h.basis || '',
+                adultCost: Number(h.cost_per_pax) || 0,
+                adultSell: Number(h.selling_price) || 0,
+                adultOrs: Number(h.ors_margin) || 0,
+                adultTotal: (Number(h.cost_per_pax) || 0) + (Number(h.selling_price) || 0) + (Number(h.ors_margin) || 0),
+                supplier: h.supplier || '',
+                rateCode: h.rate_code || '',
+                packageMeals: h.package_meals || '',
+                hotelView: h.hotel_view || '',
+                vat: h.vat || '',
+                municipalityTax: h.municipality_tax || '',
+                vatPercent: h.vat_percent || 15,
+                municipalityTaxPercent: h.municipality_tax_percent || 5,
+                childCost: Number(h.child_cost) || 0,
+                childSell: Number(h.child_sell) || 0,
+                childOrs: Number(h.child_ors) || 0,
+                contractId: h.contract_id || ''
             })),
-            meals: (v.meals || []).map(m => ({
-                ...m,
-                adultCost: m.adultCost || 0,
-                adultSell: m.adultSell || 0,
-                adultOrs: m.adultOrs || 0,
-                adultTotal: (m.adultCost || 0) + (m.adultSell || 0) + (m.adultOrs || 0)
+            meals: (v.variant_meals || []).map(m => ({
+                supplier: m.supplier || '',
+                hotel: m.hotel || '',
+                foodType: m.food_type || '',
+                fromDate: m.from_date || '',
+                toDate: m.to_date || '',
+                nights: m.nights || 0,
+                rateCode: m.rate_code || '',
+                vat: m.vat || '',
+                vatPercent: m.vat_percent || 15,
+                adultCost: Number(m.adult_cost) || 0,
+                adultSell: Number(m.adult_sell) || 0,
+                adultOrs: Number(m.adult_ors) || 0,
+                adultTotal: (Number(m.adult_cost) || 0) + (Number(m.adult_sell) || 0) + (Number(m.adult_ors) || 0),
+                childCost: Number(m.child_cost) || 0,
+                childSell: Number(m.child_sell) || 0,
+                childOrs: Number(m.child_ors) || 0
             })),
-            transport: (v.transport || []).map(t => ({
-                ...t,
-                adultCost: t.adultCost || 0,
-                adultSell: t.adultSell || t.sell || 0,
-                childCost: t.childCost || 0,
-                childSell: t.childSell || 0
+            transport: (v.variant_transport || []).map(t => ({
+                vehicle: t.vehicle_type || '',
+                supplier: t.supplier_name || '',
+                route: t.route || '',
+                adultCost: Number(t.cost_per_pax) || 0,
+                adultSell: Number(t.selling_price) || 0,
+                childCost: Number(t.child_cost) || 0,
+                childSell: Number(t.child_sell) || 0
             })),
-            services: (v.services || []).map(s => ({
-                ...s,
-                cost: s.cost || 0,
-                sell: s.sell || 0
+            services: (v.variant_services || []).map(s => ({
+                category: s.category || '',
+                supplier: s.supplier_name || '',
+                description: s.description || '',
+                cost: Number(s.cost) || 0,
+                sell: Number(s.sell) || 0
             })),
-            additional: (v.additional || []).map(a => ({
-                ...a,
-                cost: a.cost || 0,
-                sell: a.sell || 0
-            })),
-            pricing: v.pricing || { double: 0, triple: 0, quad: 0, quint: 0 }
+            additional: (v.variant_additional || []).map(a => ({
+                name: a.name || '',
+                description: a.description || '',
+                cost: Number(a.cost) || 0,
+                sell: Number(a.sell) || 0
+            }))
         }));
     }
 
-    save() {
+    async save() {
+        if (!this.flightInfo.batchName) {
+            alert('Please specify a batch name.');
+            return;
+        }
+
+        const isUuid = (str) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+        const finalBatchId = (this.batchId && isUuid(this.batchId)) ? this.batchId : crypto.randomUUID();
+        this.batchId = finalBatchId;
+
         const batchToSave = {
-            id: this.batchId || `batch-${Date.now()}`,
+            id: finalBatchId,
             name: this.flightInfo.batchName,
             airline: this.flightInfo.airline,
-            flightCode: `${this.flightInfo.airlineCode} ${this.flightInfo.flightNumber}`,
-            departureDate: this.flightInfo.departureDate,
-            arrivalDate: this.flightInfo.arrivalDate,
+            flight_code: `${this.flightInfo.airlineCode} ${this.flightInfo.flightNumber}`.trim(),
+            departure_date: this.flightInfo.departureDate || null,
+            arrival_date: this.flightInfo.arrivalDate || null,
             status: this.flightInfo.status || 'Active',
             image: '✈️',
-            itinerary: $state.snapshot(this.itinerary),
-            variants: $state.snapshot(this.packageVariants)
+            itinerary: $state.snapshot(this.itinerary)
         };
 
-        const existing = packageStore.packages.find(p => p.id === batchToSave.id);
-        if (existing) {
-            packageStore.updatePackage(batchToSave.id, batchToSave);
-        } else {
-            packageStore.addPackage(batchToSave);
+        const { error: batchError } = await supabase.from('flight_batches').upsert(batchToSave);
+        if (batchError) {
+            console.error('Error saving batch:', batchError);
+            alert('Failed to save batch data.');
+            return;
+        }
+
+        const variants = $state.snapshot(this.packageVariants);
+
+        // Delete variants that are no longer in the state
+        const { data: existingVariants } = await supabase.from('package_variants').select('id').eq('batch_id', finalBatchId);
+        if (existingVariants) {
+            const currentVariantIds = variants.map(v => v.id);
+            const variantsToDelete = existingVariants.filter(ev => !currentVariantIds.includes(ev.id)).map(v => v.id);
+            if (variantsToDelete.length > 0) {
+                await supabase.from('package_variants').delete().in('id', variantsToDelete);
+            }
+        }
+
+        for (const v of variants) {
+            const variantId = (v.id && isUuid(v.id)) ? v.id : crypto.randomUUID();
+            v.id = variantId;
+
+            const variantToSave = {
+                id: variantId,
+                batch_id: finalBatchId,
+                name: v.name,
+                categories: v.categories || [],
+                variant_types: v.types || [],
+                duration_days: v.durationDays || null,
+                duration_nights: v.durationNights || null,
+                pricing: v.pricing || { double: 0, triple: 0, quad: 0, quint: 0 }
+            };
+
+            const { error: variantError } = await supabase.from('package_variants').upsert(variantToSave);
+            if (variantError) {
+                console.error('Error saving variant:', variantError);
+                continue;
+            }
+
+            // Clear nested items to avoid duplicates
+            await Promise.all([
+                supabase.from('variant_hotels').delete().eq('variant_id', variantId),
+                supabase.from('variant_transport').delete().eq('variant_id', variantId),
+                supabase.from('variant_services').delete().eq('variant_id', variantId),
+                supabase.from('variant_meals').delete().eq('variant_id', variantId),
+                supabase.from('variant_additional').delete().eq('variant_id', variantId)
+            ]);
+
+            // Insert new nested items
+            if (v.hotels?.length) {
+                const hotels = v.hotels.map(h => ({
+                    variant_id: variantId,
+                    city: h.city,
+                    hotel_name: h.hotel,
+                    hotel_id: h.hotelId || null,
+                    check_in: h.checkIn || null,
+                    check_out: h.checkOut || null,
+                    nights: h.nights || null,
+                    room_types: h.roomType || [],
+                    basis: h.basis || null,
+                    cost_per_pax: h.adultCost || 0,
+                    selling_price: h.adultSell || 0,
+                    ors_margin: h.adultOrs || 0,
+                    supplier: h.supplier || null,
+                    rate_code: h.rateCode || null,
+                    package_meals: h.packageMeals || null,
+                    hotel_view: h.hotelView || null,
+                    vat: h.vat || null,
+                    municipality_tax: h.municipalityTax || null,
+                    vat_percent: h.vatPercent || 15,
+                    municipality_tax_percent: h.municipalityTaxPercent || 5,
+                    child_cost: h.childCost || 0,
+                    child_sell: h.childSell || 0,
+                    child_ors: h.childOrs || 0,
+                    contract_id: h.contractId || null
+                }));
+                await supabase.from('variant_hotels').insert(hotels);
+            }
+
+            if (v.transport?.length) {
+                const tr = v.transport.map(t => ({
+                    variant_id: variantId,
+                    vehicle_type: t.vehicle || null,
+                    supplier_name: t.supplier || null,
+                    route: t.route || null,
+                    cost_per_pax: t.adultCost || 0,
+                    selling_price: t.adultSell || 0,
+                    child_cost: t.childCost || 0,
+                    child_sell: t.childSell || 0
+                }));
+                await supabase.from('variant_transport').insert(tr);
+            }
+
+            if (v.services?.length) {
+                const svc = v.services.map(s => ({
+                    variant_id: variantId,
+                    category: s.category || null,
+                    supplier_name: s.supplier || null,
+                    description: s.description || null,
+                    cost: s.cost || 0,
+                    sell: s.sell || 0
+                }));
+                await supabase.from('variant_services').insert(svc);
+            }
+
+            if (v.meals?.length) {
+                const meals = v.meals.map(m => ({
+                    variant_id: variantId,
+                    supplier: m.supplier || null,
+                    hotel: m.hotel || null,
+                    food_type: m.foodType || null,
+                    from_date: m.fromDate || null,
+                    to_date: m.toDate || null,
+                    nights: m.nights || 0,
+                    rate_code: m.rateCode || null,
+                    vat: m.vat || null,
+                    vat_percent: m.vatPercent || 15,
+                    adult_cost: m.adultCost || 0,
+                    adult_sell: m.adultSell || 0,
+                    adult_ors: m.adultOrs || 0,
+                    child_cost: m.childCost || 0,
+                    child_sell: m.childSell || 0,
+                    child_ors: m.childOrs || 0
+                }));
+                await supabase.from('variant_meals').insert(meals);
+            }
+
+            if (v.additional?.length) {
+                const addl = v.additional.map(a => ({
+                    variant_id: variantId,
+                    name: a.name || null,
+                    description: a.description || null,
+                    cost: a.cost || 0,
+                    sell: a.sell || 0
+                }));
+                await supabase.from('variant_additional').insert(addl);
+            }
         }
 
         window.location.href = '/package-management';

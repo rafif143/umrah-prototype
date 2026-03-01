@@ -108,7 +108,10 @@
 					{pkgState.editingTransportIndex !== null ? 'Edit' : 'Add'} Transport
 				</h2>
 				<button
-					onclick={() => (pkgState.showTransportModal = false)}
+					onclick={() => {
+						pkgState.showTransportModal = false;
+						pkgState.resetTransportForm();
+					}}
 					class="text-gray-400 hover:text-gray-600"
 				>
 					<X size={20} />
@@ -205,7 +208,10 @@
 			</div>
 			<div class="flex justify-end gap-3 border-t border-gray-100 p-6">
 				<button
-					onclick={() => (pkgState.showTransportModal = false)}
+					onclick={() => {
+						pkgState.showTransportModal = false;
+						pkgState.resetTransportForm();
+					}}
 					class="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-700"
 					>Cancel</button
 				>

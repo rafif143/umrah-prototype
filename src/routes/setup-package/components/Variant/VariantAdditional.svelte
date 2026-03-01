@@ -96,7 +96,10 @@
 					{pkgState.editingAdditionalIndex !== null ? 'Edit' : 'Add'} Additional Cost
 				</h2>
 				<button
-					onclick={() => (pkgState.showAdditionalModal = false)}
+					onclick={() => {
+						pkgState.showAdditionalModal = false;
+						pkgState.resetAdditionalForm();
+					}}
 					class="text-gray-400 hover:text-gray-600"
 				>
 					<X size={20} />
@@ -148,7 +151,10 @@
 			</div>
 			<div class="flex justify-end gap-3 border-t border-gray-100 p-6">
 				<button
-					onclick={() => (pkgState.showAdditionalModal = false)}
+					onclick={() => {
+						pkgState.showAdditionalModal = false;
+						pkgState.resetAdditionalForm();
+					}}
 					class="rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-700"
 					>Cancel</button
 				>

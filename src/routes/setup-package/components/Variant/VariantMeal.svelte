@@ -154,7 +154,7 @@
 								bind:value={state.mealsForm.hotel}
 							>
 								<option value="">Select hotel</option>
-								{#each hotelStorageStore.hotels.map((h) => h.hotelName) as hotel}
+								{#each state.masterHotels.map((h) => h.name) as hotel}
 									<option value={hotel}>{hotel}</option>
 								{/each}
 							</select>
