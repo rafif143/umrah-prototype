@@ -60,8 +60,11 @@
 						name: c.title,
 						contract_number: c.contract_number,
 						contractPeriod: { from: c.start_date, to: c.end_date },
-						totalRooms: 0, // Placeholder mapping
-						waves: [] // Placeholder mapping
+						totalRooms: c.total_rooms || 0,
+						waves: c.waves || [],
+						floors: c.floors || [],
+						rooms: c.rooms || [],
+						notes: c.notes || ''
 					}))
 			}))
 			.filter((h) => {
@@ -124,6 +127,15 @@
 		showAddContractModal = false;
 		editingContract = null;
 		selectedHotelForContract = null;
+	}
+
+	function handleSaveContract(savedContract) {
+		const idx = rawContracts.findIndex((c) => c.id === savedContract.id);
+		if (idx >= 0) {
+			rawContracts[idx] = savedContract;
+		} else {
+			rawContracts = [...rawContracts, savedContract];
+		}
 	}
 
 	function handleOpenSellStaffModal(contract) {
@@ -476,6 +488,7 @@
 	hotelName={selectedHotelForContract?.hotelName}
 	{editingContract}
 	onClose={handleCloseContractModal}
+	onSave={handleSaveContract}
 />
 
 <SellStaffDetailModal

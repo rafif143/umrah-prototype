@@ -26,7 +26,7 @@ export class PackageState {
             const [hotelsRes, contractsRes, suppliersRes] = await Promise.all([
                 supabase.from('master_hotels').select('*'),
                 supabase.from('master_hotel_contracts').select(`
-                    id, contract_number, title, start_date, end_date, hotel_id, supplier_id,
+                    id, contract_number, title, start_date, end_date, hotel_id, supplier_id, waves,
                     master_hotel_contract_periods (
                         id, name, start_date, end_date,
                         master_hotel_contract_rates (
@@ -102,17 +102,17 @@ export class PackageState {
     // Available Hotel Waves (Unused)
     get availableHotelWaves() {
         const waves = [];
-        for (const hotel of hotelStorageStore.hotels) {
-            for (const contract of hotel.contracts) {
-                for (const wave of contract.waves) {
-                    if (!wave.tripName) {
-                        waves.push({
-                            ...wave,
-                            hotelName: hotel.hotelName,
-                            contractName: contract.name,
-                            fullLabel: `${hotel.hotelName} - ${contract.name} - ${wave.name} (${wave.checkIn} to ${wave.checkOut})`
-                        });
-                    }
+        for (const contract of this.masterHotelContracts) {
+            const hotel = this.masterHotels.find(h => h.id === contract.hotel_id);
+            if (!hotel || !contract.waves) continue;
+            for (const wave of contract.waves) {
+                if (!wave.tripName) {
+                    waves.push({
+                        ...wave,
+                        hotelName: hotel.name,
+                        contractName: contract.title,
+                        fullLabel: `${hotel.name} - ${contract.title} - ${wave.name} (${wave.checkIn} to ${wave.checkOut})`
+                    });
                 }
             }
         }
@@ -190,8 +190,9 @@ export class PackageState {
         const wave = this.availableHotelWaves.find(w => w.id === waveId);
         if (wave) {
             this.accommodationForm.selectedWaveId = waveId;
-            this.accommodationForm.city = hotelStorageStore.hotels.find(h => h.hotelName === wave.hotelName)?.city || '';
-            this.accommodationForm.hotelId = hotelStorageStore.hotels.find(h => h.hotelName === wave.hotelName)?.hotelId || '';
+            const hotel = this.masterHotels.find(h => h.name === wave.hotelName);
+            this.accommodationForm.city = hotel?.city || '';
+            this.accommodationForm.hotelId = hotel?.id || '';
             // Trigger hotel selection logic to fill details
             this.selectHotelForAccommodation(this.accommodationForm.hotelId);
 

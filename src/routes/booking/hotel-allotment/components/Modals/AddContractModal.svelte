@@ -1,11 +1,18 @@
 <script>
 	import { X, Plus, Trash2, Calendar, Palette } from 'lucide-svelte';
 	import { fade, slide } from 'svelte/transition';
-	import { hotelStorageStore } from '$lib/stores/hotelStorageStore.svelte.js';
+	import { supabase } from '$lib/supabase';
 	import { gregorianToHijri, hijriToGregorian, hijriMonths } from '$lib/utils/hijri.js';
 	import HijriDatePicker from '$lib/components/HijriDatePicker.svelte';
 
-	let { show = false, hotelId = '', hotelName = '', editingContract = null, onClose } = $props();
+	let {
+		show = false,
+		hotelId = '',
+		hotelName = '',
+		editingContract = null,
+		onClose,
+		onSave
+	} = $props();
 
 	// --- Contract Form ---
 	let contractName = $state('');
@@ -17,9 +24,7 @@
 	let notes = $state('');
 
 	// --- Floor System ---
-	let floors = $state([
-		{ id: 1, name: 'Floor 1', roomCount: 0 }
-	]);
+	let floors = $state([{ id: 1, name: 'Floor 1', roomCount: 0 }]);
 
 	// Initialize form when editing
 	$effect(() => {
@@ -28,7 +33,7 @@
 			dateFrom = editingContract.contractPeriod?.from || '';
 			dateTo = editingContract.contractPeriod?.to || '';
 			notes = editingContract.notes || '';
-			
+
 			// Convert existing rooms to floors if editing
 			if (editingContract.floors) {
 				floors = [...editingContract.floors];
@@ -37,7 +42,7 @@
 				const totalRooms = editingContract.totalRooms || 0;
 				floors = [{ id: 1, name: 'Floor 1', roomCount: totalRooms }];
 			}
-			
+
 			// Update hijri dates
 			if (dateFrom) {
 				const h = gregorianToHijri(dateFrom);
@@ -57,29 +62,32 @@
 
 	function addFloor() {
 		const newFloorNumber = floors.length + 1;
-		floors = [...floors, { 
-			id: Date.now(), 
-			name: `Floor ${newFloorNumber}`, 
-			roomCount: 0 
-		}];
+		floors = [
+			...floors,
+			{
+				id: Date.now(),
+				name: `Floor ${newFloorNumber}`,
+				roomCount: 0
+			}
+		];
 	}
 
 	function removeFloor(floorId) {
 		if (floors.length <= 1) return; // Keep at least one floor
-		floors = floors.filter(f => f.id !== floorId);
+		floors = floors.filter((f) => f.id !== floorId);
 	}
 
 	// --- Generate rooms array from floors ---
 	function generateRooms() {
 		const rooms = [];
-		
+
 		floors.forEach((floor, floorIdx) => {
 			const floorNumber = floorIdx + 1; // Floor 1, Floor 2, etc.
 			for (let i = 0; i < floor.roomCount; i++) {
 				const roomNumber = String(i + 1).padStart(2, '0'); // 01, 02, 03, etc.
 				const roomId = `R${floorNumber}${roomNumber}`; // R101, R102, R201, etc.
-				rooms.push({ 
-					id: roomId, 
+				rooms.push({
+					id: roomId,
 					floor: floor.name,
 					floorId: floor.id,
 					type: 'unset', // Default type, will be changed later in grid header
@@ -87,11 +95,11 @@
 				});
 			}
 		});
-		
+
 		return rooms;
 	}
 
-	function handleSubmit() {
+	async function handleSubmit() {
 		if (!contractName || !dateFrom || !dateTo || totalRooms === 0) return;
 
 		const rooms = generateRooms();
@@ -99,28 +107,54 @@
 		if (editingContract) {
 			// Update existing contract
 			const updatedContract = {
-				...editingContract,
-				name: contractName,
-				contractPeriod: { from: dateFrom, to: dateTo },
-				totalRooms,
-				floors: [...floors],
-				rooms,
-				notes
+				title: contractName,
+				start_date: dateFrom,
+				end_date: dateTo,
+				total_rooms: totalRooms,
+				floors: floors,
+				rooms: rooms,
+				notes: notes
 			};
-			hotelStorageStore.updateContract(hotelId, editingContract.id, updatedContract);
+			const { data, error } = await supabase
+				.from('master_hotel_contracts')
+				.update(updatedContract)
+				.eq('id', editingContract.id)
+				.select();
+			if (error) {
+				alert(`Failed to update contract: ${error.message}`);
+				console.error(error);
+				return;
+			}
+			if (data && data.length) {
+				if (onSave) onSave(data[0]);
+			}
 		} else {
 			// Create new contract
 			const contract = {
-				name: contractName,
-				contractPeriod: { from: dateFrom, to: dateTo },
-				totalRooms,
-				floors: [...floors],
-				rooms,
-				waves: [], // Empty waves array - will be added later via "Tambah Gelombang" button
-				isOverflow: false,
-				notes
+				hotel_id: hotelId,
+				contract_number: `CTR-${Date.now()}`,
+				title: contractName,
+				start_date: dateFrom,
+				end_date: dateTo,
+				total_rooms: totalRooms,
+				is_overflow: false,
+				notes: notes,
+				floors: floors,
+				rooms: rooms,
+				waves: []
 			};
-			hotelStorageStore.addContract(hotelId, contract);
+			const { data, error } = await supabase
+				.from('master_hotel_contracts')
+				.insert([contract])
+				.select();
+			if (error) {
+				alert(`Failed to create contract: ${error.message}`);
+				console.error(error);
+				return;
+			}
+			if (data && data.length) {
+				if (onSave) onSave(data[0]);
+			}
 		}
 
 		resetAndClose();
@@ -302,8 +336,10 @@
 					<div class="mb-3 flex items-center justify-between">
 						<span class="text-xs font-medium text-gray-600">Floors & Rooms</span>
 						<div class="flex items-center gap-2">
-							<span class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700"
-								>Total: {totalRooms} kamar</span>
+							<span
+								class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-semibold text-gray-700"
+								>Total: {totalRooms} kamar</span
+							>
 							<button
 								class="flex items-center gap-1 rounded-md bg-[#972395] px-2.5 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[#7a1c78]"
 								onclick={addFloor}
@@ -313,7 +349,7 @@
 							</button>
 						</div>
 					</div>
-					
+
 					<div class="space-y-2">
 						{#each floors as floor, index (floor.id)}
 							<div class="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
@@ -330,7 +366,7 @@
 										type="number"
 										min="0"
 										placeholder="0"
-										class="w-16 bg-white rounded border border-gray-200 px-2 py-1 text-center text-sm font-semibold text-gray-900 outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
+										class="w-16 rounded border border-gray-200 bg-white px-2 py-1 text-center text-sm font-semibold text-gray-900 outline-none focus:border-[#972395] focus:ring-1 focus:ring-[#972395]"
 										bind:value={floor.roomCount}
 									/>
 									<span class="text-xs text-gray-500">rooms</span>
